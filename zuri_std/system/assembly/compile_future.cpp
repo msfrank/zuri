@@ -1,0 +1,105 @@
+/* SPDX-License-Identifier: BSD-3-Clause */
+
+#include <lyric_assembler/call_symbol.h>
+#include <lyric_assembler/class_symbol.h>
+#include <lyric_assembler/fundamental_cache.h>
+#include <lyric_assembler/proc_handle.h>
+#include <lyric_assembler/symbol_cache.h>
+#include <zuri_std_system/lib_types.h>
+
+#include "compile_future.h"
+
+tempo_utils::Status
+build_std_system_Future(
+    lyric_compiler::ModuleEntry &moduleEntry,
+    lyric_assembler::BlockHandle *block)
+{
+    auto *state = moduleEntry.getState();
+    auto *fundamentalCache = state->fundamentalCache();
+    auto *symbolCache = state->symbolCache();
+
+    auto resolveObjectResult = block->resolveClass(
+        lyric_parser::Assignable::forSingular({"Object"}));
+    if (resolveObjectResult.isStatus())
+        return resolveObjectResult.getStatus();
+    auto *ObjectClass = static_cast<lyric_assembler::ClassSymbol *>(
+        symbolCache->getSymbol(resolveObjectResult.getResult()));
+
+    lyric_object::TemplateParameter TParam;
+    TParam.name = "T";
+    TParam.index = 0;
+    TParam.typeDef = {};
+    TParam.bound = lyric_object::BoundType::None;
+    TParam.variance = lyric_object::VarianceType::Invariant;
+
+    auto declareFutureClassResult = block->declareClass("Future",
+        ObjectClass, lyric_object::AccessType::Public, {TParam}, lyric_object::DeriveType::Final);
+    if (declareFutureClassResult.isStatus())
+        return declareFutureClassResult.getStatus();
+    auto *FutureClass = static_cast<lyric_assembler::ClassSymbol *>(
+        symbolCache->getSymbol(declareFutureClassResult.getResult()));
+
+    auto TSpec = lyric_parser::Assignable::forSingular({"T"});
+    auto FutureTSpec = lyric_parser::Assignable::forSingular(declareFutureClassResult.getResult(), {TSpec});
+    auto StatusSpec = lyric_parser::Assignable::forSingular(
+        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Status));
+    auto BoolSpec = lyric_parser::Assignable::forSingular(
+        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Bool));
+
+    {
+        auto declareCtorResult = FutureClass->declareCtor(
+            {},
+            {},
+            {},
+            lyric_object::AccessType::Public,
+            static_cast<uint32_t>(StdSystemTrap::FUTURE_ALLOC));
+        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *code = call->callProc()->procCode();
+        code->trap(static_cast<uint32_t>(StdSystemTrap::FUTURE_CTOR));
+        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        auto declareMethodResult = FutureClass->declareMethod("Resolve",
+            {
+                {{}, "result", "", TSpec, lyric_parser::BindingType::VALUE}
+            },
+            {},
+            {},
+            BoolSpec,
+            lyric_object::AccessType::Public);
+        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *code = call->callProc()->procCode();
+        code->trap(static_cast<uint32_t>(StdSystemTrap::FUTURE_RESOLVE));
+        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        auto declareMethodResult = FutureClass->declareMethod("Reject",
+            {
+                {{}, "status", "", StatusSpec, lyric_parser::BindingType::VALUE}
+            },
+            {},
+            {},
+            BoolSpec,
+            lyric_object::AccessType::Public);
+        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *code = call->callProc()->procCode();
+        code->trap(static_cast<uint32_t>(StdSystemTrap::FUTURE_REJECT));
+        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        auto declareMethodResult = FutureClass->declareMethod("Cancel",
+            {},
+            {},
+            {},
+            BoolSpec,
+            lyric_object::AccessType::Public);
+        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        moduleEntry.compileBlock(R"(
+            val cancelled: Cancelled = Cancelled{message = "cancelled"}
+            this.Reject(cancelled)
+            )", call->callProc()->procBlock());
+    }
+
+
+    return tempo_utils::Status();
+}

@@ -1,0 +1,297 @@
+cmake_minimum_required(VERSION 3.27)
+
+project(zuri)
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    set(IS_DEBUG_BUILD ON)
+else()
+    set(IS_DEBUG_BUILD OFF)
+endif()
+
+#######################################################################
+#
+# declare options
+#
+#######################################################################
+
+set(RUNTIME_DISTRIBUTION_ROOT "${CMAKE_INSTALL_PREFIX}"
+    CACHE STRING
+    "The runtime distribution root directory. Defaults to CMAKE_INSTALL_PREFIX.")
+message(STATUS "runtime distribution root is ${RUNTIME_DISTRIBUTION_ROOT}")
+
+option(USE_SANITIZER "Enable sanitizer library" OFF)
+
+set(SANITIZER ""
+    CACHE STRING
+    "one of 'address', 'thread', 'memory', 'ub', or 'leak'")
+
+set(SANITIZER_IGNORELIST ""
+    CACHE PATH
+    "Instruct sanitizer to ignore symbols specified in ignorelist")
+
+option(USE_PROFILER "Enable gperftools profiler" OFF)
+
+#######################################################################
+#
+# configure compiler and linker
+#
+#######################################################################
+
+# configure common compiler flags
+set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
+set (CMAKE_CXX_EXTENSIONS OFF)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Werror -Wno-deprecated-declarations")
+
+# by default do not specify -O
+set (OPTIMIZATION_LEVEL "")
+
+# enable one of the sanitizer libraries if specified
+if (USE_SANITIZER)
+    if ("${SANITIZER}" STREQUAL "address")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+        set (OPTIMIZATION_LEVEL "-O1")
+        message(STATUS "enabling address sanitizer library")
+    elseif ("${SANITIZER}" STREQUAL "thread")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+        set (OPTIMIZATION_LEVEL "-O1")
+        message(STATUS "enabling thread sanitizer library")
+    elseif ("${SANITIZER}" STREQUAL "memory")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory")
+        set (OPTIMIZATION_LEVEL "-O1")
+        message(STATUS "enabling memory sanitizer library")
+    elseif ("${SANITIZER}" STREQUAL "ub")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+        set (OPTIMIZATION_LEVEL "-O1")
+        message(STATUS "enabling ub sanitizer library")
+    elseif ("${SANITIZER}" STREQUAL "leak")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
+        set (OPTIMIZATION_LEVEL "-O1")
+        message(STATUS "enabling leak sanitizer library")
+    else()
+        message(WARNING "skipping unknown sanitizer ${SANITIZER}")
+        set (SANITIZER "")
+    endif ("${SANITIZER}" STREQUAL "address")
+    # if a sanitizer is enabled and an ignorelist is specified, then add it to the cxx flags
+    if (SANITIZER)
+        if (SANITIZER_IGNORELIST)
+            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize-ignorelist=${SANITIZER_IGNORELIST}")
+            message(STATUS "using sanitizer ignorelist ${SANITIZER_IGNORELIST}")
+        endif (SANITIZER_IGNORELIST)
+    endif (SANITIZER)
+else()
+    message(STATUS "sanitizer not enabled")
+endif (USE_SANITIZER)
+
+#
+if (NOT OPTIMIZATION_LEVEL)
+    set(OPTIMIZATION_LEVEL "-O0 -fno-eliminate-unused-debug-types")
+endif()
+
+# set the optimization level
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZATION_LEVEL}")
+
+# set rpath for executable targets based on relative path from the executable
+if (APPLE)
+    set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
+elseif(WIN32)
+    # do nothing
+else()
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+endif()
+
+#######################################################################
+#
+# find required and optional dependencies
+#
+#######################################################################
+
+# find required Tempo dependency
+find_package(tempo REQUIRED)
+
+# find required Lyric dependency
+find_package(lyric REQUIRED)
+
+# find required Abseil dependency
+find_package(absl REQUIRED)
+
+# find required Boost dependency
+find_package(boost REQUIRED)
+
+# find required cppterminal dependency
+find_package(cppterminal REQUIRED)
+
+# find required libedit dependency
+find_package(libedit REQUIRED)
+
+# find required Flatbuffers dependency
+find_package(flatbuffers REQUIRED)
+
+# find required Openssl dependency
+find_package(openssl REQUIRED)
+
+# find required Uv dependency
+find_package(uv REQUIRED)
+
+# find required Fmt dependency
+find_package(fmt REQUIRED)
+
+# find required ICU dependency
+find_package(icu REQUIRED)
+
+# find required Rocksdb dependency
+find_package(rocksdb REQUIRED)
+
+# find required google test dependency
+find_package(gtest REQUIRED)
+
+# link to gperftools profiler library if specified
+set (PROFILER_LIBRARIES "")
+if (${USE_PROFILER})
+    set (PROFILER_LIBRARIES "-lprofiler")
+    message(STATUS "enabling gperftools profiler")
+else()
+    message(STATUS "gperftools profiler not enabled")
+endif(${USE_PROFILER})
+
+# include needed CMake features
+include(CMakePackageConfigHelpers)
+include(CTest)
+include(GNUInstallDirs)
+include(GoogleTest)
+
+#######################################################################
+#
+# configure tools and paths
+#
+#######################################################################
+
+#######################################################################
+#
+# define build constants
+#
+#######################################################################
+
+set(FULL_PLATFORM "${CMAKE_SYSTEM_NAME}.${CMAKE_SYSTEM_VERSION}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "full platform is ${FULL_PLATFORM}")
+
+# define individual version components and version string
+string(REGEX REPLACE "([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1"
+    MAJOR_VERSION
+    "${PACKAGE_VERSION}")
+string(REGEX REPLACE "[0-9]+\\.([0-9]+)\\.[0-9]+" "\\1"
+    MINOR_VERSION
+    "${PACKAGE_VERSION}")
+string(REGEX REPLACE "[0-9]+\\.[0-9]+\\.([0-9]+)" "\\1"
+    PATCH_VERSION
+    "${PACKAGE_VERSION}")
+set(FULL_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
+message(STATUS "version is ${FULL_VERSION}")
+
+# special directory names
+set(ZURI_PACKAGES_DIR_NAME                  "zuri-packages-${MAJOR_VERSION}")
+
+# install paths
+set(PACKAGES_DIR_PREFIX                     "${CMAKE_INSTALL_LIBDIR}/${ZURI_PACKAGES_DIR_NAME}")
+set(DOC_DIR_PREFIX                          "${CMAKE_INSTALL_DATAROOTDIR}/doc/zuri-${FULL_VERSION}")
+set(CONFIG_DIR_PREFIX                       "${CMAKE_INSTALL_DATAROOTDIR}/zuri-${FULL_VERSION}/config")
+set(VENDOR_CONFIG_DIR_PREFIX                "${CMAKE_INSTALL_DATAROOTDIR}/zuri-${FULL_VERSION}/vendor-config")
+
+# build paths
+set(ZURI_BUILD_PACKAGES_DIR                 "${CMAKE_BINARY_DIR}/${PACKAGES_DIR_PREFIX}")
+set(ZURI_BUILD_DOC_DIR                      "${CMAKE_BINARY_DIR}/${DOC_DIR_PREFIX}")
+set(ZURI_BUILD_CONFIG_DIR                   "${CMAKE_BINARY_DIR}/${CONFIG_DIR_PREFIX}")
+set(ZURI_BUILD_VENDOR_CONFIG_DIR            "${CMAKE_BINARY_DIR}/${VENDOR_CONFIG_DIR_PREFIX}")
+
+# runtime paths
+set(ZURI_RUNTIME_DISTRIBUTION_ROOT          "${CMAKE_INSTALL_PREFIX}")
+set(ZURI_RUNTIME_PACKAGES_DIR               "${CMAKE_INSTALL_PREFIX}/${PACKAGES_DIR_PREFIX}")
+set(ZURI_RUNTIME_CONFIG_DIR                 "${CMAKE_INSTALL_PREFIX}/${CONFIG_DIR_PREFIX}")
+set(ZURI_RUNTIME_VENDOR_CONFIG_DIR          "${CMAKE_INSTALL_PREFIX}/${VENDOR_CONFIG_DIR_PREFIX}")
+
+#
+
+set(ZURI_STD_PACKAGE_GROUP                  "dev.zuri")
+set(ZURI_STD_PACKAGE_NAME                   "std")
+set(ZURI_STD_PACKAGE_VERSION                "${FULL_VERSION}")
+
+set(ZURI_DEV_DOMAIN_NAME                    "zuri.dev")
+set(ZURI_STD_PACKAGE_AUTHORITY              "${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}@${ZURI_DEV_DOMAIN_NAME}")
+set(ZURI_STD_PACKAGE_URL                    "dev.zuri.pkg://${ZURI_STD_PACKAGE_AUTHORITY}")
+
+# used to initialize tester
+set(TESTER_CONFIG_PATH                      "${CMAKE_BINARY_DIR}/zuri_std/tester.config")
+
+# empty cpp file is used for targets which don't have any source files
+set(EMPTY_CPP "${CMAKE_BINARY_DIR}/empty.cpp")
+
+#######################################################################
+#
+# add library targets from subdirectories
+#
+#######################################################################
+
+add_subdirectory(resources)
+add_subdirectory(zuri)
+add_subdirectory(zuri_build)
+add_subdirectory(zuri_std)
+
+add_subdirectory(examples)
+#add_subdirectory(userguide)
+
+#######################################################################
+#
+# declare the package test suite target
+#
+#######################################################################
+
+add_custom_command(
+    OUTPUT ${EMPTY_CPP}
+    COMMAND cmake -E touch ${EMPTY_CPP}
+)
+
+add_executable(zuri_testsuite ${EMPTY_CPP})
+target_link_libraries(zuri_testsuite
+    PUBLIC gtest::gtest
+    PRIVATE
+    ZuriStdCollectionsTestSuite
+    ZuriStdLogTestSuite
+    ZuriStdSystemTestSuite
+    ZuriStdTextTestSuite
+)
+gtest_discover_tests(zuri_testsuite)
+
+#######################################################################
+#
+# create cmake package config
+#
+#######################################################################
+
+configure_package_config_file(
+    cmake/zuri-config.cmake.in
+    zuri-config.cmake
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/zuri"
+    PATH_VARS
+      PACKAGES_DIR_PREFIX
+      DOC_DIR_PREFIX
+      CONFIG_DIR_PREFIX
+      VENDOR_CONFIG_DIR_PREFIX
+    )
+
+write_basic_package_version_file(zuri-config-version.cmake
+    VERSION "${FULL_VERSION}"
+    COMPATIBILITY SameMajorVersion
+    )
+
+install(EXPORT zuri-targets
+    COMPONENT Devel
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/zuri"
+    NAMESPACE zuri::
+    )
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/zuri-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/zuri-config-version.cmake"
+    COMPONENT Devel
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/zuri"
+    )

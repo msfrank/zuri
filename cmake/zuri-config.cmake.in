@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+if (NOT TARGET zuri::zuri)
+  include(${CMAKE_CURRENT_LIST_DIR}/zuri-targets.cmake)
+endif ()
+
+set(ZURI_STD_PACKAGE_AUTHORITY          "@ZURI_STD_PACKAGE_AUTHORITY@")
+set(ZURI_STD_PACKAGE_URL                "@ZURI_STD_PACKAGE_URL@")
+
+set(ZURI_INSTALL_PACKAGES_DIR           "@PACKAGE_PACKAGES_DIR_PREFIX@")
+set(ZURI_INSTALL_DOC_DIR                "@PACKAGE_DOC_DIR_PREFIX@")
+set(ZURI_INSTALL_CONFIG_DIR             "@PACKAGE_CONFIG_DIR_PREFIX@")
+set(ZURI_INSTALL_VENDOR_CONFIG_DIR      "@PACKAGE_VENDOR_CONFIG_DIR_PREFIX@")
+
+# should be last
+check_required_components(zuri)

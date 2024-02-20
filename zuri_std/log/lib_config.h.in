@@ -1,0 +1,12 @@
+#ifndef ZURI_STD_LOG_CONFIG_H
+#define ZURI_STD_LOG_CONFIG_H
+
+#define ZURI_STD_LOG_PACKAGE_GROUP              "@PACKAGE_GROUP@"
+#define ZURI_STD_LOG_PACKAGE_NAME               "@PACKAGE_NAME@"
+#define ZURI_STD_LOG_PACKAGE_VERSION            "@PACKAGE_VERSION@"
+#define ZURI_STD_LOG_PACKAGE_ID                 "@PACKAGE_ID@"
+#define ZURI_STD_LOG_LIB_NAME                   "@LIB_NAME@"
+
+#define ZURI_STD_LOG_LOCATION                   "@ZURI_STD_LOG_LOCATION@"
+
+#endif // ZURI_STD_LOG_CONFIG_H

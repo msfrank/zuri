@@ -1,0 +1,18 @@
+{
+    "build": {
+        "global": {
+            "jobParallelism": 1,
+            "builderWaitTimeoutInMillis": 1000,
+            "cacheMode": "InMemory",
+            "sourceBaseUrl": "/src",
+            "packageDirectoryPathList": [ "@ZURI_RUNTIME_PACKAGES_DIR@" ],
+            "packageMap": {
+                "std": "@ZURI_STD_PACKAGE_AUTHORITY@"
+            }
+        },
+        "domains": {
+        },
+        "tasks": {
+        }
+    }
+}

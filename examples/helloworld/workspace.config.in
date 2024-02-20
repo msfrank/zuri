@@ -1,0 +1,18 @@
+{
+    "zuri-build": {
+        "global": {
+            "sourceBaseUrl": "file://@SOURCE_DIRECTORY@",
+            "packageDirectoryPathList": [ "@ZURI_BUILD_PACKAGES_DIR@" ]
+        },
+        "tasks": {
+            "package:": {
+                "packageDomain": "examples",
+                "packageName": "helloworld",
+                "majorVersion": @MAJOR_VERSION@,
+                "minorVersion": @MINOR_VERSION@,
+                "patchVersion": @PATCH_VERSION@,
+                "mainLocation": "/helloworld"
+            }
+        }
+    }
+}
