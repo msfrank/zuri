@@ -69,27 +69,30 @@ tempo_utils::Status
 std_system_await(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
+    auto *scheduler = state->systemScheduler();
 
     auto &frame = currentCoro->peekCall();
 
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);
     TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
-    auto *future = cell.data.ref;
 
-    // consume the waiter if it exists
-    lyric_runtime::Waiter *waiter = nullptr;
+    auto *fut = cell.data.ref;
+    fut->awaitFuture(scheduler);
 
-    if (future->releaseWaiter(&waiter)) {
-        if (waiter->handle) {
-            // if the future has not been awaited and has not completed, then suspend the current task
-            auto *scheduler = state->systemScheduler();
-            waiter->task = scheduler->currentTask();
-            TU_LOG_INFO << "suspending task " << waiter->task;
-            scheduler->suspendTask(waiter->task);
-        }
-    }
-
+//    // consume the waiter if it exists
+//    lyric_runtime::Waiter *waiter = nullptr;
+//
+//    if (ref->releaseWaiter(&waiter)) {
+//        if (waiter->handle) {
+//            // if the future has not been awaited and has not completed, then suspend the current task
+//            auto *scheduler = state->systemScheduler();
+//            waiter->task = scheduler->currentTask();
+//            TU_LOG_INFO << "suspending task " << waiter->task;
+//            scheduler->suspendTask(waiter->task);
+//        }
+//    }
+//
 //    // push the future onto the top of the stack
 //    currentCoro->pushData(cell);
 
@@ -106,25 +109,25 @@ std_system_get_result(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);
     TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
-    auto *future = cell.data.ref;
+    auto *ref = cell.data.ref;
 
     lyric_runtime::DataCell result;
-    future->resolveFuture(result, interp, state);
+    ref->resolveFuture(result);
     currentCoro->pushData(result);
 
     return lyric_runtime::InterpreterStatus::ok();
 }
 
 static void
-on_sleep_complete(lyric_runtime::Waiter *waiter, void *data)
+on_sleep_accept(lyric_runtime::Promise *promise)
 {
-    auto *future = (FutureRef *) data;
-    future->complete(lyric_runtime::DataCell::nil());
+    promise->complete(lyric_runtime::DataCell::nil());
 }
 
 tempo_utils::Status
 std_system_sleep(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
+    auto *scheduler = state->systemScheduler();
     auto *currentCoro = state->currentCoro();
 
     auto &frame = currentCoro->peekCall();
@@ -153,13 +156,13 @@ std_system_sleep(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto ref = heapManager->allocateRef<FutureRef>(vtable);
     currentCoro->pushData(ref);
 
-    // register a waiter bound to the current task
-    auto *fut = static_cast<FutureRef *>(ref.data.ref);
-    auto scheduler = state->systemScheduler();
-    auto *waiter = scheduler->registerTimer(timeout, on_sleep_complete, fut);
+    // register a timer
+    auto promise = lyric_runtime::Promise::create(on_sleep_accept);
+    scheduler->registerTimer(timeout, promise);
 
-    // attach the waiter to the future
-    fut->attachWaiter(waiter);
+    // attach the timer promise to the future
+    auto *fut = ref.data.ref;
+    fut->prepareFuture(promise);
 
     return lyric_runtime::InterpreterStatus::ok();
 }

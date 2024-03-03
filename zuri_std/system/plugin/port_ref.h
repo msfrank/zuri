@@ -26,11 +26,10 @@ public:
     lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
-    bool send(const lyric_serde::LyricPatchset &patchset);
+    std::shared_ptr<lyric_runtime::DuplexPort> duplexPort();
 
-    bool isInReceive() const;
-    bool waitForReceive(FutureRef *fut, uv_async_t *async);
-    bool completeReceive();
+    bool send(const lyric_serde::LyricPatchset &patchset);
+    bool waitForReceive(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async);
 
 protected:
     void setMembersReachable() override;
@@ -41,7 +40,6 @@ private:
     lyric_runtime::InterpreterState *m_state;
     std::shared_ptr<lyric_runtime::DuplexPort> m_port;
     std::vector<lyric_runtime::DataCell> m_values;
-    FutureRef *m_fut;
 };
 
 tempo_utils::Status port_send(

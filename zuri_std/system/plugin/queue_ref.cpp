@@ -23,13 +23,13 @@ QueueRef::~QueueRef()
 lyric_runtime::DataCell
 QueueRef::getField(const lyric_runtime::DataCell &field) const
 {
-    return lyric_runtime::DataCell();
+    return {};
 }
 
 lyric_runtime::DataCell
 QueueRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
 {
-    return lyric_runtime::DataCell();
+    return {};
 }
 
 std::string
@@ -74,9 +74,9 @@ QueueRef::takeAvailableElement()
 }
 
 bool
-QueueRef::waitForPush(FutureRef *fut, uv_async_t *async)
+QueueRef::waitForPush(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async)
 {
-    m_waiting.push_back({fut, async});
+    m_waiting.push_back({promise, async});
     return true;
 }
 
@@ -88,9 +88,9 @@ QueueRef::setMembersReachable()
             element.data.ref->setReachable();
         }
     }
-    for (auto &waiting : m_waiting) {
-        waiting.first->setReachable();
-    }
+//    for (auto &waiting : m_waiting) {
+//        waiting.first->setReachable();
+//    }
 }
 
 void
@@ -101,9 +101,9 @@ QueueRef::clearMembersReachable()
             element.data.ref->clearReachable();
         }
     }
-    for (auto &waiting : m_waiting) {
-        waiting.first->clearReachable();
-    }
+//    for (auto &waiting : m_waiting) {
+//        waiting.first->clearReachable();
+//    }
 }
 
 tempo_utils::Status
@@ -140,11 +140,18 @@ queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interprete
     return lyric_runtime::InterpreterStatus::ok();
 }
 
+static void
+on_async_complete(lyric_runtime::Promise *promise)
+{
+    // do nothing
+}
+
 tempo_utils::Status
 queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
     auto *segmentManager = state->segmentManager();
+    auto *scheduler = state->systemScheduler();
 
     auto &frame = currentCoro->peekCall();
     TU_ASSERT(frame.numArguments() == 0);
@@ -170,22 +177,24 @@ queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
     currentCoro->pushData(ref);
     auto *fut = static_cast<FutureRef *>(ref.data.ref);
 
+    //
+    auto promise = lyric_runtime::Promise::create(on_async_complete);
+
+    // register an async waiter
+    uv_async_t *async = nullptr;
+    scheduler->registerAsync(&async, promise);
+
+    // attach the promise to the future
+    fut->prepareFuture(promise);
+
     // special case: if the queue has an available element then take it and set the future immediately
     if (instance->containsAvailableElement()) {
-        fut->complete(instance->takeAvailableElement());
+        promise->complete(instance->takeAvailableElement());
         return lyric_runtime::InterpreterStatus::ok();
     }
 
-    // otherwise register a waiter bound to the current task
-    auto scheduler = state->systemScheduler();
-    uv_async_t *async = nullptr;
-    auto *waiter = scheduler->registerAsync(&async, nullptr, nullptr);
-
-    // attach the waiter to the future
-    fut->attachWaiter(waiter);
-
     // add the future to the queue
-    instance->waitForPush(fut, async);
+    instance->waitForPush(promise, async);
 
     return lyric_runtime::InterpreterStatus::ok();
 }

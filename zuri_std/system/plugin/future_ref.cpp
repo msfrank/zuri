@@ -10,90 +10,100 @@
 FutureRef::FutureRef(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable),
       m_state(FutureState::Initial),
-      m_waiter(nullptr),
-      m_cb(nullptr),
-      m_data(nullptr),
-      m_result(),
-      m_resolveStatus(ResolveStatus::Invalid)
+      m_promise(nullptr)
 {
 }
 
 FutureRef::~FutureRef()
 {
-    if (m_cb) {
-        lyric_runtime::DataCell result;
-        auto resolveResult = m_cb(result, nullptr, nullptr, nullptr, m_data);
-        TU_LOG_ERROR_IF (resolveResult.isStatus()) << "resolve callback failed: " << resolveResult.getStatus();
-    }
-    m_cb = nullptr;
-    m_data = nullptr;
     TU_LOG_INFO << "free" << FutureRef::toString();
 }
 
 lyric_runtime::DataCell
 FutureRef::getField(const lyric_runtime::DataCell &field) const
 {
-    return lyric_runtime::DataCell();
+    return {};
 }
 
 lyric_runtime::DataCell
 FutureRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
 {
-    return lyric_runtime::DataCell();
+    return {};
 }
 
 bool
-FutureRef::attachWaiter(lyric_runtime::Waiter *waiter)
+FutureRef::prepareFuture(std::shared_ptr<lyric_runtime::Promise> promise)
 {
-    // if the future is not in Initial state then we don't attach the waiter
+    // if the future is not in Initial state then prepare fails
     if (m_state != FutureState::Initial)
         return false;
 
-    m_waiter = waiter;
+    // if future already has a promise assigned then prepare fails
+    if (m_promise != nullptr)
+        return false;
+
+    // if promise is already resolved then prepare fails
+    if (promise->getPromiseState() != lyric_runtime::PromiseState::Pending)
+        return false;
+
+    m_promise = promise;
     m_state = FutureState::Ready;
     return true;
 }
 
-bool
-FutureRef::releaseWaiter(lyric_runtime::Waiter **waiter)
+void
+FutureRef::checkState()
 {
-    TU_ASSERT (waiter != nullptr);
-
-    // if the future is not in Ready state then we don't release the waiter
-    if (m_state != FutureState::Ready)
-        return false;
-
-    *waiter = m_waiter;
-    m_waiter = nullptr;
-    m_state = FutureState::Ready;
-    return true;
+    // if the promise has been completed or rejected then mark the future as resolved and return
+    switch (m_promise->getPromiseState()) {
+        case lyric_runtime::PromiseState::Completed:
+        case lyric_runtime::PromiseState::Rejected:
+            m_state = FutureState::Resolved;
+            return;
+        default:
+            break;
+    }
 }
 
 bool
-FutureRef::resolveFuture(
-    lyric_runtime::DataCell &result,
-    lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state)
+FutureRef::awaitFuture(lyric_runtime::SystemScheduler *systemScheduler)
 {
-    // if the future is not in Completed state then we don't resolve the future
-    if (m_state != FutureState::Completed)
+    TU_ASSERT (systemScheduler != nullptr);
+
+    // synchronize the internal state
+    checkState();
+
+    // if the future has not been prepared then await fails
+    if (m_state == FutureState::Initial)
         return false;
 
-    // if there is a resolve callback then run it to get the result
-    if (m_cb) {
-        auto resolveResult = m_cb(m_result, interp, state, this, m_data);
-        m_cb = nullptr;
-        m_data = nullptr;
-        if (resolveResult.isStatus()) {
-            TU_LOG_ERROR << "resolve callback failed: " << resolveResult.getStatus();
-            m_resolveStatus = ResolveStatus::Failed;
-            return false;
-        }
-        m_resolveStatus = resolveResult.getResult();
+    // if the future is already resolved out then await succeeds without suspending
+    if (m_state == FutureState::Resolved)
+        return true;
+
+    if (m_state == FutureState::Ready) {
+        // suspend the current task and set state to Waiting
+        m_promise->await(systemScheduler);
+        return true;
     }
 
-    result = m_result;
-    return true;
+    if (m_state == FutureState::Waiting) {
+        // FIXME: support suspending multiple tasks for the same future
+        TU_UNREACHABLE();
+    }
+
+    return false;
+}
+
+bool
+FutureRef::resolveFuture(lyric_runtime::DataCell &result)
+{
+    checkState();
+    if (m_state == FutureState::Resolved) {
+        result = m_promise->getResult();
+        return true;
+    }
+    return false;
 }
 
 std::string
@@ -102,69 +112,66 @@ FutureRef::toString() const
     return absl::Substitute("<$0: FutureRef>", this);
 }
 
-FutureState
-FutureRef::getState() const
-{
-    return m_state;
-}
-
-ResolveStatus
-FutureRef::getResolveStatus() const
-{
-    return m_resolveStatus;
-}
-
-lyric_runtime::DataCell
-FutureRef::getResult() const
-{
-    return m_result;
-}
-
-bool
+tempo_utils::Status
 FutureRef::complete(const lyric_runtime::DataCell &result)
 {
     switch (m_state) {
+
         case FutureState::Initial:
+            m_promise = lyric_runtime::Promise::completed(result);
+            m_state = FutureState::Resolved;
+            return lyric_runtime::InterpreterStatus::ok();
+
         case FutureState::Ready:
         case FutureState::Waiting:
-            m_state = FutureState::Completed;
-            m_resolveStatus = ResolveStatus::Completed;
-            m_result = result;
-            return true;
+            m_promise->complete(result);
+            m_state = FutureState::Resolved;
+            return lyric_runtime::InterpreterStatus::ok();
+
         default:
-            return false;
+            return lyric_runtime::InterpreterStatus::forCondition(
+                lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid future state");
     }
 }
 
-bool
-FutureRef::complete(ResolveCallback cb, void *data)
+tempo_utils::Status
+FutureRef::reject(const lyric_runtime::DataCell &result)
 {
     switch (m_state) {
+
         case FutureState::Initial:
+            m_promise = lyric_runtime::Promise::rejected(result);
+            m_state = FutureState::Resolved;
+            return lyric_runtime::InterpreterStatus::ok();
+
         case FutureState::Ready:
         case FutureState::Waiting:
-            m_state = FutureState::Completed;
-            m_resolveStatus = ResolveStatus::Completed;
-            m_cb = cb;
-            m_data = data;
-            return true;
+            m_promise->reject(result);
+            m_state = FutureState::Resolved;
+            return lyric_runtime::InterpreterStatus::ok();
+
         default:
-            return false;
+            return lyric_runtime::InterpreterStatus::forCondition(
+                lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid future state");
     }
 }
 
 void
 FutureRef::setMembersReachable()
 {
-    if (m_result.type == lyric_runtime::DataCellType::REF)
-        m_result.data.ref->setReachable();
+    auto result = m_promise->getResult();
+    if (result.type == lyric_runtime::DataCellType::REF) {
+        result.data.ref->setReachable();
+    }
 }
 
 void
 FutureRef::clearMembersReachable()
 {
-    if (m_result.type == lyric_runtime::DataCellType::REF)
-        m_result.data.ref->clearReachable();
+    auto result = m_promise->getResult();
+    if (result.type == lyric_runtime::DataCellType::REF) {
+        result.data.ref->clearReachable();
+    }
 }
 
 tempo_utils::Status
@@ -197,7 +204,7 @@ future_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 }
 
 tempo_utils::Status
-future_resolve(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+future_complete(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -209,9 +216,7 @@ future_resolve(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver != nullptr);
     auto *instance = static_cast<FutureRef *>(receiver);
-    instance->complete(arg0);
-
-    return lyric_runtime::InterpreterStatus::ok();
+    return instance->complete(arg0);
 }
 
 tempo_utils::Status
@@ -227,9 +232,7 @@ future_reject(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver != nullptr);
     auto *instance = static_cast<FutureRef *>(receiver);
-    instance->complete(arg0);
-
-    return lyric_runtime::InterpreterStatus::ok();
+    return instance->reject(arg0);
 }
 
 tempo_utils::Status
@@ -245,7 +248,5 @@ future_cancel(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver != nullptr);
     auto *instance = static_cast<FutureRef *>(receiver);
-    instance->complete(arg0);
-
-    return lyric_runtime::InterpreterStatus::ok();
+    return instance->reject(arg0);
 }

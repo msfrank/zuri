@@ -18,12 +18,12 @@ protected:
     }
 };
 
-TEST_F(StdSystemSystem, EvaluateAwaitResolvedFuture)
+TEST_F(StdSystemSystem, EvaluateAwaitCompletedFuture)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
         val fut: Future[Int] = Future[Int]{}
-        fut.Resolve(42)
+        fut.Complete(42)
         Await(fut)
     )", options);
 
@@ -58,12 +58,12 @@ TEST_F(StdSystemSystem, EvaluateAwaitCancelledFuture)
         RunModule(Return(IsRefType(lyric_common::SymbolPath({"Cancelled"}))))));
 }
 
-TEST_F(StdSystemSystem, EvaluateAwaitDefaultForResolvedFuture)
+TEST_F(StdSystemSystem, EvaluateAwaitDefaultForCompletedFuture)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
         val fut: Future[Int] = Future[Int]{}
-        fut.Resolve(42)
+        fut.Complete(42)
         AwaitOrDefault(fut, 0)
     )", options);
 

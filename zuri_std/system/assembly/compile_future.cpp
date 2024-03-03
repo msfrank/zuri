@@ -59,7 +59,7 @@ build_std_system_Future(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = FutureClass->declareMethod("Resolve",
+        auto declareMethodResult = FutureClass->declareMethod("Complete",
             {
                 {{}, "result", "", TSpec, lyric_parser::BindingType::VALUE}
             },
@@ -69,7 +69,7 @@ build_std_system_Future(
             lyric_object::AccessType::Public);
         auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
         auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdSystemTrap::FUTURE_RESOLVE));
+        code->trap(static_cast<uint32_t>(StdSystemTrap::FUTURE_COMPLETE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {

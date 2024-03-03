@@ -20,8 +20,7 @@ PortRef::PortRef(
     lyric_runtime::InterpreterState *state)
     : BaseRef(vtable),
       m_interp(interp),
-      m_state(state),
-      m_fut(nullptr)
+      m_state(state)
 {
     TU_ASSERT (m_interp != nullptr);
     TU_ASSERT (m_state != nullptr);
@@ -35,8 +34,7 @@ PortRef::PortRef(
     : BaseRef(vtable),
       m_interp(interp),
       m_state(state),
-      m_port(port),
-      m_fut(nullptr)
+      m_port(port)
 {
     TU_ASSERT (m_interp != nullptr);
     TU_ASSERT (m_state != nullptr);
@@ -51,21 +49,25 @@ PortRef::~PortRef()
 lyric_runtime::DataCell
 PortRef::getField(const lyric_runtime::DataCell &field) const
 {
-    return lyric_runtime::DataCell();
+    return {};
 }
 
 lyric_runtime::DataCell
 PortRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
 {
-    return lyric_runtime::DataCell();
+    return {};
 }
 
 std::string
 PortRef::toString() const
 {
-    if (m_fut)
-        return absl::Substitute("<$0: PortRef pending receive>", this);
     return absl::Substitute("<$0: PortRef>", this);
+}
+
+std::shared_ptr<lyric_runtime::DuplexPort>
+PortRef::duplexPort()
+{
+    return m_port;
 }
 
 bool
@@ -80,26 +82,17 @@ PortRef::send(const lyric_serde::LyricPatchset &patchset)
 }
 
 bool
-PortRef::isInReceive() const
+PortRef::waitForReceive(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async)
 {
-    return m_fut;
-}
-
-bool
-PortRef::waitForReceive(FutureRef *fut, uv_async_t *async)
-{
-    if (m_fut)
-        return false;
-    m_fut = fut;
     if (m_port) {
         // if port is attached then signal the port that we are ready to receive
         m_port->readyToReceive(async);
     } else {
         // otherwise if this is the null protocol then signal a receive immediately
-        m_fut->complete(lyric_runtime::DataCell::nil());
-        m_fut = nullptr;
+        promise->complete(lyric_runtime::DataCell::nil());
         uv_async_send(async);
     }
+
     return true;
 }
 
@@ -631,96 +624,6 @@ allocate_operation(
     }
 }
 
-struct ResolveData {
-    lyric_serde::LyricPatchset patchset;
-};
-
-static tempo_utils::Result<ResolveStatus>
-resolve_callback(
-    lyric_runtime::DataCell &result,
-    lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state,
-    FutureRef *fut,
-    void *_data)
-{
-    auto *data = static_cast<ResolveData *>(_data);
-
-    // special case: we were called as cleanup handler, there is no associated future
-    if (fut == nullptr) {
-        delete data;
-        return ResolveStatus::Completed;
-    }
-
-    // take a new reference to patchset and delete the data struct
-    auto patchset = data->patchset.getPatchset();
-    delete data;
-
-    if (patchset.numChanges() == 0) {
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "patchset is empty");
-    }
-    if (patchset.numChanges() > 1) {
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "multiple changes in patchset");
-    }
-
-    auto change = patchset.getChange(0);
-
-    //
-    auto *currentCoro = state->currentCoro();
-    int stackBase = currentCoro->dataStackSize();
-    for (uint32_t i = 0; i < patchset.numValues(); i++) {
-        const auto value = patchset.getValue(i);
-        auto status = allocate_next_value(patchset, value, stackBase, interp, state);
-        if (status.notOk()) {
-            currentCoro->resizeDataStack(stackBase);
-            return status;
-        }
-    }
-
-    auto allocateOperationResult = allocate_operation(patchset, change, stackBase, interp, state);
-    if (allocateOperationResult.isStatus())
-        return allocateOperationResult.getStatus();
-
-    result = allocateOperationResult.getResult();
-    currentCoro->resizeDataStack(stackBase);
-    return ResolveStatus::Completed;
-}
-
-bool
-PortRef::completeReceive()
-{
-    if (m_fut == nullptr)
-        return false;
-
-    lyric_serde::LyricPatchset patchset;
-    if (m_port) {
-        if (!m_port->hasPending())
-            return false;
-        patchset = m_port->nextPending();
-    } else {
-        lyric_serde::PatchsetState state;
-        auto appendChangeResult = state.appendChange("");
-        if (appendChangeResult.isStatus())
-            return false;
-        auto *change = appendChangeResult.getResult();
-        auto appendValueResult = state.appendValue(tempo_utils::AttrValue(nullptr));
-        if (appendValueResult.isStatus())
-            return false;
-        change->setEmitOperation(appendValueResult.getResult()->getAddress());
-        auto toPatchsetResult = state.toPatchset();
-        if (toPatchsetResult.isStatus())
-            return false;
-        patchset = toPatchsetResult.getResult();
-    }
-
-    auto *data = new ResolveData();
-    data->patchset = patchset;
-    m_fut->complete(resolve_callback, data);
-    m_fut = nullptr;
-    return true;
-}
-
 void
 PortRef::setMembersReachable()
 {
@@ -728,8 +631,8 @@ PortRef::setMembersReachable()
         if (value.type == lyric_runtime::DataCellType::REF)
             value.data.ref->setReachable();
     }
-    if (m_fut)
-        m_fut->setReachable();
+    //if (m_fut)
+    //    m_fut->setReachable();
 }
 
 void
@@ -739,8 +642,8 @@ PortRef::clearMembersReachable()
         if (value.type == lyric_runtime::DataCellType::REF)
             value.data.ref->clearReachable();
     }
-    if (m_fut)
-        m_fut->clearReachable();
+    //if (m_fut)
+    //    m_fut->clearReachable();
 }
 
 tempo_utils::Status
@@ -777,11 +680,50 @@ port_send(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
     return lyric_runtime::InterpreterStatus::ok();
 }
 
+struct ResolveData {
+    std::shared_ptr<lyric_runtime::DuplexPort> port;
+    lyric_serde::LyricPatchset patchset;
+    lyric_runtime::DataCell ref;
+};
+
+
 static void
-on_async_complete(lyric_runtime::Waiter *waiter, void *data)
+on_resolve_patchset(
+    lyric_runtime::Promise *promise,
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state)
 {
-    auto *ref = (PortRef *) data;
-    ref->completeReceive();
+    auto *data = static_cast<ResolveData *>(promise->getData());
+
+    // take a new reference to patchset and delete the data struct
+    auto patchset = data->patchset.getPatchset();
+    delete data;
+
+    TU_ASSERT (patchset.numChanges() == 1);
+    auto change = patchset.getChange(0);
+
+    //
+    auto *currentCoro = state->currentCoro();
+    int stackBase = currentCoro->dataStackSize();
+
+    //
+    for (uint32_t i = 0; i < patchset.numValues(); i++) {
+        const auto value = patchset.getValue(i);
+        TU_RAISE_IF_NOT_OK (allocate_next_value(patchset, value, stackBase, interp, state));
+    }
+
+    lyric_runtime::DataCell result;
+    TU_ASSIGN_OR_RAISE (result, allocate_operation(patchset, change, stackBase, interp, state));
+    promise->complete(result);
+    currentCoro->resizeDataStack(stackBase);
+}
+
+static void
+on_async_complete(lyric_runtime::Promise *promise)
+{
+    auto *data = static_cast<ResolveData *>(promise->getData());
+    TU_ASSERT (data->port->hasPending());
+    data->patchset = data->port->nextPending();
 }
 
 tempo_utils::Status
@@ -789,6 +731,7 @@ port_receive(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
     auto *segmentManager = state->segmentManager();
+    auto *scheduler = state->systemScheduler();
 
     auto &frame = currentCoro->peekCall();
 
@@ -813,18 +756,28 @@ port_receive(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     // create a new future to wait for receive result
     auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
     currentCoro->pushData(ref);
-    auto *fut = static_cast<FutureRef *>(ref.data.ref);
+    auto *fut = ref.data.ref;
+
+    //
+    auto *data = static_cast<ResolveData *>(std::malloc(sizeof(ResolveData)));
+    data->port = instance->duplexPort();
+
+    //
+    lyric_runtime::PromiseOptions options;
+    options.adapt = on_resolve_patchset;
+    options.release = std::free;
+    options.data = data;
+    auto promise = lyric_runtime::Promise::create(on_async_complete, options);
 
     // register a waiter bound to the current task
-    auto scheduler = state->systemScheduler();
     uv_async_t *async = nullptr;
-    auto *waiter = scheduler->registerAsync(&async, on_async_complete, instance);
+    scheduler->registerAsync(&async, promise);
 
     // attach the waiter to the future
-    fut->attachWaiter(waiter);
+    fut->prepareFuture(promise);
 
     // set port to await a message from the remote side
-    instance->waitForReceive(fut, async);
+    instance->waitForReceive(promise, async);
 
     return lyric_runtime::InterpreterStatus::ok();
 }

@@ -27,8 +27,8 @@ NativeStdSystem::getTrap(uint32_t index) const
             return future_alloc;
         case StdSystemTrap::FUTURE_CTOR:
             return future_ctor;
-        case StdSystemTrap::FUTURE_RESOLVE:
-            return future_resolve;
+        case StdSystemTrap::FUTURE_COMPLETE:
+            return future_complete;
         case StdSystemTrap::FUTURE_REJECT:
             return future_reject;
         case StdSystemTrap::FUTURE_CANCEL:

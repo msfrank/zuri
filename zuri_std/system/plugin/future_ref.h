@@ -7,6 +7,7 @@
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <lyric_runtime/gc_heap.h>
 #include <lyric_runtime/interpreter_state.h>
+#include <lyric_runtime/promise.h>
 
 class FutureRef;
 
@@ -14,23 +15,23 @@ enum class FutureState {
     Initial,
     Ready,
     Waiting,
-    Completed,
+    Resolved,
 };
 
-enum class ResolveStatus {
-    Invalid,
-    Completed,
-    Rejected,
-    Cancelled,
-    Failed,
-};
-
-typedef tempo_utils::Result<ResolveStatus> (*ResolveCallback)(
-    lyric_runtime::DataCell &,
-    lyric_runtime::BytecodeInterpreter *,
-    lyric_runtime::InterpreterState *,
-    FutureRef *,
-    void *);
+//enum class ResolveStatus {
+//    Invalid,
+//    Completed,
+//    Rejected,
+//    Cancelled,
+//    Failed,
+//};
+//
+//typedef tempo_utils::Result<ResolveStatus> (*ResolveCallback)(
+//    lyric_runtime::DataCell &,
+//    lyric_runtime::BytecodeInterpreter *,
+//    lyric_runtime::InterpreterState *,
+//    FutureRef *,
+//    void *);
 
 class FutureRef : public lyric_runtime::BaseRef {
 
@@ -42,19 +43,13 @@ public:
     lyric_runtime::DataCell setField(
         const lyric_runtime::DataCell &field,
         const lyric_runtime::DataCell &value) override;
-    bool attachWaiter(lyric_runtime::Waiter *waiter) override;
-    bool releaseWaiter(lyric_runtime::Waiter **waiter) override;
-    bool resolveFuture(
-        lyric_runtime::DataCell &result,
-        lyric_runtime::BytecodeInterpreter *interp,
-        lyric_runtime::InterpreterState *state) override;
+    bool prepareFuture(std::shared_ptr<lyric_runtime::Promise> promise) override;
+    bool awaitFuture(lyric_runtime::SystemScheduler *systemScheduler) override;
+    bool resolveFuture(lyric_runtime::DataCell &result) override;
     std::string toString() const override;
 
-    FutureState getState() const;
-    ResolveStatus getResolveStatus() const;
-    lyric_runtime::DataCell getResult() const;
-    bool complete(const lyric_runtime::DataCell &result);
-    bool complete(ResolveCallback cb, void *data);
+    tempo_utils::Status complete(const lyric_runtime::DataCell &result);
+    tempo_utils::Status reject(const lyric_runtime::DataCell &result);
 
 protected:
     void setMembersReachable() override;
@@ -62,11 +57,9 @@ protected:
 
 private:
     FutureState m_state;
-    lyric_runtime::Waiter *m_waiter;
-    ResolveCallback m_cb;
-    void *m_data;
-    lyric_runtime::DataCell m_result;
-    ResolveStatus m_resolveStatus;
+    std::shared_ptr<lyric_runtime::Promise> m_promise;
+
+    void checkState();
 };
 
 tempo_utils::Status future_alloc(
@@ -77,7 +70,7 @@ tempo_utils::Status future_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status future_resolve(
+tempo_utils::Status future_complete(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
