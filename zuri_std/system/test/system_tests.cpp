@@ -109,3 +109,21 @@ TEST_F(StdSystemSystem, EvaluateAwaitSleep)
     ASSERT_THAT (result, ContainsResult(
         RunModule(Return(DataCellNil()))));
 }
+
+TEST_F(StdSystemSystem, EvaluateAwaitSpawn)
+{
+    auto result = lyric_test::LyricTester::runSingleModule(R"(
+        import from "//std/system" ...
+
+        val x: Function0[Int] = lambda (): Int {
+            Await(Sleep(1000))
+            42
+        }
+
+        val fut: Future[Nil] = Spawn(x)
+        Await(fut)
+    )", options);
+
+    ASSERT_THAT (result, ContainsResult(
+        RunModule(Return(DataCellInt(42)))));
+}

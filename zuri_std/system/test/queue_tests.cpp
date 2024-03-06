@@ -46,3 +46,25 @@ TEST_F(StdSystemQueue, EvaluatePushMultipleAndAwaitPop)
     ASSERT_THAT (result, ContainsResult(
         RunModule(Return(DataCellInt(3)))));
 }
+
+TEST_F(StdSystemQueue, EvaluatePushMultipleAndAwaitPopInSeparateTasks)
+{
+    auto result = lyric_test::LyricTester::runSingleModule(R"(
+        import from "//std/system" ...
+        val queue: Queue[Int] = Queue[Int]{}
+
+        val p1: Function0[Bool] = lambda(): Bool {
+            queue.push(1) and queue.push(1) and queue.push(1)
+        }
+
+        val p2: Function0[Int] = lambda(): Int {
+            AwaitOrDefault(queue.pop(), 0) + AwaitOrDefault(queue.pop(), 0) + AwaitOrDefault(queue.pop(), 0)
+        }
+
+        Spawn(p1)
+        AwaitOrDefault(Spawn(p2), 0)
+    )", testerOptions);
+
+    ASSERT_THAT (result, ContainsResult(
+        RunModule(Return(DataCellInt(3)))));
+}

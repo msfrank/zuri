@@ -166,3 +166,82 @@ std_system_sleep(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
 
     return lyric_runtime::InterpreterStatus::ok();
 }
+
+static void
+on_worker_complete(lyric_runtime::Promise *promise)
+{
+    auto *workerTask = static_cast<lyric_runtime::Task *>(promise->getData());
+
+    // complete the promise
+    auto *workerCoro = workerTask->stackfulCoroutine();
+    auto result = workerCoro->peekData();
+    TU_LOG_INFO << "worker task " << workerTask << " terminated with result " << result;
+    promise->complete(result);
+
+    // destroy the worker task
+    auto *scheduler = workerTask->getSystemScheduler();
+    TU_LOG_INFO << "destroying worker task " << workerTask;
+    scheduler->destroyTask(workerTask);
+}
+
+tempo_utils::Status
+std_system_spawn(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *scheduler = state->systemScheduler();
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->peekCall();
+
+    TU_ASSERT(frame.numArguments() == 1);
+    const auto &cell = frame.getArgument(0);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
+    auto *closure = cell.data.ref;
+
+    auto *segmentManager = state->segmentManager();
+    auto *heapManager = state->heapManager();
+
+    auto *segment = currentCoro->peekSP();
+    auto object = segment->getObject().getObject();
+    auto symbol = object.findSymbol(lyric_common::SymbolPath({"Future"}));
+    TU_ASSERT (symbol.isValid());
+
+    lyric_runtime::InterpreterStatus status;
+    auto descriptor = segmentManager->resolveDescriptor(segment,
+        symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
+    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CLASS);
+    const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
+    TU_ASSERT(vtable != nullptr);
+
+    // create a new future to wait for spawn result
+    auto ref = heapManager->allocateRef<FutureRef>(vtable);
+    currentCoro->pushData(ref);
+    auto *fut = ref.data.ref;
+
+    // create a new worker task
+    auto *workerTask = scheduler->createTask();
+    TU_ASSERT (workerTask != nullptr);
+
+    // push a new frame onto the worker task call stack
+    if (!closure->applyClosure(workerTask, state))
+        return lyric_runtime::InterpreterStatus::forCondition(
+            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to apply closure");
+
+    // add the bottom stack guard
+    workerTask->stackfulCoroutine()->pushGuard();
+
+    //
+    lyric_runtime::PromiseOptions options;
+    options.data = workerTask;
+    auto promise = lyric_runtime::Promise::create(on_worker_complete, options);
+
+    // register a waiter bound to the current task
+    scheduler->registerWorker(workerTask, promise);
+
+    // attach the waiter to the future
+    fut->prepareFuture(promise);
+
+    // put worker task on the ready queue
+    scheduler->resumeTask(workerTask);
+
+    return lyric_runtime::InterpreterStatus::ok();
+}

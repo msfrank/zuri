@@ -30,6 +30,8 @@ build_std_system(
         lyric_parser::Assignable::forSingular(
             fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Status)),
         TSpec});
+    auto Function0ReturningTSpec = lyric_parser::Assignable::forSingular(
+        fundamentalCache->getFunctionUrl(0), {TSpec});
 
     {
         auto declareFunctionResult = block->declareFunction("Acquire",
@@ -164,6 +166,35 @@ build_std_system(
         auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::SLEEP));
+        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        auto declareFunctionResult = block->declareFunction("Spawn",
+            {
+                {   {},
+                    "fn",
+                    "",
+                    Function0ReturningTSpec,
+                    lyric_parser::BindingType::VALUE
+                }
+            },
+            {},
+            {},
+            FutureTSpec,
+            lyric_object::AccessType::Public,
+            {
+                {
+                    "T",
+                    0,
+                    fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Any),
+                    lyric_object::VarianceType::Invariant,
+                    lyric_object::BoundType::None,
+                }
+            });
+        auto functionUrl = declareFunctionResult.getResult();
+        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *code = call->callProc()->procCode();
+        code->trap(static_cast<uint32_t>(StdSystemTrap::SPAWN));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 

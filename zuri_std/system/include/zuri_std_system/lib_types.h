@@ -27,6 +27,7 @@ enum class StdSystemTrap : uint32_t {
     AWAIT,
     GET_RESULT,
     SLEEP,
+    SPAWN,
     LAST_,
 };
 

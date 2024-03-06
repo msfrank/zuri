@@ -61,6 +61,8 @@ NativeStdSystem::getTrap(uint32_t index) const
             return std_system_get_result;
         case StdSystemTrap::SLEEP:
             return std_system_sleep;
+        case StdSystemTrap::SPAWN:
+            return std_system_spawn;
         case StdSystemTrap::LAST_:
             break;
     }

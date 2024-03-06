@@ -24,4 +24,8 @@ tempo_utils::Status std_system_sleep(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
+tempo_utils::Status std_system_spawn(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state);
+
 #endif // ZURI_STD_SYSTEM_SYSTEM_TRAPS_H
