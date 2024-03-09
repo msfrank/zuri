@@ -258,6 +258,7 @@ target_link_libraries(zuri_testsuite
     ZuriStdLogTestSuite
     ZuriStdSystemTestSuite
     ZuriStdTextTestSuite
+    ZuriStdTimeTestSuite
 )
 gtest_discover_tests(zuri_testsuite)
 

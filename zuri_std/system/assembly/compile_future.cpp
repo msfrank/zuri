@@ -52,10 +52,10 @@ build_std_system_Future(
             {},
             {},
             lyric_object::AccessType::Public,
-            static_cast<uint32_t>(StdSystemTrap::FUTURE_ALLOC));
+            static_cast<tu_uint32>(StdSystemTrap::FUTURE_ALLOC));
         auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
         auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdSystemTrap::FUTURE_CTOR));
+        code->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_CTOR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
@@ -69,7 +69,7 @@ build_std_system_Future(
             lyric_object::AccessType::Public);
         auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
         auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdSystemTrap::FUTURE_COMPLETE));
+        code->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_COMPLETE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
@@ -83,7 +83,7 @@ build_std_system_Future(
             lyric_object::AccessType::Public);
         auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
         auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdSystemTrap::FUTURE_REJECT));
+        code->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_REJECT));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {

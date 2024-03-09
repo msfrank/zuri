@@ -10,10 +10,12 @@ add_subdirectory(collections)
 add_subdirectory(log)
 add_subdirectory(system)
 add_subdirectory(text)
+add_subdirectory(time)
 
 add_custom_target(ZuriStd DEPENDS
     ZuriStdCollections
     ZuriStdLog
     ZuriStdSystem
     ZuriStdText
+    ZuriStdTime
     )
