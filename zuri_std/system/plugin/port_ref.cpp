@@ -672,8 +672,8 @@ port_send(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
     auto patchset = toPatchsetResult.getResult();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<PortRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<PortRef *>(receiver.data.ref);
     auto ret = instance->send(patchset);
     currentCoro->pushData(lyric_runtime::DataCell(ret));
 
@@ -738,8 +738,8 @@ port_receive(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<PortRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<PortRef *>(receiver.data.ref);
 
     //
     auto *segment = currentCoro->peekSP();

@@ -116,7 +116,7 @@ find_package(lyric REQUIRED)
 find_package(absl REQUIRED)
 
 # find required Boost dependency
-find_package(boost REQUIRED)
+find_package(Boost REQUIRED)
 
 # find required cppterminal dependency
 find_package(cppterminal REQUIRED)

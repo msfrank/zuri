@@ -85,8 +85,8 @@ instant_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 
     auto &frame = currentCoro->peekCall();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<InstantRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<InstantRef *>(receiver.data.ref);
     instance->setInstant(absl::UnixEpoch());
 
     return lyric_runtime::InterpreterStatus::ok();
@@ -101,8 +101,8 @@ instant_to_epoch_millis(lyric_runtime::BytecodeInterpreter *interp, lyric_runtim
 
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<InstantRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<InstantRef *>(receiver.data.ref);
     currentCoro->pushData(instance->toEpochMillis());
     return lyric_runtime::InterpreterStatus::ok();
 }

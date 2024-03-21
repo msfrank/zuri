@@ -132,8 +132,8 @@ queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interprete
     const auto &arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<QueueRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<QueueRef *>(receiver.data.ref);
     auto ret = instance->push(arg0);
     currentCoro->pushData(lyric_runtime::DataCell(ret));
 
@@ -157,8 +157,8 @@ queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<QueueRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<QueueRef *>(receiver.data.ref);
 
     // resolve the virtual table for Future
     auto *segment = currentCoro->peekSP();

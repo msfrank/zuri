@@ -83,8 +83,8 @@ timezone_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT (arg0.type == lyric_runtime::DataCellType::I64);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<TimezoneRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TimezoneRef *>(receiver.data.ref);
 
     int offsetSeconds = 0;
     if (0 <= arg0.data.i64 && arg0.data.i64 < 60 * 60 * 24) {

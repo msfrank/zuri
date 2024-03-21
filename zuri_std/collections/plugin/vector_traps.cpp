@@ -29,8 +29,8 @@ vector_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 
     auto &frame = currentCoro->peekCall();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
 
     for (int i = 0; i < frame.numRest(); i++) {
         const auto &item = frame.getRest(i);
@@ -50,8 +50,8 @@ vector_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->size())));
     return lyric_runtime::InterpreterStatus::ok();
 }
@@ -68,8 +68,8 @@ vector_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
     TU_ASSERT(idx.type == lyric_runtime::DataCellType::I64);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     currentCoro->pushData(instance->at(idx.data.i64));
     return lyric_runtime::InterpreterStatus::ok();
 }
@@ -85,8 +85,8 @@ vector_append(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     const auto &val = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     instance->append(val);
     currentCoro->pushData(lyric_runtime::DataCell::nil());
     return lyric_runtime::InterpreterStatus::ok();
@@ -105,8 +105,8 @@ vector_insert(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     const auto &val = frame.getArgument(1);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     instance->insert(idx.data.i64, val);
     currentCoro->pushData(lyric_runtime::DataCell::nil());
     return lyric_runtime::InterpreterStatus::ok();
@@ -125,8 +125,8 @@ vector_update(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     const auto &val = frame.getArgument(1);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     currentCoro->pushData(instance->update(idx.data.i64, val));
     return lyric_runtime::InterpreterStatus::ok();
 }
@@ -143,8 +143,8 @@ vector_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(idx.type == lyric_runtime::DataCellType::I64);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     currentCoro->pushData(instance->remove(idx.data.i64));
     return lyric_runtime::InterpreterStatus::ok();
 }
@@ -159,8 +159,8 @@ vector_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     instance->clear();
     currentCoro->pushData(lyric_runtime::DataCell::nil());
     return lyric_runtime::InterpreterStatus::ok();
@@ -177,8 +177,8 @@ vector_iter(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     TU_ASSERT(cell.type == lyric_runtime::DataCellType::CLASS);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<VectorRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
 
     lyric_runtime::InterpreterStatus status;
     const auto *vtable = state->segmentManager()->resolveClassVirtualTable(cell, status);

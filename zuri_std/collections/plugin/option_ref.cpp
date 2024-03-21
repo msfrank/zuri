@@ -130,8 +130,8 @@ option_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 
     auto &frame = currentCoro->peekCall();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<OptionRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<OptionRef *>(receiver.data.ref);
 
     TU_ASSERT (frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
@@ -153,8 +153,8 @@ option_get(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interprete
     TU_ASSERT (frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT (receiver != nullptr);
-    auto *instance = static_cast<OptionRef *>(receiver);
+    TU_ASSERT (receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<OptionRef *>(receiver.data.ref);
     auto value = instance->optionGet();
 
     TU_ASSERT (value.isValid());
@@ -172,8 +172,8 @@ option_is_empty(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<OptionRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<OptionRef *>(receiver.data.ref);
     auto value = instance->optionGet();
 
     TU_ASSERT (value.isValid());

@@ -197,8 +197,8 @@ future_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto &frame = currentCoro->peekCall();
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    //auto *instance = static_cast<FutureRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    //auto *instance = static_cast<FutureRef *>(receiver.data.ref);
 
     return lyric_runtime::InterpreterStatus::ok();
 }
@@ -214,8 +214,8 @@ future_complete(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
     const auto arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<FutureRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<FutureRef *>(receiver.data.ref);
     return instance->complete(arg0);
 }
 
@@ -230,8 +230,8 @@ future_reject(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     const auto arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<FutureRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<FutureRef *>(receiver.data.ref);
     return instance->reject(arg0);
 }
 
@@ -246,7 +246,7 @@ future_cancel(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     const auto arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<FutureRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<FutureRef *>(receiver.data.ref);
     return instance->reject(arg0);
 }

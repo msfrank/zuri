@@ -98,7 +98,7 @@ datetime_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto arg1 = frame.getArgument(1);
     TU_ASSERT (arg1.type == lyric_runtime::DataCellType::REF);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
 
     auto instant = static_cast<InstantRef *>(arg0.data.ref)->getInstant();
     auto tz = static_cast<TimezoneRef *>(arg1.data.ref)->getTimeZone();
@@ -106,7 +106,7 @@ datetime_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto ci = tz.At(instant);
     auto ss = ci.subsecond;
 
-    auto *instance = static_cast<DatetimeRef *>(receiver);
+    auto *instance = static_cast<DatetimeRef *>(receiver.data.ref);
     instance->setCivilSecond(cs);
     instance->setSubseconds(ss);
 

@@ -27,8 +27,8 @@ treemap_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 
     auto &frame = currentCoro->peekCall();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<TreeMapRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
 
     TU_ASSERT (frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
@@ -50,8 +50,8 @@ treemap_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<TreeMapRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->size())));
     return lyric_runtime::InterpreterStatus::ok();
 }
@@ -67,8 +67,8 @@ treemap_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     const auto &key = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<TreeMapRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(instance->contains(key)));
     return lyric_runtime::InterpreterStatus::ok();
 }
@@ -84,8 +84,8 @@ treemap_get(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     const auto &key = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<TreeMapRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     currentCoro->pushData(instance->get(key));
     return lyric_runtime::InterpreterStatus::ok();
 }
@@ -102,8 +102,8 @@ treemap_put(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     const auto &val = frame.getArgument(1);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<TreeMapRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     auto prev = instance->put(key, val);
     currentCoro->pushData(prev);
     return lyric_runtime::InterpreterStatus::ok();
@@ -120,8 +120,8 @@ treemap_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     const auto &key = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<TreeMapRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     auto prev = instance->remove(key);
     currentCoro->pushData(prev);
     return lyric_runtime::InterpreterStatus::ok();
@@ -137,8 +137,8 @@ treemap_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver != nullptr);
-    auto *instance = static_cast<TreeMapRef *>(receiver);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     instance->clear();
     currentCoro->pushData(lyric_runtime::DataCell::nil());
     return lyric_runtime::InterpreterStatus::ok();

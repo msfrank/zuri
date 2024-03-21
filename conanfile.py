@@ -31,7 +31,7 @@ class Zuri(ConanFile):
         'tempo/0.0.1',
         # requirements from timbre
         'absl/20230802.1@timbre',
-        'boost/1.83.0@timbre',
+        'boost/1.84.0@timbre',
         'cppterminal/20231011.1@timbre',
         'fmt/9.1.0@timbre',
         'flatbuffers/23.5.26@timbre',
