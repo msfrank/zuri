@@ -95,13 +95,13 @@ TEST_F(StdTreeSet, TestEvaluateTreeSetClear)
         RunModule(Return(DataCellInt(0LL)))));
 }
 
-TEST_F(StdTreeSet, TestEvaluateTreeSetIter)
+TEST_F(StdTreeSet, TestEvaluateTreeSetIterate)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: TreeSet[Int] = TreeSet[Int]{1, 2, 3}
         var sum: Int = 0
-        for n in ints.iter() {
+        for n: Int in ints {
             set sum += n
         }
         sum

@@ -121,13 +121,13 @@ TEST_F(StdVector, TestEvaluateVectorClear)
         RunModule(Return(DataCellInt(0LL)))));
 }
 
-TEST_F(StdVector, TestEvaluateVectorIter)
+TEST_F(StdVector, TestEvaluateVectorIterate)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: Vector[Int] = Vector[Int]{1, 2, 3}
         var sum: Int = 0
-        for n in ints.iter() {
+        for n: Int in ints {
             set sum += n
         }
         sum

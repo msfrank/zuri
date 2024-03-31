@@ -7,8 +7,9 @@
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <lyric_runtime/gc_heap.h>
 #include <lyric_runtime/interpreter_state.h>
+#include <zuri_std_system/base_value_ref.h>
 
-class AttrRef : public lyric_runtime::BaseRef {
+class AttrRef : public BaseValueRef {
 
 public:
     AttrRef(
@@ -21,6 +22,8 @@ public:
     lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     bool serializeValue(lyric_serde::PatchsetState &state, tu_uint32 &index) override;
     std::string toString() const override;
+
+    ValueType getValueType() const override;
 
 protected:
     void setMembersReachable() override;

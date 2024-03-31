@@ -2,21 +2,21 @@
 
 #include <lyric_assembler/call_symbol.h>
 #include <lyric_assembler/class_symbol.h>
+#include <lyric_assembler/impl_handle.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
 #include <zuri_std_collections/lib_types.h>
 
 #include "compile_vector.h"
 
-tempo_utils::Status
-build_std_collections_Vector(
+tempo_utils::Result<lyric_assembler::ClassSymbol *>
+declare_std_collections_Vector(
     lyric_assembler::AssemblyState &state,
-    lyric_assembler::BlockHandle *parentBlock,
-    lyric_typing::TypeSystem *typeSystem)
+    lyric_assembler::BlockHandle *block)
 {
     auto *symbolCache = state.symbolCache();
 
-    auto resolveObjectResult = parentBlock->resolveClass(
+    auto resolveObjectResult = block->resolveClass(
         lyric_parser::Assignable::forSingular({"Object"}));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
@@ -29,15 +29,28 @@ build_std_collections_Vector(
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Covariant;
 
-    auto declareVectorClassResult = parentBlock->declareClass("Vector",
+    auto declareVectorClassResult = block->declareClass("Vector",
         ObjectClass, lyric_object::AccessType::Public, {TParam});
     if (declareVectorClassResult.isStatus())
         return declareVectorClassResult.getStatus();
     auto *VectorClass = cast_symbol_to_class(symbolCache->getSymbol(declareVectorClassResult.getResult()));
+    return VectorClass;
+}
+
+tempo_utils::Status
+build_std_collections_Vector(
+    lyric_assembler::ClassSymbol *VectorClass,
+    lyric_assembler::ClassSymbol *VectorIteratorClass,
+    lyric_assembler::AssemblyState &state,
+    lyric_assembler::BlockHandle *parentBlock,
+    lyric_typing::TypeSystem *typeSystem)
+{
+    auto *symbolCache = state.symbolCache();
 
     auto TSpec = lyric_parser::Assignable::forSingular({"T"});
     auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
     auto NilSpec = lyric_parser::Assignable::forSingular({"Nil"});
+    auto IterableTSpec = lyric_parser::Assignable::forSingular({"Iterable"}, {TSpec});
     auto IteratorTSpec = lyric_parser::Assignable::forSingular({"Iterator"}, {TSpec});
 
     {
@@ -152,21 +165,23 @@ build_std_collections_Vector(
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_CLEAR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
+
+    lyric_common::TypeDef vectorIterableImplType;
+    TU_ASSIGN_OR_RETURN (vectorIterableImplType, VectorClass->declareImpl(IterableTSpec));
+    auto *VectorIterableImpl = VectorClass->getImpl(vectorIterableImplType);
+    TU_ASSERT (VectorIterableImpl != nullptr);
+
     {
-        auto declareMethodResult = VectorClass->declareMethod("iter",
+        auto declareExtensionResult = VectorIterableImpl->declareExtension("Iterate",
             {},
             {},
             {},
-            IteratorTSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+            IteratorTSpec);
+        auto extension = declareExtensionResult.getResult();
+        auto *call = cast_symbol_to_call(symbolCache->getSymbol(extension.methodCall));
         auto *code = call->callProc()->procCode();
-        auto resolveIteratorClassResult = parentBlock->resolveClass(IteratorTSpec);
-        if (resolveIteratorClassResult.isStatus())
-            return resolveIteratorClassResult.getStatus();
-        auto *iteratorClass = cast_symbol_to_class(symbolCache->getSymbol(resolveIteratorClassResult.getResult()));
-        code->loadClass(iteratorClass->getAddress());
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ITER));
+        code->loadClass(VectorIteratorClass->getAddress());
+        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ITERATE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 

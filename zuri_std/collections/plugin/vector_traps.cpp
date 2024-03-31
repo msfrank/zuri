@@ -167,7 +167,7 @@ vector_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 }
 
 tempo_utils::Status
-vector_iter(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+vector_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -186,6 +186,60 @@ vector_iter(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 
     auto ref = state->heapManager()->allocateRef<VectorIterator>(vtable, instance->begin(), instance);
     currentCoro->pushData(ref);
+
+    return lyric_runtime::InterpreterStatus::ok();
+}
+
+tempo_utils::Status
+vector_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->peekCall();
+    const auto *vtable = frame.getVirtualTable();
+    TU_ASSERT(vtable != nullptr);
+
+    auto ref = state->heapManager()->allocateRef<VectorIterator>(vtable);
+    currentCoro->pushData(ref);
+
+    return lyric_runtime::InterpreterStatus::ok();
+}
+
+tempo_utils::Status
+vector_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->peekCall();
+
+    TU_ASSERT(frame.numArguments() == 0);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<lyric_runtime::AbstractRef *>(receiver.data.ref);
+    currentCoro->pushData(lyric_runtime::DataCell(instance->iteratorValid()));
+
+    return lyric_runtime::InterpreterStatus::ok();
+}
+
+tempo_utils::Status
+vector_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->peekCall();
+
+    TU_ASSERT(frame.numArguments() == 0);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<lyric_runtime::AbstractRef *>(receiver.data.ref);
+
+    lyric_runtime::DataCell next;
+    if (!instance->iteratorNext(next)) {
+        next = lyric_runtime::DataCell();
+    }
+    currentCoro->pushData(next);
 
     return lyric_runtime::InterpreterStatus::ok();
 }

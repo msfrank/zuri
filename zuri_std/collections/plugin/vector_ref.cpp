@@ -140,6 +140,12 @@ VectorRef::clearMembersReachable()
     }
 }
 
+VectorIterator::VectorIterator(const lyric_runtime::VirtualTable *vtable)
+    : BaseRef(vtable),
+      m_vector(nullptr)
+{
+}
+
 VectorIterator::VectorIterator(
     const lyric_runtime::VirtualTable *vtable,
     absl::InlinedVector<lyric_runtime::DataCell,16>::iterator iter,
@@ -172,13 +178,13 @@ VectorIterator::toString() const
 bool
 VectorIterator::iteratorValid()
 {
-    return m_iter != m_vector->end();
+    return m_vector && m_iter != m_vector->end();
 }
 
 bool
 VectorIterator::iteratorNext(lyric_runtime::DataCell &next)
 {
-    if (m_iter == m_vector->end())
+    if (!m_vector || m_iter == m_vector->end())
         return false;
     next = *m_iter++;
     return true;

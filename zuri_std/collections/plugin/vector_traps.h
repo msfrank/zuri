@@ -15,6 +15,10 @@ tempo_utils::Status vector_append(lyric_runtime::BytecodeInterpreter *interp, ly
 tempo_utils::Status vector_update(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
 tempo_utils::Status vector_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
 tempo_utils::Status vector_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
-tempo_utils::Status vector_iter(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
+tempo_utils::Status vector_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
+
+tempo_utils::Status vector_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
+tempo_utils::Status vector_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
+tempo_utils::Status vector_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
 
 #endif // ZURI_STD_COLLECTIONS_VECTOR_TRAPS_H

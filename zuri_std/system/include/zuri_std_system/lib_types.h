@@ -8,6 +8,9 @@
 enum class StdSystemTrap : uint32_t {
     ATTR_ALLOC,
     ELEMENT_ALLOC,
+    ELEMENT_CTOR,
+    ELEMENT_GET_OR_ELSE,
+    ELEMENT_SIZE,
     FUTURE_ALLOC,
     FUTURE_CTOR,
     FUTURE_COMPLETE,

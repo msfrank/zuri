@@ -161,6 +161,12 @@ TreeSetComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
     return false;
 }
 
+TreeSetIterator::TreeSetIterator(const lyric_runtime::VirtualTable *vtable)
+    : BaseRef(vtable),
+      m_set(nullptr)
+{
+}
+
 TreeSetIterator::TreeSetIterator(
     const lyric_runtime::VirtualTable *vtable,
     absl::btree_set<lyric_runtime::DataCell,TreeSetComparator>::iterator iter,
@@ -193,13 +199,13 @@ TreeSetIterator::toString() const
 bool
 TreeSetIterator::iteratorValid()
 {
-    return m_iter != m_set->end();
+    return m_set && m_iter != m_set->end();
 }
 
 bool
 TreeSetIterator::iteratorNext(lyric_runtime::DataCell &next)
 {
-    if (m_iter == m_set->end())
+    if (!m_set || m_iter == m_set->end())
         return false;
     next = *m_iter++;
     return true;

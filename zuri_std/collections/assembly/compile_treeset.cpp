@@ -4,6 +4,7 @@
 #include <lyric_assembler/class_symbol.h>
 #include <lyric_assembler/concept_symbol.h>
 #include <lyric_assembler/fundamental_cache.h>
+#include <lyric_assembler/impl_handle.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
 #include <lyric_typing/callsite_reifier.h>
@@ -11,29 +12,18 @@
 
 #include "compile_treeset.h"
 
-tempo_utils::Status
-build_std_collections_TreeSet(
+tempo_utils::Result<lyric_assembler::ClassSymbol *>
+declare_std_collections_TreeSet(
     lyric_assembler::AssemblyState &state,
-    lyric_assembler::BlockHandle *parentBlock,
-    lyric_typing::TypeSystem *typeSystem)
+    lyric_assembler::BlockHandle *block)
 {
-    auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto resolveObjectResult = parentBlock->resolveClass(
+    auto resolveObjectResult = block->resolveClass(
         lyric_parser::Assignable::forSingular({"Object"}));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
     auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
-
-    auto TSpec = lyric_parser::Assignable::forSingular({"T"});
-    auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
-    auto BoolSpec = lyric_parser::Assignable::forSingular({"Bool"});
-    auto NilSpec = lyric_parser::Assignable::forSingular({"Nil"});
-    auto IteratorTSpec = lyric_parser::Assignable::forSingular({"Iterator"}, {TSpec});
-    auto OrderedTSpec = lyric_parser::Assignable::forSingular({"Ordered"}, {
-        lyric_parser::Assignable::forSingular({"T"})});
-    auto orderedUrl = fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Ordered);
 
     lyric_object::TemplateParameter TParam;
     TParam.name = "T";
@@ -41,6 +31,35 @@ build_std_collections_TreeSet(
     TParam.typeDef = {};
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Invariant;
+
+    auto declareTreeSetClassResult = block->declareClass("TreeSet",
+        ObjectClass, lyric_object::AccessType::Public, {TParam});
+    if (declareTreeSetClassResult.isStatus())
+        return declareTreeSetClassResult.getStatus();
+    auto *TreeSetClass = cast_symbol_to_class(symbolCache->getSymbol(declareTreeSetClassResult.getResult()));
+    return TreeSetClass;
+}
+
+tempo_utils::Status
+build_std_collections_TreeSet(
+    lyric_assembler::ClassSymbol *TreeSetClass,
+    lyric_assembler::ClassSymbol *TreeSetIteratorClass,
+    lyric_assembler::AssemblyState &state,
+    lyric_assembler::BlockHandle *parentBlock,
+    lyric_typing::TypeSystem *typeSystem)
+{
+    auto *fundamentalCache = state.fundamentalCache();
+    auto *symbolCache = state.symbolCache();
+
+    auto TSpec = lyric_parser::Assignable::forSingular({"T"});
+    auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
+    auto BoolSpec = lyric_parser::Assignable::forSingular({"Bool"});
+    auto NilSpec = lyric_parser::Assignable::forSingular({"Nil"});
+    auto IterableTSpec = lyric_parser::Assignable::forSingular({"Iterable"}, {TSpec});
+    auto IteratorTSpec = lyric_parser::Assignable::forSingular({"Iterator"}, {TSpec});
+    auto OrderedTSpec = lyric_parser::Assignable::forSingular({"Ordered"}, {
+        lyric_parser::Assignable::forSingular({"T"})});
+    auto orderedUrl = fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Ordered);
 
     lyric_assembler::CallAddress compareAddress;
     {
@@ -116,14 +135,6 @@ build_std_collections_TreeSet(
 
         compareAddress = call->getAddress();
     }
-
-    auto declareTreeSetClassResult = parentBlock->declareClass(
-        "TreeSet", ObjectClass, lyric_object::AccessType::Public, {TParam});
-    if (declareTreeSetClassResult.isStatus())
-        return declareTreeSetClassResult.getStatus();
-    auto *TreeSetClass = cast_symbol_to_class(
-        symbolCache->getSymbol(declareTreeSetClassResult.getResult()));
-
     {
         lyric_assembler::ParameterSpec restSpec;
         restSpec.type = TSpec;
@@ -214,21 +225,23 @@ build_std_collections_TreeSet(
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_CLEAR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
+
+    lyric_common::TypeDef treesetIterableImplType;
+    TU_ASSIGN_OR_RETURN (treesetIterableImplType, TreeSetClass->declareImpl(IterableTSpec));
+    auto *TreesetIterableImpl = TreeSetClass->getImpl(treesetIterableImplType);
+    TU_ASSERT (TreesetIterableImpl != nullptr);
+
     {
-        auto declareMethodResult = TreeSetClass->declareMethod("iter",
+        auto declareExtensionResult = TreesetIterableImpl->declareExtension("Iterate",
             {},
             {},
             {},
-            IteratorTSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+            IteratorTSpec);
+        auto extension = declareExtensionResult.getResult();
+        auto *call = cast_symbol_to_call(symbolCache->getSymbol(extension.methodCall));
         auto *code = call->callProc()->procCode();
-        auto resolveIteratorClassResult = parentBlock->resolveClass(IteratorTSpec);
-        if (resolveIteratorClassResult.isStatus())
-            return resolveIteratorClassResult.getStatus();
-        auto *iteratorClass = cast_symbol_to_class(symbolCache->getSymbol(resolveIteratorClassResult.getResult()));
-        code->loadClass(iteratorClass->getAddress());
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_ITER));
+        code->loadClass(TreeSetIteratorClass->getAddress());
+        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_ITERATE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 

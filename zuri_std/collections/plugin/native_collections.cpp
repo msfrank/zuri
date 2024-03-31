@@ -77,8 +77,14 @@ NativeStdCollections::getTrap(uint32_t index) const
             return treeset_remove;
         case StdCollectionsTrap::TREESET_CLEAR:
             return treeset_clear;
-        case StdCollectionsTrap::TREESET_ITER:
-            return treeset_iter;
+        case StdCollectionsTrap::TREESET_ITERATE:
+            return treeset_iterate;
+        case StdCollectionsTrap::TREESET_ITERATOR_ALLOC:
+            return treeset_iterator_alloc;
+        case StdCollectionsTrap::TREESET_ITERATOR_NEXT:
+            return treeset_iterator_next;
+        case StdCollectionsTrap::TREESET_ITERATOR_VALID:
+            return treeset_iterator_valid;
         case StdCollectionsTrap::VECTOR_ALLOC:
             return vector_alloc;
         case StdCollectionsTrap::VECTOR_CTOR:
@@ -97,8 +103,14 @@ NativeStdCollections::getTrap(uint32_t index) const
             return vector_remove;
         case StdCollectionsTrap::VECTOR_CLEAR:
             return vector_clear;
-        case StdCollectionsTrap::VECTOR_ITER:
-            return vector_iter;
+        case StdCollectionsTrap::VECTOR_ITERATE:
+            return vector_iterate;
+        case StdCollectionsTrap::VECTOR_ITERATOR_ALLOC:
+            return vector_iterator_alloc;
+        case StdCollectionsTrap::VECTOR_ITERATOR_NEXT:
+            return vector_iterator_next;
+        case StdCollectionsTrap::VECTOR_ITERATOR_VALID:
+            return vector_iterator_valid;
 
         case StdCollectionsTrap::LAST_:
             break;

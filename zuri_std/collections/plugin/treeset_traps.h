@@ -13,6 +13,10 @@ tempo_utils::Status treeset_contains(lyric_runtime::BytecodeInterpreter *interp,
 tempo_utils::Status treeset_add(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
 tempo_utils::Status treeset_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
 tempo_utils::Status treeset_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
-tempo_utils::Status treeset_iter(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
+tempo_utils::Status treeset_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
+
+tempo_utils::Status treeset_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
+tempo_utils::Status treeset_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
+tempo_utils::Status treeset_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
 
 #endif // ZURI_STD_COLLECTIONS_TREESET_TRAPS_H

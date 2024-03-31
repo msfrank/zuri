@@ -24,8 +24,12 @@ add_executable(std-collections-builder
     assembly/compile_treemap.h
     assembly/compile_treeset.cpp
     assembly/compile_treeset.h
+    assembly/compile_treeset_iterator.cpp
+    assembly/compile_treeset_iterator.h
     assembly/compile_vector.cpp
     assembly/compile_vector.h
+    assembly/compile_vector_iterator.cpp
+    assembly/compile_vector_iterator.h
     assembly/lib_builder.cpp
     include/zuri_std_collections/lib_types.h
     ${CMAKE_CURRENT_BINARY_DIR}/include/zuri_std_collections/config.h

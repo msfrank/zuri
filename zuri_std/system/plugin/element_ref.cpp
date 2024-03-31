@@ -15,7 +15,7 @@ ElementRef::ElementRef(
     const lyric_runtime::VirtualTable *vtable,
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state)
-    : BaseRef(vtable),
+    : BaseValueRef(vtable),
       m_interp(interp),
       m_state(state)
 {
@@ -27,6 +27,12 @@ ElementRef::ElementRef(
 ElementRef::~ElementRef()
 {
     TU_LOG_INFO << "free" << ElementRef::toString();
+}
+
+ValueType
+ElementRef::getValueType() const
+{
+    return ValueType::Element;
 }
 
 lyric_runtime::DataCell
@@ -65,7 +71,6 @@ ElementRef::serializeValue(lyric_serde::PatchsetState &state, tu_uint32 &index)
     auto object = segment->getObject().getObject();
 
     auto *segmentManager = m_state->segmentManager();
-    auto *subroutineManager = m_state->subroutineManager();
 
     lyric_runtime::InterpreterStatus status;
 
@@ -96,34 +101,13 @@ ElementRef::serializeValue(lyric_serde::PatchsetState &state, tu_uint32 &index)
         return false;
     auto idInt = static_cast<tu_uint32>(id.data.i64);
 
-    // get children iterator
-    symbol = object.findSymbol(lyric_common::SymbolPath({"Element", "$getChildrenIterator"}));
-    TU_ASSERT (symbol.isValid());
-    descriptor = segmentManager->resolveDescriptor(segment,
-        symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
-    std::vector<lyric_runtime::DataCell> args{};
-
-    if (!subroutineManager->callVirtual(this, descriptor.data.descriptor.value, args, currentCoro, status))
-        return false;
-    auto runInterpreterResult = m_interp->runSubinterpreter();
-    if (runInterpreterResult.isStatus())
-        return false;
-    auto result = runInterpreterResult.getResult();
-    TU_ASSERT (result.type == lyric_runtime::DataCellType::REF);
-    auto *iterator = result.data.ref;
-
-    // serialize each element in children member
+    // serialize each child value in element
     std::vector<lyric_serde::ValueAddress> children;
-    while (iterator->iteratorValid()) {
-        lyric_runtime::DataCell child;
-        if (!iterator->iteratorNext(child))
-            return false;
+    for (const auto &child : m_children) {
         tu_uint32 childOffset= lyric_runtime::serialize_value(child, state);
         if (childOffset == lyric_runtime::INVALID_ADDRESS_U32)
             return false;
-        children.push_back(lyric_serde::ValueAddress(childOffset));
+        children.emplace_back(childOffset);
     }
 
     auto appendValueResult = state.appendValue(nsString.c_str(), static_cast<tu_uint32>(idInt), children);
@@ -149,6 +133,12 @@ ElementRef::setMembersReachable()
             cell.data.ref->setReachable();
         }
     }
+    for (auto &cell : m_children) {
+        if (cell.type == lyric_runtime::DataCellType::REF) {
+            TU_ASSERT (cell.data.ref != nullptr);
+            cell.data.ref->setReachable();
+        }
+    }
 }
 
 void
@@ -160,6 +150,32 @@ ElementRef::clearMembersReachable()
             cell.data.ref->clearReachable();
         }
     }
+    for (auto &cell : m_children) {
+        if (cell.type == lyric_runtime::DataCellType::REF) {
+            TU_ASSERT (cell.data.ref != nullptr);
+            cell.data.ref->clearReachable();
+        }
+    }
+}
+
+void
+ElementRef::initialize(std::vector<lyric_runtime::DataCell> &&children)
+{
+    m_children = std::move(children);
+}
+
+lyric_runtime::DataCell
+ElementRef::getChild(int index) const
+{
+    if (0 <= index && index < m_children.size())
+        return m_children.at(index);
+    return {};
+}
+
+int
+ElementRef::numChildren() const
+{
+    return m_children.size();
 }
 
 tempo_utils::Status
@@ -175,4 +191,62 @@ element_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     currentCoro->pushData(ref);
 
     return lyric_runtime::InterpreterStatus::ok();
+}
+
+tempo_utils::Status
+element_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->peekCall();
+    auto receiver = frame.getReceiver();
+    TU_ASSERT (receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<ElementRef *>(receiver.data.ref);
+
+    std::vector<lyric_runtime::DataCell> children;
+    children.resize(frame.numRest());
+    for (int i = 0; i < frame.numRest(); i++) {
+        children[i] = frame.getRest(i);
+    }
+
+    instance->initialize(std::move(children));
+
+    return lyric_runtime::InterpreterStatus::ok();
+}
+
+tempo_utils::Status
+element_get_or_else(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->peekCall();
+    auto arg0 = frame.getArgument(0);
+    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::I64);
+    auto arg1 = frame.getArgument(1);
+    TU_ASSERT (arg1.isValid());
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT (receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<ElementRef *>(receiver.data.ref);
+
+    auto child = instance->getChild(static_cast<int>(arg0.data.i64));
+    if (!child.isValid()) {
+        child = arg1;
+    }
+    currentCoro->pushData(child);
+    return {};
+}
+
+tempo_utils::Status
+element_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->peekCall();
+    auto receiver = frame.getReceiver();
+    TU_ASSERT (receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<ElementRef *>(receiver.data.ref);
+
+    currentCoro->pushData(lyric_runtime::DataCell(static_cast<tu_int64>(instance->numChildren())));
+    return {};
 }

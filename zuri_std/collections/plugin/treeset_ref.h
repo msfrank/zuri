@@ -61,9 +61,11 @@ private:
 class TreeSetIterator : public lyric_runtime::BaseRef {
 
 public:
-    TreeSetIterator(const lyric_runtime::VirtualTable *vtable,
-                    absl::btree_set<lyric_runtime::DataCell,TreeSetComparator>::iterator iter,
-                    TreeSetRef *set);
+    explicit TreeSetIterator(const lyric_runtime::VirtualTable *vtable);
+    TreeSetIterator(
+        const lyric_runtime::VirtualTable *vtable,
+        absl::btree_set<lyric_runtime::DataCell,TreeSetComparator>::iterator iter,
+        TreeSetRef *set);
 
     lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
     lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;

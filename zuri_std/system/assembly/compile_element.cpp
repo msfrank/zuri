@@ -66,12 +66,6 @@ build_std_system_Element(
     auto *IdField = static_cast<lyric_assembler::FieldSymbol *>(
         symbolCache->getSymbol(declareIdResult.getResult().symbol));
 
-    auto declareChildrenResult = ElementStruct->declareMember("children", SeqSpec);
-    if (declareChildrenResult.isStatus())
-        return declareChildrenResult.getStatus();
-    auto *ChildrenField = static_cast<lyric_assembler::FieldSymbol *>(
-        symbolCache->getSymbol(declareChildrenResult.getResult().symbol));
-
     {
         auto *SuperStruct = ElementStruct->superStruct();
         auto superCtorUrl = SuperStruct->getCtor();
@@ -95,7 +89,6 @@ build_std_system_Element(
             static_cast<uint32_t>(StdSystemTrap::ELEMENT_ALLOC));
         auto *call = static_cast<lyric_assembler::CallSymbol *>(symbolCache->getSymbol(declareCtorResult.getResult()));
         auto *code = call->callProc()->procCode();
-        auto *ctorBlock = call->callProc()->procBlock();
 
         // call the super constructor
         code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
@@ -109,65 +102,36 @@ build_std_system_Element(
         code->loadArgument(lyric_assembler::ArgumentOffset(1));
         code->storeField(IdField->getAddress());
 
-        auto resolveSeqResult = block->resolveStruct(SeqSpec);
-        if (resolveSeqResult.isStatus())
-            return resolveSeqResult.getStatus();
-        auto *SeqStruct = static_cast<lyric_assembler::StructSymbol *>(
-            symbolCache->getSymbol(resolveSeqResult.getResult()));
-        auto resolveCtorResult = SeqStruct->resolveCtor();
-        if (resolveCtorResult.isStatus())
-            return resolveCtorResult.getStatus();
-        auto ctor = resolveCtorResult.getResult();
-        lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
-            ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
-
-        // FIXME: how do we reify the forwarded rest arg?
-        //auto status = ctorReifier.reifyNextArgument(call->getRest().getValue().type);
-        //if (status.notOk())
-        //    return status;
-        auto invokeNewResult = ctor.invokeNew(ctorBlock, ctorReifier, lyric_object::CALL_FORWARD_REST);
-        if (invokeNewResult.isStatus())
-            return invokeNewResult.getStatus();
-
-        // seq is on the top of the stack, store it as the children member
-        code->storeField(ChildrenField->getAddress());
-
+        // invoke the Element constructor
+        code->trap(static_cast<tu_uint32>(StdSystemTrap::ELEMENT_CTOR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = ElementStruct->declareMethod("$getChildrenIterator",
+        auto declareMethodResult = ElementStruct->declareMethod("Size",
             {},
             {},
             {},
-            IteratorTSpec);
-        if (declareMethodResult.isStatus())
-            return declareMethodResult.getStatus();
+            IntSpec);
         auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
-        auto *proc = call->callProc();
-        auto *code = proc->procCode();
-        auto *methodBlock = proc->procBlock();
-
-        // load children member onto top of the stack
-        code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
-        code->loadField(ChildrenField->getAddress());
-
-        // call 'Iter' method on children
-        auto resolveStructResult = methodBlock->resolveStruct(SeqSpec);
-        if (resolveStructResult.isStatus())
-            return resolveStructResult.getStatus();
-        auto *SeqStruct = cast_symbol_to_struct(symbolCache->getSymbol(resolveStructResult.getResult()));
-        auto resolveIterResult = SeqStruct->resolveMethod("Iter", SeqStruct->getAssignableType());
-        if (resolveIterResult.isStatus())
-            return resolveIterResult.getStatus();
-        auto iter = resolveIterResult.getResult();
-
-        lyric_typing::CallsiteReifier iterReifier(iter.getParameters(), iter.getRest(),
-            iter.getTemplateUrl(), iter.getTemplateParameters(), {}, typeSystem);
-
-        auto invokeNewResult = iter.invoke(methodBlock, iterReifier);
-        if (invokeNewResult.isStatus())
-            return invokeNewResult.getStatus();
+        auto *code = call->callProc()->procCode();
+        code->trap(static_cast<tu_uint32>(StdSystemTrap::ELEMENT_SIZE));
+        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
+    {
+        auto declareMethodResult = ElementStruct->declareMethod("GetOrElse",
+            {
+                {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE},
+                {{}, "default", "", ValueSpec, lyric_parser::BindingType::VALUE},
+            },
+            {},
+            {},
+            ValueSpec);
+        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *code = call->callProc()->procCode();
+        code->trap(static_cast<uint32_t>(StdSystemTrap::ELEMENT_GET_OR_ELSE));
+        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+
 
     return tempo_utils::Status();
 }

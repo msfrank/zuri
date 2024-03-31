@@ -23,6 +23,12 @@ NativeStdSystem::getTrap(uint32_t index) const
             return attr_alloc;
         case StdSystemTrap::ELEMENT_ALLOC:
             return element_alloc;
+        case StdSystemTrap::ELEMENT_CTOR:
+            return element_ctor;
+        case StdSystemTrap::ELEMENT_GET_OR_ELSE:
+            return element_get_or_else;
+        case StdSystemTrap::ELEMENT_SIZE:
+            return element_size;
         case StdSystemTrap::FUTURE_ALLOC:
             return future_alloc;
         case StdSystemTrap::FUTURE_CTOR:

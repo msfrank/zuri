@@ -23,7 +23,7 @@ TEST_F(StdSystemElement, EvaluateElementWithMultipleChildren)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
         val element: Element = Element{ns = `test`, id = 1, 1, 2, 3}
-        element.children.GetOrElse(2, 0)
+        element.GetOrElse(2, 0)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(

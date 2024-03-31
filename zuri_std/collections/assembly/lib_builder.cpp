@@ -12,7 +12,9 @@
 #include "compile_option.h"
 #include "compile_treemap.h"
 #include "compile_treeset.h"
+#include "compile_treeset_iterator.h"
 #include "compile_vector.h"
+#include "compile_vector_iterator.h"
 
 tempo_utils::Status
 build(int argc, char *argv[])
@@ -53,10 +55,29 @@ build(int argc, char *argv[])
     auto *root = moduleEntry.getRoot();
     auto *rootBlock = root->namespaceBlock();
 
+    lyric_assembler::ClassSymbol *TreeSetClass;
+    TU_ASSIGN_OR_RETURN (TreeSetClass, declare_std_collections_TreeSet(assemblyState, rootBlock));
+    lyric_assembler::ClassSymbol *TreeSetIteratorClass;
+    TU_ASSIGN_OR_RETURN (TreeSetIteratorClass, declare_std_collections_TreeSetIterator(assemblyState, rootBlock));
+
+    lyric_assembler::ClassSymbol *VectorClass;
+    TU_ASSIGN_OR_RETURN (VectorClass, declare_std_collections_Vector(assemblyState, rootBlock));
+    lyric_assembler::ClassSymbol *VectorIteratorClass;
+    TU_ASSIGN_OR_RETURN (VectorIteratorClass, declare_std_collections_VectorIterator(assemblyState, rootBlock));
+
     TU_RETURN_IF_NOT_OK (build_std_collections_HashMap(assemblyState, rootBlock, typeSystem));
     TU_RETURN_IF_NOT_OK (build_std_collections_TreeMap(assemblyState, rootBlock, typeSystem));
-    TU_RETURN_IF_NOT_OK (build_std_collections_TreeSet(assemblyState, rootBlock, typeSystem));
-    TU_RETURN_IF_NOT_OK (build_std_collections_Vector(assemblyState, rootBlock, typeSystem));
+
+    TU_RETURN_IF_NOT_OK (build_std_collections_TreeSetIterator(
+        TreeSetIteratorClass, assemblyState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_collections_TreeSet(
+        TreeSetClass, TreeSetIteratorClass, assemblyState, rootBlock, typeSystem));
+
+    TU_RETURN_IF_NOT_OK (build_std_collections_VectorIterator(
+        VectorIteratorClass, assemblyState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_collections_Vector(
+        VectorClass, VectorIteratorClass, assemblyState, rootBlock, typeSystem));
+
     TU_RETURN_IF_NOT_OK (build_std_collections_Option(assemblyState, rootBlock, typeSystem));
 
     // serialize state to object
@@ -70,7 +91,7 @@ build(int argc, char *argv[])
         return writer.getStatus();
 
     TU_LOG_INFO << "wrote output to " << destinationPath;
-    return tempo_utils::Status();
+    return {};
 }
 
 int

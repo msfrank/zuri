@@ -15,7 +15,7 @@ AttrRef::AttrRef(
     const lyric_runtime::VirtualTable *vtable,
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state)
-    : BaseRef(vtable),
+    : BaseValueRef(vtable),
       m_interp(interp),
       m_state(state)
 {
@@ -27,6 +27,12 @@ AttrRef::AttrRef(
 AttrRef::~AttrRef()
 {
     TU_LOG_INFO << "free" << AttrRef::toString();
+}
+
+ValueType
+AttrRef::getValueType() const
+{
+    return ValueType::Attr;
 }
 
 lyric_runtime::DataCell

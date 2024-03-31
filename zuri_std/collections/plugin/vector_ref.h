@@ -44,6 +44,7 @@ private:
 class VectorIterator : public lyric_runtime::BaseRef {
 
 public:
+    explicit VectorIterator(const lyric_runtime::VirtualTable *vtable);
     VectorIterator(
         const lyric_runtime::VirtualTable *vtable,
         absl::InlinedVector<lyric_runtime::DataCell,16>::iterator iter,
