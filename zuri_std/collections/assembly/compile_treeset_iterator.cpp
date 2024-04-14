@@ -2,6 +2,7 @@
 
 #include <lyric_assembler/call_symbol.h>
 #include <lyric_assembler/class_symbol.h>
+#include <lyric_assembler/fundamental_cache.h>
 #include <lyric_assembler/impl_handle.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
@@ -25,7 +26,7 @@ declare_std_collections_TreeSetIterator(
     lyric_object::TemplateParameter TParam;
     TParam.name = "T";
     TParam.index = 0;
-    TParam.typeDef = {};
+    TParam.typeDef = state.fundamentalCache()->getFundamentalType(lyric_assembler::FundamentalSymbol::Any);
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Contravariant;
 

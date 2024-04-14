@@ -58,13 +58,13 @@ build_std_system_Element(
     if (declareNsResult.isStatus())
         return declareNsResult.getStatus();
     auto *NsField = static_cast<lyric_assembler::FieldSymbol *>(
-        symbolCache->getSymbol(declareNsResult.getResult().symbol));
+        symbolCache->getSymbol(declareNsResult.getResult().symbolUrl));
 
     auto declareIdResult = ElementStruct->declareMember("id", IntSpec);
     if (declareIdResult.isStatus())
         return declareIdResult.getStatus();
     auto *IdField = static_cast<lyric_assembler::FieldSymbol *>(
-        symbolCache->getSymbol(declareIdResult.getResult().symbol));
+        symbolCache->getSymbol(declareIdResult.getResult().symbolUrl));
 
     {
         auto *SuperStruct = ElementStruct->superStruct();

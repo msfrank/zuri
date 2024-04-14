@@ -28,7 +28,7 @@ build_std_system_Future(
     lyric_object::TemplateParameter TParam;
     TParam.name = "T";
     TParam.index = 0;
-    TParam.typeDef = {};
+    TParam.typeDef = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Any);
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Invariant;
 

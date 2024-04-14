@@ -54,19 +54,19 @@ build_std_system_Attr(
     if (declareNsResult.isStatus())
         return declareNsResult.getStatus();
     auto *NsField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareNsResult.getResult().symbol));
+        symbolCache->getSymbol(declareNsResult.getResult().symbolUrl));
 
     auto declareIdResult = AttrStruct->declareMember("id", IntSpec);
     if (declareIdResult.isStatus())
         return declareIdResult.getStatus();
     auto *IdField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareIdResult.getResult().symbol));
+        symbolCache->getSymbol(declareIdResult.getResult().symbolUrl));
 
     auto declareValueResult = AttrStruct->declareMember("value", ValueSpec);
     if (declareValueResult.isStatus())
         return declareValueResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueResult.getResult().symbol));
+        symbolCache->getSymbol(declareValueResult.getResult().symbolUrl));
 
     {
         auto *SuperStruct = AttrStruct->superStruct();

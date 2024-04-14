@@ -39,14 +39,14 @@ build_std_collections_TreeMap(
     lyric_object::TemplateParameter KParam;
     KParam.name = "K";
     KParam.index = 0;
-    KParam.typeDef = {};
+    KParam.typeDef = state.fundamentalCache()->getFundamentalType(lyric_assembler::FundamentalSymbol::Any);
     KParam.bound = lyric_object::BoundType::None;
     KParam.variance = lyric_object::VarianceType::Invariant;
 
     lyric_object::TemplateParameter VParam;
     VParam.name = "V";
     VParam.index = 1;
-    VParam.typeDef = {};
+    VParam.typeDef = state.fundamentalCache()->getFundamentalType(lyric_assembler::FundamentalSymbol::Any);
     VParam.bound = lyric_object::BoundType::None;
     VParam.variance = lyric_object::VarianceType::Covariant;
 
@@ -64,7 +64,7 @@ build_std_collections_TreeMap(
             IntSpec,
             lyric_object::AccessType::Public,
             {
-                {"K", 0, {}, lyric_object::VarianceType::Invariant, lyric_object::BoundType::None},
+                KParam,
             });
 
         if (declareFunctionResult.isStatus())
@@ -76,7 +76,7 @@ build_std_collections_TreeMap(
         tempo_utils::Status status;
 
         // push ord receiver onto the stack
-        auto ordResult = block->resolveBinding("ord");
+        auto ordResult = block->resolveReference("ord");
         if (ordResult.isStatus())
             return ordResult.getStatus();
         auto ord = ordResult.getResult();
@@ -93,29 +93,32 @@ build_std_collections_TreeMap(
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid Ordered concept");
         auto *orderedSymbol = cast_symbol_to_concept(sym);
-        auto resolveCompareResult = orderedSymbol->resolveAction("compare", ord.type);
+        auto resolveCompareResult = orderedSymbol->resolveAction("compare", ord.typeDef);
         if (resolveCompareResult.isStatus())
             return resolveCompareResult.getStatus();
         auto compare = resolveCompareResult.getResult();
 
+        auto callsiteTypeArguments = ord.typeDef.getConcreteArguments();
         lyric_typing::CallsiteReifier reifier(compare.getParameters(), compare.getRest(),
             compare.getTemplateUrl(), compare.getTemplateParameters(),
-            compare.getTemplateArguments(), typeSystem);
+            std::vector<lyric_common::TypeDef>(callsiteTypeArguments.begin(), callsiteTypeArguments.end()),
+            typeSystem);
+        TU_RETURN_IF_NOT_OK (reifier.initialize());
 
         // push x1 and x2 onto the stack
-        auto x1Result = block->resolveBinding("x1");
+        auto x1Result = block->resolveReference("x1");
         if (x1Result.isStatus())
             return x1Result.getStatus();
         auto x1 = x1Result.getResult();
         TU_RETURN_IF_NOT_OK (block->load(x1));
-        TU_RETURN_IF_NOT_OK (reifier.reifyNextArgument(x1.type));
+        TU_RETURN_IF_NOT_OK (reifier.reifyNextArgument(x1.typeDef));
 
-        auto x2Result = block->resolveBinding("x2");
+        auto x2Result = block->resolveReference("x2");
         if (x2Result.isStatus())
             return x2Result.getStatus();
         auto x2 = x2Result.getResult();
         TU_RETURN_IF_NOT_OK (block->load(x2));
-        TU_RETURN_IF_NOT_OK (reifier.reifyNextArgument(x2.type));
+        TU_RETURN_IF_NOT_OK (reifier.reifyNextArgument(x2.typeDef));
 
         // return result of ord.compare()
         auto invokeCompareResult = compare.invoke(block, reifier);

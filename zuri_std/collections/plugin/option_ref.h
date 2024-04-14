@@ -28,6 +28,29 @@ private:
     lyric_runtime::DataCell m_value;
 };
 
+//class OptionIterator : public lyric_runtime::BaseRef {
+//
+//public:
+//    explicit OptionIterator(const lyric_runtime::VirtualTable *vtable);
+//    OptionIterator(const lyric_runtime::VirtualTable *vtable, const lyric_runtime::DataCell &value);
+//
+//    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
+//    lyric_runtime::DataCell setField(
+//        const lyric_runtime::DataCell &field,
+//        const lyric_runtime::DataCell &value) override;
+//    std::string toString() const override;
+//
+//    bool iteratorValid() override;
+//    bool iteratorNext(lyric_runtime::DataCell &next) override;
+//
+//protected:
+//    void setMembersReachable() override;
+//    void clearMembersReachable() override;
+//
+//private:
+//    lyric_runtime::DataCell m_value;
+//};
+
 tempo_utils::Status option_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
 tempo_utils::Status option_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);
 tempo_utils::Status option_get(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state);

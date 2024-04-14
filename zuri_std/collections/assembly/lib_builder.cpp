@@ -78,7 +78,7 @@ build(int argc, char *argv[])
     TU_RETURN_IF_NOT_OK (build_std_collections_Vector(
         VectorClass, VectorIteratorClass, assemblyState, rootBlock, typeSystem));
 
-    TU_RETURN_IF_NOT_OK (build_std_collections_Option(assemblyState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_collections_Option(assemblyState, rootBlock, moduleEntry, typeSystem));
 
     // serialize state to object
     lyric_object::LyricObject object;

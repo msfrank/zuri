@@ -6,6 +6,7 @@ include(GoogleTest)
 
 set(TEST_CASES
     hashmap_tests.cpp
+    option_tests.cpp
     treemap_tests.cpp
     treeset_tests.cpp
     vector_tests.cpp

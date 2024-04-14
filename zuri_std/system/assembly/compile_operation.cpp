@@ -84,6 +84,7 @@ build_std_system_Operation(
         auto ctor = resolveCtorResult.getResult();
         lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
             ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
+        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
 
         TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
         TU_RETURN_IF_NOT_OK (ctorReifier.reifyNextArgument(call->getParameters().front().typeDef));
@@ -119,6 +120,7 @@ build_std_system_Operation(
         auto ctor = resolveCtorResult.getResult();
         lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
             ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
+        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
 
         TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
         TU_RETURN_IF_NOT_OK (ctorReifier.reifyNextArgument(call->getParameters().front().typeDef));
@@ -156,6 +158,7 @@ build_std_system_Operation(
         auto ctor = resolveCtorResult.getResult();
         lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
             ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
+        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
 
         TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
         TU_RETURN_IF_NOT_OK (ctorReifier.reifyNextArgument(call->getParameters().at(0).typeDef));
@@ -204,14 +207,14 @@ build_std_system_AppendOperation(
     if (declarePathMemberResult.isStatus())
         return declarePathMemberResult.getStatus();
     auto *PathField = cast_symbol_to_field(
-        symbolCache->getSymbol(declarePathMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declarePathMemberResult.getResult().symbolUrl));
 
     // declare the "value" member
     auto declareValueMemberResult = AppendOperationStruct->declareMember("value", valueUnionSpec);
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
@@ -270,6 +273,7 @@ build_std_system_AppendOperation(
         auto ctor = resolveCtorResult.getResult();
         lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
             ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
+        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
 
         TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
         TU_RETURN_IF_NOT_OK (ctorReifier.reifyNextArgument(call->getParameters().at(0).typeDef));
@@ -318,21 +322,21 @@ build_std_system_InsertOperation(
     if (declarePathMemberResult.isStatus())
         return declarePathMemberResult.getStatus();
     auto *PathField = cast_symbol_to_field(
-        symbolCache->getSymbol(declarePathMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declarePathMemberResult.getResult().symbolUrl));
 
     // declare the "index" member
     auto declareIndexMemberResult = InsertOperationStruct->declareMember("index", IntSpec);
     if (declareIndexMemberResult.isStatus())
         return declareIndexMemberResult.getStatus();
     auto *IndexField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareIndexMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declareIndexMemberResult.getResult().symbolUrl));
 
     // declare the "value" member
     auto declareValueMemberResult = InsertOperationStruct->declareMember("value", valueUnionSpec);
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
@@ -396,6 +400,7 @@ build_std_system_InsertOperation(
         auto ctor = resolveCtorResult.getResult();
         lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
             ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
+        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
 
         TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
         TU_RETURN_IF_NOT_OK (ctorReifier.reifyNextArgument(call->getParameters().at(0).typeDef));
@@ -447,28 +452,28 @@ build_std_system_UpdateOperation(
     if (declarePathMemberResult.isStatus())
         return declarePathMemberResult.getStatus();
     auto *PathField = cast_symbol_to_field(
-        symbolCache->getSymbol(declarePathMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declarePathMemberResult.getResult().symbolUrl));
 
     // declare the "ns" member
     auto declareNsMemberResult = InsertOperationStruct->declareMember("ns", UrlSpec);
     if (declareNsMemberResult.isStatus())
         return declareNsMemberResult.getStatus();
     auto *NsField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareNsMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declareNsMemberResult.getResult().symbolUrl));
 
     // declare the "id" member
     auto declareIdMemberResult = InsertOperationStruct->declareMember("id", IntSpec);
     if (declareIdMemberResult.isStatus())
         return declareIdMemberResult.getStatus();
     auto *IdField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareIdMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declareIdMemberResult.getResult().symbolUrl));
 
     // declare the "value" member
     auto declareValueMemberResult = InsertOperationStruct->declareMember("value", valueUnionSpec);
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
@@ -537,6 +542,7 @@ build_std_system_UpdateOperation(
         auto ctor = resolveCtorResult.getResult();
         lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
             ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
+        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
 
         lyric_assembler::AssemblerStatus status;
         TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
@@ -589,14 +595,14 @@ build_std_system_ReplaceOperation(
     if (declarePathMemberResult.isStatus())
         return declarePathMemberResult.getStatus();
     auto *PathField = cast_symbol_to_field(
-        symbolCache->getSymbol(declarePathMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declarePathMemberResult.getResult().symbolUrl));
 
     // declare the "value" member
     auto declareValueMemberResult = ReplaceOperationStruct->declareMember("value", valueUnionSpec);
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
@@ -655,6 +661,7 @@ build_std_system_ReplaceOperation(
         auto ctor = resolveCtorResult.getResult();
         lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
             ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
+        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
 
         TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
         TU_RETURN_IF_NOT_OK (ctorReifier.reifyNextArgument(call->getParameters().at(0).typeDef));
@@ -701,7 +708,7 @@ build_std_system_EmitOperation(
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *IdField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbol));
+        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
@@ -755,6 +762,7 @@ build_std_system_EmitOperation(
         auto ctor = resolveCtorResult.getResult();
         lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
             ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
+        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
 
         code->loadArgument(lyric_assembler::ArgumentOffset(0));
         auto status = ctorReifier.reifyNextArgument(call->getParameters().front().typeDef);
