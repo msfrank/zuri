@@ -43,7 +43,7 @@ tempo_utils::Status text_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status text_size(
+tempo_utils::Status text_length(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 

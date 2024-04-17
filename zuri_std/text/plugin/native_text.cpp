@@ -17,8 +17,8 @@ NativeStdText::getTrap(uint32_t index) const
             return text_alloc;
         case StdTextTrap::TEXT_CTOR:
             return text_ctor;
-        case StdTextTrap::TEXT_SIZE:
-            return text_size;
+        case StdTextTrap::TEXT_LENGTH:
+            return text_length;
         case StdTextTrap::TEXT_AT:
             return text_at;
         case StdTextTrap::TEXT_ITER:

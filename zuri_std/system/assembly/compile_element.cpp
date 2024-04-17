@@ -45,8 +45,6 @@ build_std_system_Element(
     auto IntSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Int"}));
     auto ValueSpec = lyric_parser::Assignable::forUnion({
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Intrinsic"})),
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"String"})),
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Url"})),
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Attr"})),
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Element"})),
     });

@@ -39,7 +39,7 @@ TEST_F(StdSystemOperation, EvaluateEmitOperationWithStringValue)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
-        RunModule(Return(IsRefType(lyric_common::SymbolPath({"String"}))))));
+        RunModule(Return(DataCellString("hello, world!")))));
 }
 
 TEST_F(StdSystemOperation, EvaluateEmitOperationWithUrlValue)
@@ -51,7 +51,7 @@ TEST_F(StdSystemOperation, EvaluateEmitOperationWithUrlValue)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
-        RunModule(Return(IsRefType(lyric_common::SymbolPath({"Url"}))))));
+        RunModule(Return(DataCellUrl("https://zuri.dev")))));
 }
 
 TEST_F(StdSystemOperation, EvaluateAppendOperationWithIntrinsicValue)

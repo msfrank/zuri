@@ -71,7 +71,7 @@ build_std_collections_Vector(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = VectorClass->declareMethod("size",
+        auto declareMethodResult = VectorClass->declareMethod("Size",
             {},
             {},
             {},
@@ -83,7 +83,7 @@ build_std_collections_Vector(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = VectorClass->declareMethod("at",
+        auto declareMethodResult = VectorClass->declareMethod("At",
             {
                 {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE}
             },
@@ -97,7 +97,7 @@ build_std_collections_Vector(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = VectorClass->declareMethod("insert",
+        auto declareMethodResult = VectorClass->declareMethod("Insert",
             {
                 {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE},
                 {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE},
@@ -112,7 +112,7 @@ build_std_collections_Vector(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = VectorClass->declareMethod("append",
+        auto declareMethodResult = VectorClass->declareMethod("Append",
             {
                 {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE},
             },
@@ -126,7 +126,7 @@ build_std_collections_Vector(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = VectorClass->declareMethod("replace",
+        auto declareMethodResult = VectorClass->declareMethod("Replace",
             {
                 {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE},
                 {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE},
@@ -141,7 +141,7 @@ build_std_collections_Vector(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = VectorClass->declareMethod("remove",
+        auto declareMethodResult = VectorClass->declareMethod("Remove",
             {
                 {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE},
             },
@@ -155,7 +155,7 @@ build_std_collections_Vector(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = VectorClass->declareMethod("clear",
+        auto declareMethodResult = VectorClass->declareMethod("Clear",
             {},
             {},
             {},

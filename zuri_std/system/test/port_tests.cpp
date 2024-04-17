@@ -36,7 +36,7 @@ TEST_F(StdSystemPort, EvaluateSendEmitOperationWithStringValue)
     auto result = lyric_test::LyricProtocolTester::runSingleModuleInMockSandbox(R"(
         import from "//std/system" ...
         val port: Port = Acquire(`dev.zuri.proto:test`)
-        port.send(EmitOperation{value = "hello, world!"})
+        port.Send(EmitOperation{value = "hello, world!"})
     )", protocolTesterOptions);
 
     ASSERT_THAT (result, ContainsResult(
@@ -71,7 +71,7 @@ TEST_F(StdSystemPort, EvaluateReceiveEmitOperationWithStringValue)
     auto result = lyric_test::LyricProtocolTester::runSingleModuleInMockSandbox(R"(
         import from "//std/system" ...
         val port: Port = Acquire(`dev.zuri.proto:test`)
-        val fut: Future[Operation] = port.receive()
+        val fut: Future[Operation] = port.Receive()
         match Await(fut) {
           case emit: EmitOperation
             match emit.value {
@@ -96,7 +96,7 @@ TEST_F(StdSystemPort, EvaluateSendEmitOperationWithAttrValue)
         import from "//std/system" ...
         val port: Port = Acquire(`dev.zuri.proto:test`)
         val root: Attr = Attr{ns = `io.fathomdata:ns:richtext-1`, id = 29, "Hello, world"}
-        port.send(EmitOperation{value = root})
+        port.Send(EmitOperation{value = root})
     )", protocolTesterOptions);
 
     ASSERT_THAT (result, ContainsResult(
@@ -128,7 +128,7 @@ TEST_F(StdSystemPort, EvaluateSendEmitOperationWithElementValue)
         import from "//std/system" ...
         val port: Port = Acquire(`dev.zuri.proto:test`)
         val root: Element = Element{ns = `io.fathomdata:ns:richtext-1`, id = 29, "Hello, world"}
-        port.send(EmitOperation{value = root})
+        port.Send(EmitOperation{value = root})
     )", protocolTesterOptions);
 
     ASSERT_THAT (result, ContainsResult(

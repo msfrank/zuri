@@ -4,6 +4,7 @@
 
 #include <lyric_runtime/data_cell.h>
 #include <lyric_runtime/interpreter_state.h>
+#include <lyric_runtime/string_ref.h>
 
 #include "timezone_ref.h"
 #include "time_traps.h"
@@ -52,11 +53,11 @@ std_time_parse_timezone(lyric_runtime::BytecodeInterpreter *interp, lyric_runtim
 
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::STRING);
 
     // get the timezone name argument
     std::string tzName;
-    if (!cell.data.ref->utf8Value(tzName))
+    if (!cell.data.str->utf8Value(tzName))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid timezone name");
 

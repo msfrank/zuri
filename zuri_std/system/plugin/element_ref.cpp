@@ -5,6 +5,7 @@
 #include <lyric_object/bytecode_iterator.h>
 #include <lyric_runtime/interpreter_state.h>
 #include <lyric_runtime/serialize_value.h>
+#include <lyric_runtime/url_ref.h>
 #include <lyric_serde/patchset_value.h>
 #include <tempo_utils/big_endian.h>
 #include <tempo_utils/log_stream.h>
@@ -81,10 +82,10 @@ ElementRef::serializeValue(lyric_serde::PatchsetState &state, tu_uint32 &index)
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::FIELD);
     auto ns = ElementRef::getField(descriptor);
-    if (ns.type != lyric_runtime::DataCellType::REF)
+    if (ns.type != lyric_runtime::DataCellType::URL)
         return false;
     tempo_utils::Url nsUrl;
-    if (!ns.data.ref->uriValue(nsUrl))
+    if (!ns.data.url->uriValue(nsUrl))
         return false;
     auto nsString = nsUrl.toString();
 

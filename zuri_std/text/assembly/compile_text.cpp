@@ -46,7 +46,7 @@ build_std_text_Text(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TextClass->declareMethod("size",
+        auto declareMethodResult = TextClass->declareMethod("Length",
             {},
             {},
             {},
@@ -54,11 +54,11 @@ build_std_text_Text(
             lyric_object::AccessType::Public);
         auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
         auto *code = call->callProc()->procCode();
-        code->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_SIZE));
+        code->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_LENGTH));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TextClass->declareMethod("at",
+        auto declareMethodResult = TextClass->declareMethod("At",
             {
                 {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE, {}}
             },

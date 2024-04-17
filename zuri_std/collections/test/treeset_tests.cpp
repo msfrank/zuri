@@ -39,7 +39,7 @@ TEST_F(StdTreeSet, TestEvaluateTreeSetSize)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: TreeSet[Int] = TreeSet[Int]{1, 2, 3}
-        ints.size()
+        ints.Size()
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -51,7 +51,7 @@ TEST_F(StdTreeSet, TestEvaluateTreeSetContains)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: TreeSet[Int] = TreeSet[Int]{1, 2, 3}
-        ints.contains(2)
+        ints.Contains(2)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -63,7 +63,7 @@ TEST_F(StdTreeSet, TestEvaluateTreeSetAdd)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: TreeSet[Int] = TreeSet[Int]{1, 2, 3}
-        ints.add(42)
+        ints.Add(42)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -75,7 +75,7 @@ TEST_F(StdTreeSet, TestEvaluateTreeSetRemove)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: TreeSet[Int] = TreeSet[Int]{1, 2, 3}
-        ints.remove(3)
+        ints.Remove(3)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -87,8 +87,8 @@ TEST_F(StdTreeSet, TestEvaluateTreeSetClear)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: TreeSet[Int] = TreeSet[Int]{1, 2, 3}
-        ints.clear()
-        ints.size()
+        ints.Clear()
+        ints.Size()
     )", options);
 
     ASSERT_THAT (result, ContainsResult(

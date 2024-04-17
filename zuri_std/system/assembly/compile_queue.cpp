@@ -55,7 +55,7 @@ build_std_system_Queue(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = QueueClass->declareMethod("push",
+        auto declareMethodResult = QueueClass->declareMethod("Push",
             {
                 { {}, "element", "", TSpec, lyric_parser::BindingType::VALUE },
             },
@@ -69,7 +69,7 @@ build_std_system_Queue(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = QueueClass->declareMethod("pop",
+        auto declareMethodResult = QueueClass->declareMethod("Pop",
             {},
             {},
             {},

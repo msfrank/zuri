@@ -10,7 +10,6 @@
 #include "treemap_traps.h"
 #include "treeset_traps.h"
 #include "vector_traps.h"
-#include "option_ref.h"
 
 lyric_runtime::NativeFunc
 NativeStdCollections::getTrap(uint32_t index) const
@@ -37,14 +36,6 @@ NativeStdCollections::getTrap(uint32_t index) const
             return hashmap_clear;
         case StdCollectionsTrap::HASHMAP_ITER:
             return nullptr;
-        case StdCollectionsTrap::OPTION_ALLOC:
-            return option_alloc;
-        case StdCollectionsTrap::OPTION_CTOR:
-            return option_ctor;
-        case StdCollectionsTrap::OPTION_GET:
-            return option_get;
-        case StdCollectionsTrap::OPTION_IS_EMPTY:
-            return option_is_empty;
         case StdCollectionsTrap::TREEMAP_ALLOC:
             return treemap_alloc;
         case StdCollectionsTrap::TREEMAP_CTOR:

@@ -170,7 +170,7 @@ build_std_collections_TreeSet(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeSetClass->declareMethod("size",
+        auto declareMethodResult = TreeSetClass->declareMethod("Size",
             {},
             {},
             {},
@@ -182,7 +182,7 @@ build_std_collections_TreeSet(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeSetClass->declareMethod("contains",
+        auto declareMethodResult = TreeSetClass->declareMethod("Contains",
             {
                 {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE}
             },
@@ -196,7 +196,7 @@ build_std_collections_TreeSet(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeSetClass->declareMethod("add",
+        auto declareMethodResult = TreeSetClass->declareMethod("Add",
             {
                 {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE},
             },
@@ -210,7 +210,7 @@ build_std_collections_TreeSet(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeSetClass->declareMethod("remove",
+        auto declareMethodResult = TreeSetClass->declareMethod("Remove",
             {
                 {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE}
             },
@@ -224,7 +224,7 @@ build_std_collections_TreeSet(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeSetClass->declareMethod("clear",
+        auto declareMethodResult = TreeSetClass->declareMethod("Clear",
             {},
             {},
             {},

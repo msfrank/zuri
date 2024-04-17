@@ -69,8 +69,6 @@ add_library(std-collections-plugin SHARED
     plugin/hashmap_traps.h
     plugin/native_collections.cpp
     plugin/native_collections.h
-    plugin/option_ref.cpp
-    plugin/option_ref.h
     plugin/treemap_ref.cpp
     plugin/treemap_ref.h
     plugin/treemap_traps.cpp

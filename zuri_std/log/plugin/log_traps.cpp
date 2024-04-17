@@ -3,6 +3,7 @@
 #include <lyric_runtime/base_ref.h>
 #include <lyric_runtime/data_cell.h>
 #include <lyric_runtime/interpreter_state.h>
+#include <lyric_runtime/string_ref.h>
 #include <lyric_serde/patchset_state.h>
 #include <lyric_serde/patchset_change.h>
 #include <lyric_serde/patchset_value.h>
@@ -26,8 +27,8 @@ std_log_log(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
-    auto *instance = cell.data.ref;
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::STRING);
+    auto *instance = cell.data.str;
 
     std::string utf8;
     if (!instance->utf8Value(utf8))

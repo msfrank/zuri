@@ -33,7 +33,6 @@ build_std_system_Operation(
     auto *OperationStruct = static_cast<lyric_assembler::StructSymbol *>(
         symbolCache->getSymbol(declareOperationStructResult.getResult()));
 
-    auto Utf8Spec = lyric_parser::Assignable::forSingular({"Utf8"});
     auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
     auto StringSpec = lyric_parser::Assignable::forSingular({"String"});
     auto UrlSpec = lyric_parser::Assignable::forSingular({"Url"});
@@ -42,8 +41,6 @@ build_std_system_Operation(
 
     auto ValueSpec = lyric_parser::Assignable::forUnion({
         lyric_parser::Assignable::forSingular({"Intrinsic"}),
-        lyric_parser::Assignable::forSingular({"String"}),
-        lyric_parser::Assignable::forSingular({"Url"}),
         lyric_parser::Assignable::forSingular({"Element"}),
     });
 
@@ -55,78 +52,6 @@ build_std_system_Operation(
         auto *call = static_cast<lyric_assembler::CallSymbol *>(symbolCache->getSymbol(declareCtorResult.getResult()));
         auto *code = call->callProc()->procCode();
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareFunctionResult = block->declareFunction("Operation.$createString",
-            {
-                {{}, "utf8", "", Utf8Spec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            StringSpec,
-            lyric_object::AccessType::Public,
-            {});
-        if (declareFunctionResult.isStatus())
-            return declareFunctionResult.getStatus();
-        auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
-        auto *proc = call->callProc();
-        auto *code = proc->procCode();
-        auto *createBlock = proc->procBlock();
-
-        auto resolveStructResult = createBlock->resolveStruct(StringSpec);
-        if (resolveStructResult.isStatus())
-            return resolveStructResult.getStatus();
-        auto *StringStruct = cast_symbol_to_struct(symbolCache->getSymbol(resolveStructResult.getResult()));
-        auto resolveCtorResult = StringStruct->resolveCtor();
-        if (resolveCtorResult.isStatus())
-            return resolveCtorResult.getStatus();
-        auto ctor = resolveCtorResult.getResult();
-        lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
-            ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
-        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
-
-        TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
-        TU_RETURN_IF_NOT_OK (ctorReifier.reifyNextArgument(call->getParameters().front().typeDef));
-        auto invokeNewResult = ctor.invokeNew(createBlock, ctorReifier);
-        if (invokeNewResult.isStatus())
-            return invokeNewResult.getStatus();
-    }
-    {
-        auto declareFunctionResult = block->declareFunction("Operation.$createUrl",
-            {
-                {{}, "utf8", "", Utf8Spec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            UrlSpec,
-            lyric_object::AccessType::Public,
-            {});
-        if (declareFunctionResult.isStatus())
-            return declareFunctionResult.getStatus();
-        auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
-        auto *proc = call->callProc();
-        auto *code = proc->procCode();
-        auto *createBlock = proc->procBlock();
-
-        auto resolveStructResult = createBlock->resolveStruct(UrlSpec);
-        if (resolveStructResult.isStatus())
-            return resolveStructResult.getStatus();
-        auto *UrlStruct = cast_symbol_to_struct(symbolCache->getSymbol(resolveStructResult.getResult()));
-        auto resolveCtorResult = UrlStruct->resolveCtor();
-        if (resolveCtorResult.isStatus())
-            return resolveCtorResult.getStatus();
-        auto ctor = resolveCtorResult.getResult();
-        lyric_typing::CallsiteReifier ctorReifier(ctor.getParameters(), ctor.getRest(),
-            ctor.getTemplateUrl(), ctor.getTemplateParameters(), {}, typeSystem);
-        TU_RETURN_IF_NOT_OK (ctorReifier.initialize());
-
-        TU_RETURN_IF_NOT_OK (code->loadArgument(lyric_assembler::ArgumentOffset(0)));
-        TU_RETURN_IF_NOT_OK (ctorReifier.reifyNextArgument(call->getParameters().front().typeDef));
-        auto invokeNewResult = ctor.invokeNew(createBlock, ctorReifier);
-        if (invokeNewResult.isStatus())
-            return invokeNewResult.getStatus();
     }
     {
         auto declareFunctionResult = block->declareFunction("Operation.$createAttr",
@@ -196,8 +121,6 @@ build_std_system_AppendOperation(
     auto StringSpec = lyric_parser::Assignable::forSingular({"String"});
     auto valueUnionSpec = lyric_parser::Assignable::forUnion({
             lyric_parser::Assignable::forSingular({"Intrinsic"}),
-            lyric_parser::Assignable::forSingular({"String"}),
-            lyric_parser::Assignable::forSingular({"Url"}),
             lyric_parser::Assignable::forSingular({"Attr"}),
             lyric_parser::Assignable::forSingular({"Element"}),
         });
@@ -311,8 +234,6 @@ build_std_system_InsertOperation(
     auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
     auto valueUnionSpec = lyric_parser::Assignable::forUnion({
             lyric_parser::Assignable::forSingular({"Intrinsic"}),
-            lyric_parser::Assignable::forSingular({"String"}),
-            lyric_parser::Assignable::forSingular({"Url"}),
             lyric_parser::Assignable::forSingular({"Attr"}),
             lyric_parser::Assignable::forSingular({"Element"}),
         });
@@ -441,8 +362,6 @@ build_std_system_UpdateOperation(
     auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
     auto valueUnionSpec = lyric_parser::Assignable::forUnion({
             lyric_parser::Assignable::forSingular({"Intrinsic"}),
-            lyric_parser::Assignable::forSingular({"String"}),
-            lyric_parser::Assignable::forSingular({"Url"}),
             lyric_parser::Assignable::forSingular({"Attr"}),
             lyric_parser::Assignable::forSingular({"Element"}),
         });
@@ -584,8 +503,6 @@ build_std_system_ReplaceOperation(
     auto StringSpec = lyric_parser::Assignable::forSingular({"String"});
     auto valueUnionSpec = lyric_parser::Assignable::forUnion({
             lyric_parser::Assignable::forSingular({"Intrinsic"}),
-            lyric_parser::Assignable::forSingular({"String"}),
-            lyric_parser::Assignable::forSingular({"Url"}),
             lyric_parser::Assignable::forSingular({"Attr"}),
             lyric_parser::Assignable::forSingular({"Element"}),
         });
@@ -697,8 +614,6 @@ build_std_system_EmitOperation(
 
     auto valueUnionSpec = lyric_parser::Assignable::forUnion({
         lyric_parser::Assignable::forSingular({"Intrinsic"}),
-        lyric_parser::Assignable::forSingular({"String"}),
-        lyric_parser::Assignable::forSingular({"Url"}),
         lyric_parser::Assignable::forSingular({"Attr"}),
         lyric_parser::Assignable::forSingular({"Element"}),
     });

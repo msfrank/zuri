@@ -40,7 +40,7 @@ TEST_F(StdText, TestEvaluateTextSize)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/text" ...
         val text: Text = Text{"Hello, world!"}
-        text.size()
+        text.Length()
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -52,7 +52,7 @@ TEST_F(StdText, TestEvaluateTextAt)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/text" ...
         val text: Text = Text{"Hello, world!"}
-        text.at(0)
+        text.At(0)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(

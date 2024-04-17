@@ -43,7 +43,7 @@ TEST_F(StdHashMap, TestEvaluateHashMapConstruction)
             Tuple2[Int,Int]{2, 12},
             Tuple2[Int,Int]{3, 13}
         }
-        ints.size()
+        ints.Size()
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -55,10 +55,10 @@ TEST_F(StdHashMap, TestEvaluateHashMapSize)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.put(1, 11)
-        ints.put(2, 12)
-        ints.put(3, 13)
-        ints.size()
+        ints.Put(1, 11)
+        ints.Put(2, 12)
+        ints.Put(3, 13)
+        ints.Size()
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -70,10 +70,10 @@ TEST_F(StdHashMap, TestEvaluateHashMapPutAndContains)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.put(1, 11)
-        ints.put(2, 12)
-        ints.put(3, 13)
-        ints.contains(2)
+        ints.Put(1, 11)
+        ints.Put(2, 12)
+        ints.Put(3, 13)
+        ints.Contains(2)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -85,10 +85,10 @@ TEST_F(StdHashMap, TestEvaluateHashMapPutAndGet)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.put(1, 11)
-        ints.put(2, 12)
-        ints.put(3, 13)
-        ints.get(2)
+        ints.Put(1, 11)
+        ints.Put(2, 12)
+        ints.Put(3, 13)
+        ints.Get(2)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -100,10 +100,10 @@ TEST_F(StdHashMap, TestEvaluateHashMapPutAndRemove)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.put(1, 11)
-        ints.put(2, 12)
-        ints.put(3, 13)
-        ints.remove(2)
+        ints.Put(1, 11)
+        ints.Put(2, 12)
+        ints.Put(3, 13)
+        ints.Remove(2)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -115,11 +115,11 @@ TEST_F(StdHashMap, TestEvaluateHashMapPutAndClear)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.put(1, 11)
-        ints.put(2, 12)
-        ints.put(3, 13)
-        ints.clear()
-        ints.size()
+        ints.Put(1, 11)
+        ints.Put(2, 12)
+        ints.Put(3, 13)
+        ints.Clear()
+        ints.Size()
     )", options);
 
     ASSERT_THAT (result, ContainsResult(

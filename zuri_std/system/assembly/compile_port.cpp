@@ -50,7 +50,7 @@ build_std_system_Port(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = PortClass->declareMethod("send",
+        auto declareMethodResult = PortClass->declareMethod("Send",
             {
                 { {}, "out", "", OperationSpec, lyric_parser::BindingType::VALUE },
             },
@@ -64,7 +64,7 @@ build_std_system_Port(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = PortClass->declareMethod("receive",
+        auto declareMethodResult = PortClass->declareMethod("Receive",
             {},
             {},
             {},

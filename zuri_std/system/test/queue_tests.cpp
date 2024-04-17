@@ -24,8 +24,8 @@ TEST_F(StdSystemQueue, EvaluatePushAndAwaitPop)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
         val queue: Queue[Int] = Queue[Int]{}
-        queue.push(42)
-        Await(queue.pop())
+        queue.Push(42)
+        Await(queue.Pop())
     )", testerOptions);
 
     ASSERT_THAT (result, ContainsResult(
@@ -37,10 +37,10 @@ TEST_F(StdSystemQueue, EvaluatePushMultipleAndAwaitPop)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
         val queue: Queue[Int] = Queue[Int]{}
-        queue.push(1)
-        queue.push(1)
-        queue.push(1)
-        AwaitOrDefault(queue.pop(), 0) + AwaitOrDefault(queue.pop(), 0) + AwaitOrDefault(queue.pop(), 0)
+        queue.Push(1)
+        queue.Push(1)
+        queue.Push(1)
+        AwaitOrDefault(queue.Pop(), 0) + AwaitOrDefault(queue.Pop(), 0) + AwaitOrDefault(queue.Pop(), 0)
     )", testerOptions);
 
     ASSERT_THAT (result, ContainsResult(
@@ -54,11 +54,11 @@ TEST_F(StdSystemQueue, EvaluatePushMultipleAndAwaitPopInSeparateTasks)
         val queue: Queue[Int] = Queue[Int]{}
 
         val p1: Function0[Bool] = lambda(): Bool {
-            queue.push(1) and queue.push(1) and queue.push(1)
+            queue.Push(1) and queue.Push(1) and queue.Push(1)
         }
 
         val p2: Function0[Int] = lambda(): Int {
-            AwaitOrDefault(queue.pop(), 0) + AwaitOrDefault(queue.pop(), 0) + AwaitOrDefault(queue.pop(), 0)
+            AwaitOrDefault(queue.Pop(), 0) + AwaitOrDefault(queue.Pop(), 0) + AwaitOrDefault(queue.Pop(), 0)
         }
 
         Spawn(p1)

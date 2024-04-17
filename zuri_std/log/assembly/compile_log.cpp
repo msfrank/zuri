@@ -16,7 +16,7 @@ build_std_log(
     {
         auto StringSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"String"}));
         auto BoolSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Bool"}));
-        auto declareFunctionResult = block->declareFunction("log",
+        auto declareFunctionResult = block->declareFunction("Log",
             {
                 { {}, "message", "", StringSpec, lyric_parser::BindingType::VALUE },
             },

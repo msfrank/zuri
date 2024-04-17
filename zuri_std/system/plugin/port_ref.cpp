@@ -96,7 +96,7 @@ PortRef::waitForReceive(std::shared_ptr<lyric_runtime::Promise> promise, uv_asyn
     return true;
 }
 
-static lyric_runtime::InterpreterStatus
+static tempo_utils::Status
 allocate_next_string(
     const lyric_serde::PatchsetWalker &patchset,
     const lyric_serde::ValueWalker &nextString,
@@ -104,39 +104,12 @@ allocate_next_string(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state)
 {
-    auto *currentCoro = state->currentCoro();
-    auto *segment = currentCoro->peekSP();
-    auto object = segment->getObject().getObject();
-    auto symbol = object.findSymbol(lyric_common::SymbolPath({"Operation", "$createString"}));
-    TU_ASSERT (symbol.isValid());
-
-    auto *segmentManager = state->segmentManager();
-    auto *subroutineManager = state->subroutineManager();
-
-    lyric_runtime::InterpreterStatus status;
-
-    auto descriptor = segmentManager->resolveDescriptor(segment,
-        symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
-
+    auto *heapManager = state->heapManager();
     auto utf8 = nextString.getString();
-    auto arg0 = lyric_runtime::DataCell::forUtf8(utf8.data(), utf8.size());
-    std::vector<lyric_runtime::DataCell> args{arg0};
-
-    if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto runInterpreterResult = interp->runSubinterpreter();
-    if (runInterpreterResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    currentCoro->pushData(runInterpreterResult.getResult());
-
-    return lyric_runtime::InterpreterStatus::ok();
+    return heapManager->loadStringOntoStack(utf8);
 }
 
-static lyric_runtime::InterpreterStatus
+static tempo_utils::Status
 allocate_next_attr(
     const lyric_serde::PatchsetWalker &patchset,
     const lyric_serde::ValueWalker &nextAttr,
@@ -150,36 +123,18 @@ allocate_next_attr(
 
     auto *segmentManager = state->segmentManager();
     auto *subroutineManager = state->subroutineManager();
+    auto *heapManager = state->heapManager();
+
+    auto url = nextAttr.getAttrNamespace().getUrl();
+    auto ns = heapManager->allocateUrl(url);
 
     lyric_runtime::InterpreterStatus status;
 
     //
-    auto symbol = object.findSymbol(lyric_common::SymbolPath({"Operation", "$createUrl"}));
+    auto symbol = object.findSymbol(lyric_common::SymbolPath({"Operation", "$createAttr"}));
     TU_ASSERT (symbol.isValid());
 
     auto descriptor = segmentManager->resolveDescriptor(segment,
-        symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
-
-    auto utf8 = nextAttr.getAttrNamespace().urlView();
-    auto arg0 = lyric_runtime::DataCell::forUtf8(utf8.data(), utf8.size());
-    std::vector<lyric_runtime::DataCell> args{arg0};
-
-    if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create Url");
-    auto runInterpreterResult = interp->runSubinterpreter();
-    if (runInterpreterResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create Url");
-    auto ns = runInterpreterResult.getResult();
-
-    //
-    symbol = object.findSymbol(lyric_common::SymbolPath({"Operation", "$createAttr"}));
-    TU_ASSERT (symbol.isValid());
-
-    descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
     TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
@@ -189,12 +144,12 @@ allocate_next_attr(
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid attr value");
     lyric_runtime::DataCell id(static_cast<tu_int64>(nextAttr.getAttrResource().idValue));
-    args = {ns, id, currentCoro->peekData(index)};
+    std::vector<lyric_runtime::DataCell> args{ns, id, currentCoro->peekData(index)};
 
     if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create Attr");
-    runInterpreterResult = interp->runSubinterpreter();
+    auto runInterpreterResult = interp->runSubinterpreter();
     if (runInterpreterResult.isStatus())
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create Attr");
@@ -203,7 +158,7 @@ allocate_next_attr(
     return lyric_runtime::InterpreterStatus::ok();
 }
 
-static lyric_runtime::InterpreterStatus
+static tempo_utils::Status
 allocate_next_element(
     const lyric_serde::PatchsetWalker &patchset,
     const lyric_serde::ValueWalker &nextElement,
@@ -249,7 +204,7 @@ allocate_next_element(
     return lyric_runtime::InterpreterStatus::ok();
 }
 
-static lyric_runtime::InterpreterStatus
+static tempo_utils::Status
 allocate_next_value(
     const lyric_serde::PatchsetWalker &patchset,
     const lyric_serde::ValueWalker &nextValue,
@@ -287,9 +242,6 @@ allocate_next_value(
         case lyric_serde::ValueType::String: {
             return allocate_next_string(patchset, nextValue, stackBase, interp, state);
         }
-//        case lyric_serde::ValueType::Url: {
-//            return allocate_next_uri(patchset, next->value_as_UrlValue(), stackBase, interp, state);
-//        }
         case lyric_serde::ValueType::Attr: {
             return allocate_next_attr(patchset, nextValue, stackBase, interp, state);
         }
@@ -317,32 +269,16 @@ allocate_append_operation(
 
     auto *segmentManager = state->segmentManager();
     auto *subroutineManager = state->subroutineManager();
+    auto *heapManager = state->heapManager();
+
+    auto utf8 = operation.getPath().pathView();
+    auto path = heapManager->allocateString(utf8);
 
     lyric_runtime::InterpreterStatus status;
 
-    auto symbol = object.findSymbol(lyric_common::SymbolPath({"Operation", "$createString"}));
+    auto symbol = object.findSymbol(lyric_common::SymbolPath({"AppendOperation", "$create"}));
     TU_ASSERT (symbol.isValid());
     auto descriptor = segmentManager->resolveDescriptor(segment,
-        symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
-
-    auto utf8 = operation.getPath().pathView();
-    auto arg0 = lyric_runtime::DataCell::forUtf8(utf8.data(), utf8.size());
-    std::vector<lyric_runtime::DataCell> args{arg0};
-
-    if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto runInterpreterResult = interp->runSubinterpreter();
-    if (runInterpreterResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto path = runInterpreterResult.getResult();
-
-    symbol = object.findSymbol(lyric_common::SymbolPath({"AppendOperation", "$create"}));
-    TU_ASSERT (symbol.isValid());
-    descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
     TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
@@ -353,11 +289,11 @@ allocate_append_operation(
         lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create AppendOperation");
     auto value = currentCoro->peekData(index);
 
-    args = {path, value};
+    std::vector<lyric_runtime::DataCell> args{path, value};
     if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create AppendOperation");
-    runInterpreterResult = interp->runSubinterpreter();
+    auto runInterpreterResult = interp->runSubinterpreter();
     if (runInterpreterResult.isStatus())
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create AppendOperation");
@@ -379,32 +315,16 @@ allocate_insert_operation(
 
     auto *segmentManager = state->segmentManager();
     auto *subroutineManager = state->subroutineManager();
+    auto *heapManager = state->heapManager();
+
+    auto utf8 = operation.getPath().pathView();
+    auto path = heapManager->allocateString(utf8);
 
     lyric_runtime::InterpreterStatus status;
 
-    auto symbol = object.findSymbol(lyric_common::SymbolPath({"Operation", "$createString"}));
+    auto symbol = object.findSymbol(lyric_common::SymbolPath({"InsertOperation", "$create"}));
     TU_ASSERT (symbol.isValid());
     auto descriptor = segmentManager->resolveDescriptor(segment,
-        symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
-
-    auto utf8 = operation.getPath().pathView();
-    auto arg0 = lyric_runtime::DataCell::forUtf8(utf8.data(), utf8.size());
-    std::vector<lyric_runtime::DataCell> args{arg0};
-
-    if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto runInterpreterResult = interp->runSubinterpreter();
-    if (runInterpreterResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto path = runInterpreterResult.getResult();
-
-    symbol = object.findSymbol(lyric_common::SymbolPath({"InsertOperation", "$create"}));
-    TU_ASSERT (symbol.isValid());
-    descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
     TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
@@ -415,11 +335,12 @@ allocate_insert_operation(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create InsertOperation");
     auto value = currentCoro->peekData(index);
 
-    args = {path, lyric_runtime::DataCell(static_cast<tu_int64>(operation.getIndex())), value};
+    std::vector<lyric_runtime::DataCell> args{
+        path, lyric_runtime::DataCell(static_cast<tu_int64>(operation.getIndex())), value};
     if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create InsertOperation");
-    runInterpreterResult = interp->runSubinterpreter();
+    auto runInterpreterResult = interp->runSubinterpreter();
     if (runInterpreterResult.isStatus())
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create InsertOperation");
@@ -441,32 +362,16 @@ allocate_update_operation(
 
     auto *segmentManager = state->segmentManager();
     auto *subroutineManager = state->subroutineManager();
+    auto *heapManager = state->heapManager();
+
+    auto utf8 = operation.getPath().pathView();
+    auto path = heapManager->allocateString(utf8);
 
     lyric_runtime::InterpreterStatus status;
 
-    auto symbol = object.findSymbol(lyric_common::SymbolPath({"Operation", "$createString"}));
+    auto symbol = object.findSymbol(lyric_common::SymbolPath({"ReplaceOperation", "$create"}));
     TU_ASSERT (symbol.isValid());
     auto descriptor = segmentManager->resolveDescriptor(segment,
-        symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
-
-    auto utf8 = operation.getPath().pathView();
-    auto arg0 = lyric_runtime::DataCell::forUtf8(utf8.data(), utf8.size());
-    std::vector<lyric_runtime::DataCell> args{arg0};
-
-    if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto runInterpreterResult = interp->runSubinterpreter();
-    if (runInterpreterResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto path = runInterpreterResult.getResult();
-
-    symbol = object.findSymbol(lyric_common::SymbolPath({"ReplaceOperation", "$create"}));
-    TU_ASSERT (symbol.isValid());
-    descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
     TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
@@ -477,11 +382,11 @@ allocate_update_operation(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create ReplaceOperation");
     auto value = currentCoro->peekData(index);
 
-    args = {path, value};
+    std::vector<lyric_runtime::DataCell> args{path, value};
     if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create ReplaceOperation");
-    runInterpreterResult = interp->runSubinterpreter();
+    auto runInterpreterResult = interp->runSubinterpreter();
     if (runInterpreterResult.isStatus())
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create ReplaceOperation");
@@ -503,32 +408,16 @@ allocate_replace_operation(
 
     auto *segmentManager = state->segmentManager();
     auto *subroutineManager = state->subroutineManager();
+    auto *heapManager = state->heapManager();
+
+    auto utf8 = operation.getPath().pathView();
+    auto path = heapManager->allocateString(utf8);
 
     lyric_runtime::InterpreterStatus status;
 
-    auto symbol = object.findSymbol(lyric_common::SymbolPath({"Operation", "$createString"}));
+    auto symbol = object.findSymbol(lyric_common::SymbolPath({"ReplaceOperation", "$create"}));
     TU_ASSERT (symbol.isValid());
     auto descriptor = segmentManager->resolveDescriptor(segment,
-        symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
-
-    auto utf8 = operation.getPath().pathView();
-    auto arg0 = lyric_runtime::DataCell::forUtf8(utf8.data(), utf8.size());
-    std::vector<lyric_runtime::DataCell> args{arg0};
-
-    if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto runInterpreterResult = interp->runSubinterpreter();
-    if (runInterpreterResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create String");
-    auto path = runInterpreterResult.getResult();
-
-    symbol = object.findSymbol(lyric_common::SymbolPath({"ReplaceOperation", "$create"}));
-    TU_ASSERT (symbol.isValid());
-    descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
     TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
@@ -539,11 +428,11 @@ allocate_replace_operation(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create ReplaceOperation");
     auto value = currentCoro->peekData(index);
 
-    args = {path, value};
+    std::vector<lyric_runtime::DataCell> args{path, value};
     if (!subroutineManager->callStatic(descriptor.data.descriptor.value, args, currentCoro, status))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create ReplaceOperation");
-    runInterpreterResult = interp->runSubinterpreter();
+    auto runInterpreterResult = interp->runSubinterpreter();
     if (runInterpreterResult.isStatus())
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to create ReplaceOperation");

@@ -39,7 +39,7 @@ TEST_F(StdVector, TestEvaluateVectorSize)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: Vector[Int] = Vector[Int]{1, 2, 3}
-        ints.size()
+        ints.Size()
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -51,7 +51,7 @@ TEST_F(StdVector, TestEvaluateVectorAt)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: Vector[Int] = Vector[Int]{1, 2, 3}
-        ints.at(0)
+        ints.At(0)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -63,8 +63,8 @@ TEST_F(StdVector, TestEvaluateVectorInsert)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: Vector[Int] = Vector[Int]{1, 2, 3}
-        ints.insert(1, 42)
-        ints.at(1)
+        ints.Insert(1, 42)
+        ints.At(1)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -76,8 +76,8 @@ TEST_F(StdVector, TestEvaluateVectorAppend)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: Vector[Int] = Vector[Int]{1, 2, 3}
-        ints.append(4)
-        ints.at(3)
+        ints.Append(4)
+        ints.At(3)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -89,7 +89,7 @@ TEST_F(StdVector, TestEvaluateVectorReplace)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: Vector[Int] = Vector[Int]{1, 2, 3}
-        ints.replace(2, 42)
+        ints.Replace(2, 42)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -101,7 +101,7 @@ TEST_F(StdVector, TestEvaluateVectorRemove)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: Vector[Int] = Vector[Int]{1, 2, 3}
-        ints.remove(0)
+        ints.Remove(0)
     )", options);
 
     ASSERT_THAT (result, ContainsResult(
@@ -113,8 +113,8 @@ TEST_F(StdVector, TestEvaluateVectorClear)
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
         val ints: Vector[Int] = Vector[Int]{1, 2, 3}
-        ints.clear()
-        ints.size()
+        ints.Clear()
+        ints.Size()
     )", options);
 
     ASSERT_THAT (result, ContainsResult(

@@ -4,6 +4,7 @@
 
 #include <lyric_runtime/data_cell.h>
 #include <lyric_runtime/interpreter_state.h>
+#include <lyric_runtime/url_ref.h>
 
 #include "future_ref.h"
 #include "port_ref.h"
@@ -18,10 +19,10 @@ std_system_acquire(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::In
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::URL);
 
     tempo_utils::Url protocolUrl;
-    if (!cell.data.ref->uriValue(protocolUrl))
+    if (!cell.data.url->uriValue(protocolUrl))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid protocol uri");
     if (!protocolUrl.isValid())

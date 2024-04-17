@@ -29,7 +29,7 @@ TEST_F(StdLogLog, EvaluateLog)
 
     auto result = lyric_test::LyricProtocolTester::runSingleModuleInMockSandbox(R"(
         import from "//std/log" ...
-        log("hello world!")
+        Log("hello world!")
     )", options);
 
     ASSERT_THAT (result, ContainsResult(RunModule(Return(DataCellBool(true)))));

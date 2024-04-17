@@ -149,12 +149,7 @@ text_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
 
     TU_ASSERT (frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
-    if (arg0.type == lyric_runtime::DataCellType::UTF8) {
-        if (!instance->setTextData(arg0.data.utf8.data, arg0.data.utf8.size))
-            return lyric_runtime::InterpreterStatus::forCondition(
-                lyric_runtime::InterpreterCondition::kRuntimeInvariant,
-                "utf16 conversion failed");
-    } else if (arg0.type == lyric_runtime::DataCellType::REF) {
+    if (arg0.type == lyric_runtime::DataCellType::STRING) {
         std::string utf8;
         if (!arg0.data.ref->utf8Value(utf8))
             return lyric_runtime::InterpreterStatus::forCondition(
@@ -191,7 +186,7 @@ text_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterSt
 }
 
 tempo_utils::Status
-text_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+text_length(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 

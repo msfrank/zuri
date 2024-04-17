@@ -8,7 +8,7 @@
 enum class StdTextTrap : uint32_t {
     TEXT_ALLOC,
     TEXT_CTOR,
-    TEXT_SIZE,
+    TEXT_LENGTH,
     TEXT_AT,
     TEXT_ITER,
     LAST_,

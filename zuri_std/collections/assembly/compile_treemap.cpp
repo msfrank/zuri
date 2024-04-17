@@ -136,7 +136,7 @@ build_std_collections_TreeMap(
         symbolCache->getSymbol(declareTreeMapClassResult.getResult()));
 
     {
-        auto declareMethodResult = TreeMapClass->declareMethod("size",
+        auto declareMethodResult = TreeMapClass->declareMethod("Size",
             {},
             {},
             {},
@@ -148,7 +148,7 @@ build_std_collections_TreeMap(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeMapClass->declareMethod("contains",
+        auto declareMethodResult = TreeMapClass->declareMethod("Contains",
             {
                 {{}, "key", "", KSpec, lyric_parser::BindingType::VALUE}
             },
@@ -162,7 +162,7 @@ build_std_collections_TreeMap(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeMapClass->declareMethod("get",
+        auto declareMethodResult = TreeMapClass->declareMethod("Get",
             {
                 {{}, "key", "", KSpec, lyric_parser::BindingType::VALUE}
             },
@@ -176,7 +176,7 @@ build_std_collections_TreeMap(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeMapClass->declareMethod("put",
+        auto declareMethodResult = TreeMapClass->declareMethod("Put",
             {
                 {{}, "key", "", KSpec, lyric_parser::BindingType::VALUE},
                 {{}, "value", "", VSpec, lyric_parser::BindingType::VALUE},
@@ -191,7 +191,7 @@ build_std_collections_TreeMap(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeMapClass->declareMethod("remove",
+        auto declareMethodResult = TreeMapClass->declareMethod("Remove",
             {
                 {{}, "key", "", KSpec, lyric_parser::BindingType::VALUE}
             },
@@ -205,7 +205,7 @@ build_std_collections_TreeMap(
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = TreeMapClass->declareMethod("clear",
+        auto declareMethodResult = TreeMapClass->declareMethod("Clear",
             {},
             {},
             {},
@@ -247,7 +247,7 @@ build_std_collections_TreeMap(
         auto *Tuple2class = cast_symbol_to_class(Tuple2sym);
         auto t0 = Tuple2class->getMember("t0").getValue();
         auto t1 = Tuple2class->getMember("t1").getValue();
-        auto putMethod = TreeMapClass->getMethod("put").getValue();
+        auto putMethod = TreeMapClass->getMethod("Put").getValue();
         auto *putSym = symbolCache->getSymbol(putMethod.methodCall);
         TU_ASSERT (putSym != nullptr && putSym->getSymbolType() == lyric_assembler::SymbolType::CALL);
         auto *putCall = cast_symbol_to_call(putSym);
