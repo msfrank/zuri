@@ -178,13 +178,13 @@ message(STATUS "full platform is ${FULL_PLATFORM}")
 # define individual version components and version string
 string(REGEX REPLACE "([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1"
     MAJOR_VERSION
-    "${PACKAGE_VERSION}")
+    "${ZURI_PACKAGE_VERSION}")
 string(REGEX REPLACE "[0-9]+\\.([0-9]+)\\.[0-9]+" "\\1"
     MINOR_VERSION
-    "${PACKAGE_VERSION}")
+    "${ZURI_PACKAGE_VERSION}")
 string(REGEX REPLACE "[0-9]+\\.[0-9]+\\.([0-9]+)" "\\1"
     PATCH_VERSION
-    "${PACKAGE_VERSION}")
+    "${ZURI_PACKAGE_VERSION}")
 set(FULL_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 message(STATUS "version is ${FULL_VERSION}")
 

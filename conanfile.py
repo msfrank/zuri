@@ -50,7 +50,7 @@ class Zuri(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
-        tc.variables['PACKAGE_VERSION'] = self.version
+        tc.variables['ZURI_PACKAGE_VERSION'] = self.version
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()
