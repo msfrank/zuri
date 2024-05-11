@@ -18,12 +18,10 @@ class Zuri(ConanFile):
 
     exports_sources = (
         'CMakeLists.txt',
+        'bin/*',
         'cmake/*',
-        'examples/*',
-        'resources/*',
-        'zuri/*',
-        'zuri_build/*',
-        'zuri_std/*',
+        'pkg/*',
+        'share/*',
         )
 
     requires = (

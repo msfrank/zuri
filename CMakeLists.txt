@@ -231,13 +231,9 @@ set(EMPTY_CPP "${CMAKE_BINARY_DIR}/empty.cpp")
 #
 #######################################################################
 
-add_subdirectory(resources)
-add_subdirectory(zuri)
-add_subdirectory(zuri_build)
-add_subdirectory(zuri_std)
-
-add_subdirectory(examples)
-#add_subdirectory(userguide)
+add_subdirectory(bin)
+add_subdirectory(pkg)
+add_subdirectory(share)
 
 #######################################################################
 #
