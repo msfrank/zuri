@@ -23,15 +23,15 @@ build_std_system_Operation(
         lyric_parser::Assignable::forSingular({"Record"}));
     if (resolveRecordResult.isStatus())
         return resolveRecordResult.getStatus();
-    auto *RecordStruct = static_cast<lyric_assembler::StructSymbol *>(
-        symbolCache->getSymbol(resolveRecordResult.getResult()));
+    auto *RecordStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(resolveRecordResult.getResult()).orElseThrow());
 
     auto declareOperationStructResult = block->declareStruct("Operation",
         RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Sealed, true);
     if (declareOperationStructResult.isStatus())
         return declareOperationStructResult.getStatus();
-    auto *OperationStruct = static_cast<lyric_assembler::StructSymbol *>(
-        symbolCache->getSymbol(declareOperationStructResult.getResult()));
+    auto *OperationStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(declareOperationStructResult.getResult()).orElseThrow());
 
     auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
     auto StringSpec = lyric_parser::Assignable::forSingular({"String"});
@@ -49,7 +49,7 @@ build_std_system_Operation(
             {},
             {},
             lyric_object::AccessType::Public);
-        auto *call = static_cast<lyric_assembler::CallSymbol *>(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
@@ -68,7 +68,7 @@ build_std_system_Operation(
         if (declareFunctionResult.isStatus())
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
         auto *createBlock = proc->procBlock();
@@ -76,7 +76,7 @@ build_std_system_Operation(
         auto resolveStructResult = createBlock->resolveStruct(AttrSpec);
         if (resolveStructResult.isStatus())
             return resolveStructResult.getStatus();
-        auto *AttrStruct = cast_symbol_to_struct(symbolCache->getSymbol(resolveStructResult.getResult()));
+        auto *AttrStruct = cast_symbol_to_struct(symbolCache->getOrImportSymbol(resolveStructResult.getResult()).orElseThrow());
         auto resolveCtorResult = AttrStruct->resolveCtor();
         if (resolveCtorResult.isStatus())
             return resolveCtorResult.getStatus();
@@ -112,8 +112,8 @@ build_std_system_AppendOperation(
         OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
     if (declareAppendOperationStructResult.isStatus())
         return declareAppendOperationStructResult.getStatus();
-    auto *AppendOperationStruct = static_cast<lyric_assembler::StructSymbol *>(
-        symbolCache->getSymbol(declareAppendOperationStructResult.getResult()));
+    auto *AppendOperationStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(declareAppendOperationStructResult.getResult()).orElseThrow());
 
     //
     OperationStruct->putSealedType(AppendOperationStruct->getAssignableType());
@@ -130,21 +130,22 @@ build_std_system_AppendOperation(
     if (declarePathMemberResult.isStatus())
         return declarePathMemberResult.getStatus();
     auto *PathField = cast_symbol_to_field(
-        symbolCache->getSymbol(declarePathMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declarePathMemberResult.getResult().symbolUrl).orElseThrow());
 
     // declare the "value" member
     auto declareValueMemberResult = AppendOperationStruct->declareMember("value", valueUnionSpec);
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
         if (!symbolCache->hasSymbol(superCtorUrl))
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing ctor for AppendOperation");
-        auto *superCtorSym = symbolCache->getSymbol(superCtorUrl);
+        lyric_assembler::AbstractSymbol *superCtorSym;
+        TU_ASSIGN_OR_RETURN (superCtorSym, symbolCache->getOrImportSymbol(superCtorUrl));
         if (superCtorSym->getSymbolType() != lyric_assembler::SymbolType::CALL)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid ctor for AppendOperation");
@@ -158,7 +159,7 @@ build_std_system_AppendOperation(
             {},
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdSystemTrap::APPEND_OPERATION_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         // call the super constructor
         code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
@@ -185,7 +186,7 @@ build_std_system_AppendOperation(
         if (declareFunctionResult.isStatus())
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
         auto *createBlock = proc->procBlock();
@@ -224,8 +225,8 @@ build_std_system_InsertOperation(
         OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
     if (declareInsertOperationStructResult.isStatus())
         return declareInsertOperationStructResult.getStatus();
-    auto *InsertOperationStruct = static_cast<lyric_assembler::StructSymbol *>(
-        symbolCache->getSymbol(declareInsertOperationStructResult.getResult()));
+    auto *InsertOperationStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(declareInsertOperationStructResult.getResult()).orElseThrow());
 
     //
     OperationStruct->putSealedType(InsertOperationStruct->getAssignableType());
@@ -243,28 +244,29 @@ build_std_system_InsertOperation(
     if (declarePathMemberResult.isStatus())
         return declarePathMemberResult.getStatus();
     auto *PathField = cast_symbol_to_field(
-        symbolCache->getSymbol(declarePathMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declarePathMemberResult.getResult().symbolUrl).orElseThrow());
 
     // declare the "index" member
     auto declareIndexMemberResult = InsertOperationStruct->declareMember("index", IntSpec);
     if (declareIndexMemberResult.isStatus())
         return declareIndexMemberResult.getStatus();
     auto *IndexField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareIndexMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareIndexMemberResult.getResult().symbolUrl).orElseThrow());
 
     // declare the "value" member
     auto declareValueMemberResult = InsertOperationStruct->declareMember("value", valueUnionSpec);
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
         if (!symbolCache->hasSymbol(superCtorUrl))
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing ctor for InsertOperation");
-        auto *superCtorSym = symbolCache->getSymbol(superCtorUrl);
+        lyric_assembler::AbstractSymbol *superCtorSym;
+        TU_ASSIGN_OR_RETURN (superCtorSym, symbolCache->getOrImportSymbol(superCtorUrl));
         if (superCtorSym->getSymbolType() != lyric_assembler::SymbolType::CALL)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid ctor for InsertOperation");
@@ -279,7 +281,7 @@ build_std_system_InsertOperation(
             {},
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdSystemTrap::INSERT_OPERATION_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         // call the super constructor
         code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
@@ -310,7 +312,7 @@ build_std_system_InsertOperation(
         if (declareFunctionResult.isStatus())
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
         auto *createBlock = proc->procBlock();
@@ -351,8 +353,8 @@ build_std_system_UpdateOperation(
         OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
     if (declareInsertOperationStructResult.isStatus())
         return declareInsertOperationStructResult.getStatus();
-    auto *InsertOperationStruct = static_cast<lyric_assembler::StructSymbol *>(
-        symbolCache->getSymbol(declareInsertOperationStructResult.getResult()));
+    auto *InsertOperationStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(declareInsertOperationStructResult.getResult()).orElseThrow());
 
     //
     OperationStruct->putSealedType(InsertOperationStruct->getAssignableType());
@@ -371,35 +373,36 @@ build_std_system_UpdateOperation(
     if (declarePathMemberResult.isStatus())
         return declarePathMemberResult.getStatus();
     auto *PathField = cast_symbol_to_field(
-        symbolCache->getSymbol(declarePathMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declarePathMemberResult.getResult().symbolUrl).orElseThrow());
 
     // declare the "ns" member
     auto declareNsMemberResult = InsertOperationStruct->declareMember("ns", UrlSpec);
     if (declareNsMemberResult.isStatus())
         return declareNsMemberResult.getStatus();
     auto *NsField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareNsMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareNsMemberResult.getResult().symbolUrl).orElseThrow());
 
     // declare the "id" member
     auto declareIdMemberResult = InsertOperationStruct->declareMember("id", IntSpec);
     if (declareIdMemberResult.isStatus())
         return declareIdMemberResult.getStatus();
     auto *IdField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareIdMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareIdMemberResult.getResult().symbolUrl).orElseThrow());
 
     // declare the "value" member
     auto declareValueMemberResult = InsertOperationStruct->declareMember("value", valueUnionSpec);
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
         if (!symbolCache->hasSymbol(superCtorUrl))
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing ctor for UpdateOperation");
-        auto *superCtorSym = symbolCache->getSymbol(superCtorUrl);
+        lyric_assembler::AbstractSymbol *superCtorSym;
+        TU_ASSIGN_OR_RETURN (superCtorSym, symbolCache->getOrImportSymbol(superCtorUrl));
         if (superCtorSym->getSymbolType() != lyric_assembler::SymbolType::CALL)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid ctor for UpdateOperation");
@@ -415,7 +418,7 @@ build_std_system_UpdateOperation(
             {},
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdSystemTrap::UPDATE_OPERATION_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         // call the super constructor
         code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
@@ -450,7 +453,7 @@ build_std_system_UpdateOperation(
         if (declareFunctionResult.isStatus())
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
         auto *createBlock = proc->procBlock();
@@ -494,8 +497,8 @@ build_std_system_ReplaceOperation(
         OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
     if (declareReplaceOperationStructResult.isStatus())
         return declareReplaceOperationStructResult.getStatus();
-    auto *ReplaceOperationStruct = static_cast<lyric_assembler::StructSymbol *>(
-        symbolCache->getSymbol(declareReplaceOperationStructResult.getResult()));
+    auto *ReplaceOperationStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(declareReplaceOperationStructResult.getResult()).orElseThrow());
 
     //
     OperationStruct->putSealedType(ReplaceOperationStruct->getAssignableType());
@@ -512,21 +515,22 @@ build_std_system_ReplaceOperation(
     if (declarePathMemberResult.isStatus())
         return declarePathMemberResult.getStatus();
     auto *PathField = cast_symbol_to_field(
-        symbolCache->getSymbol(declarePathMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declarePathMemberResult.getResult().symbolUrl).orElseThrow());
 
     // declare the "value" member
     auto declareValueMemberResult = ReplaceOperationStruct->declareMember("value", valueUnionSpec);
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
         if (!symbolCache->hasSymbol(superCtorUrl))
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing ctor for ReplaceOperation");
-        auto *superCtorSym = symbolCache->getSymbol(superCtorUrl);
+        lyric_assembler::AbstractSymbol *superCtorSym;
+        TU_ASSIGN_OR_RETURN (superCtorSym, symbolCache->getOrImportSymbol(superCtorUrl));
         if (superCtorSym->getSymbolType() != lyric_assembler::SymbolType::CALL)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid ctor for ReplaceOperation");
@@ -540,7 +544,7 @@ build_std_system_ReplaceOperation(
             {},
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdSystemTrap::REPLACE_OPERATION_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         // call the super constructor
         code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
@@ -567,7 +571,7 @@ build_std_system_ReplaceOperation(
         if (declareFunctionResult.isStatus())
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
         auto *createBlock = proc->procBlock();
@@ -606,8 +610,8 @@ build_std_system_EmitOperation(
         OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
     if (declareEmitOperationStructResult.isStatus())
         return declareEmitOperationStructResult.getStatus();
-    auto *EmitOperationStruct = static_cast<lyric_assembler::StructSymbol *>(
-        symbolCache->getSymbol(declareEmitOperationStructResult.getResult()));
+    auto *EmitOperationStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(declareEmitOperationStructResult.getResult()).orElseThrow());
 
     //
     OperationStruct->putSealedType(EmitOperationStruct->getAssignableType());
@@ -623,14 +627,15 @@ build_std_system_EmitOperation(
     if (declareValueMemberResult.isStatus())
         return declareValueMemberResult.getStatus();
     auto *IdField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueMemberResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
 
     {
         auto superCtorUrl = OperationStruct->getCtor();
         if (!symbolCache->hasSymbol(superCtorUrl))
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing ctor for EmitOperation");
-        auto *superCtorSym = symbolCache->getSymbol(superCtorUrl);
+        lyric_assembler::AbstractSymbol *superCtorSym;
+        TU_ASSIGN_OR_RETURN (superCtorSym, symbolCache->getOrImportSymbol(superCtorUrl));
         if (superCtorSym->getSymbolType() != lyric_assembler::SymbolType::CALL)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid ctor for EmitOperation");
@@ -643,7 +648,7 @@ build_std_system_EmitOperation(
             {},
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdSystemTrap::EMIT_OPERATION_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         // call the super constructor
         code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
@@ -666,7 +671,7 @@ build_std_system_EmitOperation(
         if (declareFunctionResult.isStatus())
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
         auto *createBlock = proc->procBlock();

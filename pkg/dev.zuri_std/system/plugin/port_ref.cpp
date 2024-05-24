@@ -575,7 +575,6 @@ struct ResolveData {
     lyric_runtime::DataCell ref;
 };
 
-
 static void
 on_resolve_patchset(
     lyric_runtime::Promise *promise,

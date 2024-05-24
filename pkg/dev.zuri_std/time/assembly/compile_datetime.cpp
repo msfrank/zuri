@@ -19,13 +19,15 @@ build_std_time_Datetime(
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Object"})));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     auto declareDatetimeClassResult = block->declareClass(
         "Datetime", ObjectClass, lyric_object::AccessType::Public, {});
     if (declareDatetimeClassResult.isStatus())
         return declareDatetimeClassResult.getStatus();
-    auto *DatetimeClass = cast_symbol_to_class(symbolCache->getSymbol(declareDatetimeClassResult.getResult()));
+    auto *DatetimeClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declareDatetimeClassResult.getResult()).orElseThrow());
 
     auto StringSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"String"}));
     auto IntSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Int"}));
@@ -42,7 +44,8 @@ build_std_time_Datetime(
             {},
             lyric_object::AccessType::Public,
             static_cast<tu_uint32>(StdTimeTrap::DATETIME_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(
+            symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<tu_uint32>(StdTimeTrap::DATETIME_CTOR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);

@@ -21,7 +21,8 @@ declare_std_collections_VectorIterator(
         lyric_parser::Assignable::forSingular({"Object"}));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     lyric_object::TemplateParameter TParam;
     TParam.name = "T";
@@ -34,7 +35,8 @@ declare_std_collections_VectorIterator(
         ObjectClass, lyric_object::AccessType::Public, {TParam});
     if (declareVectorIteratorClassResult.isStatus())
         return declareVectorIteratorClassResult.getStatus();
-    auto *VectorIteratorClass = cast_symbol_to_class(symbolCache->getSymbol(declareVectorIteratorClassResult.getResult()));
+    auto *VectorIteratorClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declareVectorIteratorClassResult.getResult()).orElseThrow());
     return VectorIteratorClass;
 }
 
@@ -62,7 +64,8 @@ build_std_collections_VectorIterator(
             {},
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ITERATOR_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(
+            symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
@@ -79,7 +82,7 @@ build_std_collections_VectorIterator(
             {},
             BoolSpec);
         auto extension = declareExtensionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(extension.methodCall));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(extension.methodCall).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ITERATOR_VALID));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -91,7 +94,7 @@ build_std_collections_VectorIterator(
             {},
             TSpec);
         auto extension = declareExtensionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(extension.methodCall));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(extension.methodCall).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ITERATOR_NEXT));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);

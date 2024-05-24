@@ -23,7 +23,8 @@ declare_std_collections_TreeSet(
         lyric_parser::Assignable::forSingular({"Object"}));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     lyric_object::TemplateParameter TParam;
     TParam.name = "T";
@@ -36,7 +37,8 @@ declare_std_collections_TreeSet(
         ObjectClass, lyric_object::AccessType::Public, {TParam});
     if (declareTreeSetClassResult.isStatus())
         return declareTreeSetClassResult.getStatus();
-    auto *TreeSetClass = cast_symbol_to_class(symbolCache->getSymbol(declareTreeSetClassResult.getResult()));
+    auto *TreeSetClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declareTreeSetClassResult.getResult()).orElseThrow());
     return TreeSetClass;
 }
 
@@ -89,7 +91,7 @@ build_std_collections_TreeSet(
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
 
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *block = call->callProc()->procBlock();
         tempo_utils::Status status;
 
@@ -103,7 +105,7 @@ build_std_collections_TreeSet(
             return status;
 
         // push Ordered concept descriptor onto the stack
-        auto *sym = symbolCache->getSymbol(orderedUrl);
+        auto *sym = symbolCache->getOrImportSymbol(orderedUrl).orElseThrow();
         if (sym == nullptr)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing Ordered concept");
@@ -158,7 +160,7 @@ build_std_collections_TreeSet(
             },
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdCollectionsTrap::TREESET_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
 
         // push $compare call descriptor onto the stack
@@ -176,7 +178,7 @@ build_std_collections_TreeSet(
             {},
             IntSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_SIZE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -190,7 +192,7 @@ build_std_collections_TreeSet(
             {},
             BoolSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_CONTAINS));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -204,7 +206,7 @@ build_std_collections_TreeSet(
             {},
             BoolSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_ADD));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -218,7 +220,7 @@ build_std_collections_TreeSet(
             {},
             BoolSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_REMOVE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -230,7 +232,7 @@ build_std_collections_TreeSet(
             {},
             NilSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_CLEAR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -248,7 +250,7 @@ build_std_collections_TreeSet(
             {},
             IteratorTSpec);
         auto extension = declareExtensionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(extension.methodCall));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(extension.methodCall).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->loadClass(TreeSetIteratorClass->getAddress());
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_ITERATE));

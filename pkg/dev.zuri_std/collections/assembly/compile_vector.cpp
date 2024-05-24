@@ -21,7 +21,8 @@ declare_std_collections_Vector(
         lyric_parser::Assignable::forSingular({"Object"}));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     lyric_object::TemplateParameter TParam;
     TParam.name = "T";
@@ -34,7 +35,8 @@ declare_std_collections_Vector(
         ObjectClass, lyric_object::AccessType::Public, {TParam});
     if (declareVectorClassResult.isStatus())
         return declareVectorClassResult.getStatus();
-    auto *VectorClass = cast_symbol_to_class(symbolCache->getSymbol(declareVectorClassResult.getResult()));
+    auto *VectorClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declareVectorClassResult.getResult()).orElseThrow());
     return VectorClass;
 }
 
@@ -65,7 +67,7 @@ build_std_collections_Vector(
             {},
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_CTOR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -77,7 +79,7 @@ build_std_collections_Vector(
             {},
             IntSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_SIZE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -91,7 +93,7 @@ build_std_collections_Vector(
             {},
             TSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_AT));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -106,7 +108,7 @@ build_std_collections_Vector(
             {},
             NilSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_INSERT));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -120,7 +122,7 @@ build_std_collections_Vector(
             {},
             NilSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_APPEND));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -135,7 +137,7 @@ build_std_collections_Vector(
             {},
             TSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_UPDATE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -149,7 +151,7 @@ build_std_collections_Vector(
             {},
             TSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_REMOVE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -161,7 +163,7 @@ build_std_collections_Vector(
             {},
             NilSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_CLEAR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -179,7 +181,7 @@ build_std_collections_Vector(
             {},
             IteratorTSpec);
         auto extension = declareExtensionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(extension.methodCall));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(extension.methodCall).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->loadClass(VectorIteratorClass->getAddress());
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ITERATE));

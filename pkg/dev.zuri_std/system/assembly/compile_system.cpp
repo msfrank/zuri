@@ -44,7 +44,7 @@ build_std_system(
             lyric_object::AccessType::Public,
             {});
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::ACQUIRE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -68,7 +68,7 @@ build_std_system(
                 }
             });
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *code = call->callProc()->procCode();
 
         // after the await trap completes the current coro may have been suspended
@@ -100,7 +100,7 @@ build_std_system(
                 }
             });
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
 
@@ -121,7 +121,8 @@ build_std_system(
 
         // get the type handle for Status and push the Status type onto the top of the stack
         auto statusType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Status);
-        auto *statusTypeHandle = typeCache->getType(statusType);
+        lyric_assembler::TypeHandle *statusTypeHandle;
+        TU_ASSIGN_OR_RETURN (statusTypeHandle, typeCache->getOrMakeType(statusType));
         TU_ASSERT (statusTypeHandle != nullptr);
         statusTypeHandle->touch();
         TU_RETURN_IF_NOT_OK (code->loadType(statusTypeHandle->getAddress()));
@@ -163,7 +164,7 @@ build_std_system(
             lyric_object::AccessType::Public,
             {});
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::SLEEP));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -192,7 +193,7 @@ build_std_system(
                 }
             });
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::SPAWN));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);

@@ -19,13 +19,15 @@ build_std_time_Timezone(
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Object"})));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     auto declareTimezoneClassResult = block->declareClass(
         "Timezone", ObjectClass, lyric_object::AccessType::Public, {});
     if (declareTimezoneClassResult.isStatus())
         return declareTimezoneClassResult.getStatus();
-    auto *TimezoneClass = cast_symbol_to_class(symbolCache->getSymbol(declareTimezoneClassResult.getResult()));
+    auto *TimezoneClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declareTimezoneClassResult.getResult()).orElseThrow());
 
     auto StringSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"String"}));
     auto IntSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Int"}));
@@ -39,7 +41,8 @@ build_std_time_Timezone(
             {},
             lyric_object::AccessType::Public,
             static_cast<tu_uint32>(StdTimeTrap::TIMEZONE_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(
+            symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<tu_uint32>(StdTimeTrap::TIMEZONE_CTOR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);

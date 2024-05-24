@@ -24,7 +24,8 @@ build_std_collections_HashMap(
         lyric_parser::Assignable::forSingular({"Object"}));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     auto KSpec = lyric_parser::Assignable::forSingular({"K"});
     auto VSpec = lyric_parser::Assignable::forSingular({"V"});
@@ -72,7 +73,7 @@ build_std_collections_HashMap(
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
 
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *block = call->callProc()->procBlock();
         tempo_utils::Status status;
 
@@ -86,7 +87,7 @@ build_std_collections_HashMap(
             return status;
 
         // push Ordered concept descriptor onto the stack
-        auto *sym = symbolCache->getSymbol(equalityUrl);
+        auto *sym = symbolCache->getOrImportSymbol(equalityUrl).orElseThrow();
         if (sym == nullptr)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing Equality concept");
@@ -134,7 +135,8 @@ build_std_collections_HashMap(
         {KParam, VParam});
     if (declareHashMapClassResult.isStatus())
         return declareHashMapClassResult.getStatus();
-    auto *HashMapClass = cast_symbol_to_class(symbolCache->getSymbol(declareHashMapClassResult.getResult()));
+    auto *HashMapClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declareHashMapClassResult.getResult()).orElseThrow());
 
     {
         auto declareMethodResult = HashMapClass->declareMethod("Size",
@@ -143,7 +145,7 @@ build_std_collections_HashMap(
             {},
             IntSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_SIZE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -157,7 +159,7 @@ build_std_collections_HashMap(
             {},
             BoolSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_CONTAINS));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -171,7 +173,7 @@ build_std_collections_HashMap(
             {},
             VSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_GET));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -186,7 +188,7 @@ build_std_collections_HashMap(
             {},
             VSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_PUT));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -200,7 +202,7 @@ build_std_collections_HashMap(
             {},
             VSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_REMOVE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -212,7 +214,7 @@ build_std_collections_HashMap(
             {},
             NilSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_CLEAR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -230,7 +232,7 @@ build_std_collections_HashMap(
             },
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
 
@@ -243,13 +245,13 @@ build_std_collections_HashMap(
 
         auto *procBlock = proc->procBlock();
         auto IntType = procBlock->resolveAssignable(IntSpec).orElseThrow();
-        auto *Tuple2sym = symbolCache->getSymbol(fundamentalCache->getTupleUrl(2));
+        auto *Tuple2sym = symbolCache->getOrImportSymbol(fundamentalCache->getTupleUrl(2)).orElseThrow();
         TU_ASSERT (Tuple2sym != nullptr && Tuple2sym->getSymbolType() == lyric_assembler::SymbolType::CLASS);
         auto *Tuple2class = cast_symbol_to_class(Tuple2sym);
         auto t0 = Tuple2class->getMember("t0").getValue();
         auto t1 = Tuple2class->getMember("t1").getValue();
         auto putMethod = HashMapClass->getMethod("Put").getValue();
-        auto *putSym = symbolCache->getSymbol(putMethod.methodCall);
+        auto *putSym = symbolCache->getOrImportSymbol(putMethod.methodCall).orElseThrow();
         TU_ASSERT (putSym != nullptr && putSym->getSymbolType() == lyric_assembler::SymbolType::CALL);
         auto *putCall = cast_symbol_to_call(putSym);
         auto putAddress = putCall->getAddress();

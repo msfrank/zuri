@@ -20,8 +20,8 @@ build_std_system_Port(
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Object"})));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = static_cast<lyric_assembler::ClassSymbol *>(
-        symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     auto declarePortClassResult = block->declareClass("Port",
         ObjectClass,
@@ -31,8 +31,8 @@ build_std_system_Port(
         true);
     if (declarePortClassResult.isStatus())
         return declarePortClassResult.getStatus();
-    auto *PortClass = static_cast<lyric_assembler::ClassSymbol *>(
-        symbolCache->getSymbol(declarePortClassResult.getResult()));
+    auto *PortClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declarePortClassResult.getResult()).orElseThrow());
 
     auto OperationSpec = lyric_parser::Assignable::fromTypeDef(OperationStruct->getAssignableType());
     auto FutureOfOperationSpec = lyric_parser::Assignable::forSingular(
@@ -45,7 +45,7 @@ build_std_system_Port(
             {},
             {},
             lyric_object::AccessType::Private);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
@@ -58,7 +58,7 @@ build_std_system_Port(
             {},
             BoolSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::PORT_SEND));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -70,7 +70,7 @@ build_std_system_Port(
             {},
             FutureOfOperationSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::PORT_RECEIVE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);

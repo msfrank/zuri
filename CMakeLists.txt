@@ -188,6 +188,15 @@ string(REGEX REPLACE "[0-9]+\\.[0-9]+\\.([0-9]+)" "\\1"
 set(FULL_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 message(STATUS "version is ${FULL_VERSION}")
 
+# zuri package group
+set(ZURI_PACKAGE_GROUP                      "dev.zuri")
+
+# zuri std package
+set(ZURI_STD_PACKAGE_NAME                   "std")
+set(ZURI_STD_PACKAGE_VERSION                "${FULL_VERSION}")
+set(ZURI_STD_PACKAGE_AUTHORITY              "${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}@zuri.dev")
+set(ZURI_STD_PACKAGE_URL                    "dev.zuri.pkg://${ZURI_STD_PACKAGE_AUTHORITY}")
+
 # special directory names
 set(ZURI_PACKAGES_DIR_NAME                  "zuri-packages-${MAJOR_VERSION}")
 
@@ -208,16 +217,6 @@ set(ZURI_RUNTIME_DISTRIBUTION_ROOT          "${CMAKE_INSTALL_PREFIX}")
 set(ZURI_RUNTIME_PACKAGES_DIR               "${CMAKE_INSTALL_PREFIX}/${PACKAGES_DIR_PREFIX}")
 set(ZURI_RUNTIME_CONFIG_DIR                 "${CMAKE_INSTALL_PREFIX}/${CONFIG_DIR_PREFIX}")
 set(ZURI_RUNTIME_VENDOR_CONFIG_DIR          "${CMAKE_INSTALL_PREFIX}/${VENDOR_CONFIG_DIR_PREFIX}")
-
-#
-
-set(ZURI_STD_PACKAGE_GROUP                  "dev.zuri")
-set(ZURI_STD_PACKAGE_NAME                   "std")
-set(ZURI_STD_PACKAGE_VERSION                "${FULL_VERSION}")
-
-set(ZURI_DEV_DOMAIN_NAME                    "zuri.dev")
-set(ZURI_STD_PACKAGE_AUTHORITY              "${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}@${ZURI_DEV_DOMAIN_NAME}")
-set(ZURI_STD_PACKAGE_URL                    "dev.zuri.pkg://${ZURI_STD_PACKAGE_AUTHORITY}")
 
 # used to initialize tester
 set(TESTER_CONFIG_PATH                      "${CMAKE_BINARY_DIR}/zuri_std/tester.config")

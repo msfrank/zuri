@@ -19,13 +19,15 @@ build_std_text_Text(
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Object"})));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     auto declareTextClassResult = block->declareClass(
         "Text", ObjectClass, lyric_object::AccessType::Public, {});
     if (declareTextClassResult.isStatus())
         return declareTextClassResult.getStatus();
-    auto *TextClass = cast_symbol_to_class(symbolCache->getSymbol(declareTextClassResult.getResult()));
+    auto *TextClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declareTextClassResult.getResult()).orElseThrow());
 
     auto StringSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"String"}));
     auto IntSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Int"}));
@@ -40,7 +42,8 @@ build_std_text_Text(
             {},
             lyric_object::AccessType::Public,
             static_cast<tu_uint32>(StdTextTrap::TEXT_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(
+            symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_CTOR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -52,7 +55,8 @@ build_std_text_Text(
             {},
             IntSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(
+            symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_LENGTH));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -66,7 +70,8 @@ build_std_text_Text(
             {},
             CharSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(
+            symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_AT));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);

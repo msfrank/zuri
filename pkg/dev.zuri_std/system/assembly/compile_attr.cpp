@@ -22,14 +22,14 @@ declare_std_system_Attr(
     if (resolveRecordResult.isStatus())
         return resolveRecordResult.getStatus();
     auto *RecordStruct = cast_symbol_to_struct(
-        symbolCache->getSymbol(resolveRecordResult.getResult()));
+        symbolCache->getOrImportSymbol(resolveRecordResult.getResult()).orElseThrow());
 
     auto declareAttrStructResult = block->declareStruct("Attr",
         RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Any);
     if (declareAttrStructResult.isStatus())
         return declareAttrStructResult.getStatus();
     auto *AttrStruct = cast_symbol_to_struct(
-        symbolCache->getSymbol(declareAttrStructResult.getResult()));
+        symbolCache->getOrImportSymbol(declareAttrStructResult.getResult()).orElseThrow());
     return AttrStruct;
 }
 
@@ -52,19 +52,19 @@ build_std_system_Attr(
     if (declareNsResult.isStatus())
         return declareNsResult.getStatus();
     auto *NsField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareNsResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareNsResult.getResult().symbolUrl).orElseThrow());
 
     auto declareIdResult = AttrStruct->declareMember("id", IntSpec);
     if (declareIdResult.isStatus())
         return declareIdResult.getStatus();
     auto *IdField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareIdResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareIdResult.getResult().symbolUrl).orElseThrow());
 
     auto declareValueResult = AttrStruct->declareMember("value", ValueSpec);
     if (declareValueResult.isStatus())
         return declareValueResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
-        symbolCache->getSymbol(declareValueResult.getResult().symbolUrl));
+        symbolCache->getOrImportSymbol(declareValueResult.getResult().symbolUrl).orElseThrow());
 
     {
         auto *SuperStruct = AttrStruct->superStruct();
@@ -72,7 +72,7 @@ build_std_system_Attr(
         if (!symbolCache->hasSymbol(superCtorUrl))
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing ctor for Record");
-        auto *superCtorSym = symbolCache->getSymbol(superCtorUrl);
+        auto *superCtorSym = symbolCache->getOrImportSymbol(superCtorUrl).orElseThrow();
         if (superCtorSym->getSymbolType() != lyric_assembler::SymbolType::CALL)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid ctor for Record");
@@ -88,7 +88,7 @@ build_std_system_Attr(
             {},
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdSystemTrap::ATTR_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         // call the super constructor
         code->loadSynthetic(lyric_assembler::SyntheticType::THIS);

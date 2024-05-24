@@ -22,13 +22,15 @@ declare_std_system_Element(
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Record"})));
     if (resolveRecordResult.isStatus())
         return resolveRecordResult.getStatus();
-    auto *RecordStruct = cast_symbol_to_struct(symbolCache->getSymbol(resolveRecordResult.getResult()));
+    auto *RecordStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(resolveRecordResult.getResult()).orElseThrow());
 
     auto declareElementStructResult = block->declareStruct("Element",
         RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Any);
     if (declareElementStructResult.isStatus())
         return declareElementStructResult.getStatus();
-    auto *ElementStruct = cast_symbol_to_struct(symbolCache->getSymbol(declareElementStructResult.getResult()));
+    auto *ElementStruct = cast_symbol_to_struct(
+        symbolCache->getOrImportSymbol(declareElementStructResult.getResult()).orElseThrow());
     return ElementStruct;
 }
 
@@ -55,14 +57,14 @@ build_std_system_Element(
     auto declareNsResult = ElementStruct->declareMember("ns", UrlSpec);
     if (declareNsResult.isStatus())
         return declareNsResult.getStatus();
-    auto *NsField = static_cast<lyric_assembler::FieldSymbol *>(
-        symbolCache->getSymbol(declareNsResult.getResult().symbolUrl));
+    auto *NsField = cast_symbol_to_field(
+        symbolCache->getOrImportSymbol(declareNsResult.getResult().symbolUrl).orElseThrow());
 
     auto declareIdResult = ElementStruct->declareMember("id", IntSpec);
     if (declareIdResult.isStatus())
         return declareIdResult.getStatus();
-    auto *IdField = static_cast<lyric_assembler::FieldSymbol *>(
-        symbolCache->getSymbol(declareIdResult.getResult().symbolUrl));
+    auto *IdField = cast_symbol_to_field(
+        symbolCache->getOrImportSymbol(declareIdResult.getResult().symbolUrl).orElseThrow());
 
     {
         auto *SuperStruct = ElementStruct->superStruct();
@@ -70,7 +72,7 @@ build_std_system_Element(
         if (!symbolCache->hasSymbol(superCtorUrl))
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing ctor for Element");
-        auto *superCtorSym = symbolCache->getSymbol(superCtorUrl);
+        auto *superCtorSym = symbolCache->getOrImportSymbol(superCtorUrl).orElseThrow();
         if (superCtorSym->getSymbolType() != lyric_assembler::SymbolType::CALL)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid ctor for Element");
@@ -85,7 +87,7 @@ build_std_system_Element(
             Option<lyric_assembler::ParameterSpec>({{}, "children", "", ValueSpec, lyric_parser::BindingType::VALUE}),
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdSystemTrap::ELEMENT_ALLOC));
-        auto *call = static_cast<lyric_assembler::CallSymbol *>(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
 
         // call the super constructor
@@ -110,7 +112,7 @@ build_std_system_Element(
             {},
             {},
             IntSpec);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<tu_uint32>(StdSystemTrap::ELEMENT_SIZE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -124,7 +126,7 @@ build_std_system_Element(
             {},
             {},
             ValueSpec);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::ELEMENT_GET_OR_ELSE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);

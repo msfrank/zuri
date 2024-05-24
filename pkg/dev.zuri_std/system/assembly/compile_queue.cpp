@@ -21,8 +21,8 @@ build_std_system_Queue(
         lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Object"})));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = static_cast<lyric_assembler::ClassSymbol *>(
-        symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     lyric_object::TemplateParameter TParam;
     TParam.name = "T";
@@ -35,8 +35,8 @@ build_std_system_Queue(
         ObjectClass, lyric_object::AccessType::Public, {TParam});
     if (declareQueueClassResult.isStatus())
         return declareQueueClassResult.getStatus();
-    auto *QueueClass = static_cast<lyric_assembler::ClassSymbol *>(
-        symbolCache->getSymbol(declareQueueClassResult.getResult()));
+    auto *QueueClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(declareQueueClassResult.getResult()).orElseThrow());
 
     auto TSpec = lyric_parser::Assignable::forSingular({"T"});
     auto FutureTSpec = lyric_parser::Assignable::forSingular(
@@ -50,7 +50,7 @@ build_std_system_Queue(
             {},
             lyric_object::AccessType::Public,
             static_cast<tu_uint32>(StdSystemTrap::QUEUE_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
@@ -63,7 +63,7 @@ build_std_system_Queue(
             {},
             BoolSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::QUEUE_PUSH));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -75,7 +75,7 @@ build_std_system_Queue(
             {},
             FutureTSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdSystemTrap::QUEUE_POP));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);

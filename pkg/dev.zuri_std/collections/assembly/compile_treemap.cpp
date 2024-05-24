@@ -24,7 +24,8 @@ build_std_collections_TreeMap(
         lyric_parser::Assignable::forSingular({"Object"}));
     if (resolveObjectResult.isStatus())
         return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(symbolCache->getSymbol(resolveObjectResult.getResult()));
+    auto *ObjectClass = cast_symbol_to_class(
+        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
     auto KSpec = lyric_parser::Assignable::forSingular({"K"});
     auto VSpec = lyric_parser::Assignable::forSingular({"V"});
@@ -71,7 +72,7 @@ build_std_collections_TreeMap(
             return declareFunctionResult.getStatus();
         auto functionUrl = declareFunctionResult.getResult();
 
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *block = call->callProc()->procBlock();
         tempo_utils::Status status;
 
@@ -85,7 +86,7 @@ build_std_collections_TreeMap(
             return status;
 
         // push Ordered concept descriptor onto the stack
-        auto *sym = symbolCache->getSymbol(orderedUrl);
+        auto *sym = symbolCache->getOrImportSymbol(orderedUrl).orElseThrow();
         if (sym == nullptr)
             return lyric_assembler::AssemblerStatus::forCondition(
                 lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing Ordered concept");
@@ -133,7 +134,7 @@ build_std_collections_TreeMap(
     if (declareTreeMapClassResult.isStatus())
         return declareTreeMapClassResult.getStatus();
     auto *TreeMapClass = cast_symbol_to_class(
-        symbolCache->getSymbol(declareTreeMapClassResult.getResult()));
+        symbolCache->getOrImportSymbol(declareTreeMapClassResult.getResult()).orElseThrow());
 
     {
         auto declareMethodResult = TreeMapClass->declareMethod("Size",
@@ -142,7 +143,7 @@ build_std_collections_TreeMap(
             {},
             IntSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREEMAP_SIZE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -156,7 +157,7 @@ build_std_collections_TreeMap(
             {},
             BoolSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREEMAP_CONTAINS));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -170,7 +171,7 @@ build_std_collections_TreeMap(
             {},
             VSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREEMAP_GET));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -185,7 +186,7 @@ build_std_collections_TreeMap(
             {},
             VSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREEMAP_PUT));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -199,7 +200,7 @@ build_std_collections_TreeMap(
             {},
             VSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREEMAP_REMOVE));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -211,7 +212,7 @@ build_std_collections_TreeMap(
             {},
             NilSpec,
             lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareMethodResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREEMAP_CLEAR));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
@@ -229,7 +230,7 @@ build_std_collections_TreeMap(
             },
             lyric_object::AccessType::Public,
             static_cast<uint32_t>(StdCollectionsTrap::TREEMAP_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(declareCtorResult.getResult()));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
         auto *proc = call->callProc();
         auto *code = proc->procCode();
 
@@ -242,13 +243,13 @@ build_std_collections_TreeMap(
 
         auto *procBlock = proc->procBlock();
         auto IntType = procBlock->resolveAssignable(IntSpec).orElseThrow();
-        auto *Tuple2sym = symbolCache->getSymbol(fundamentalCache->getTupleUrl(2));
+        auto *Tuple2sym = symbolCache->getOrImportSymbol(fundamentalCache->getTupleUrl(2)).orElseThrow();
         TU_ASSERT (Tuple2sym != nullptr && Tuple2sym->getSymbolType() == lyric_assembler::SymbolType::CLASS);
         auto *Tuple2class = cast_symbol_to_class(Tuple2sym);
         auto t0 = Tuple2class->getMember("t0").getValue();
         auto t1 = Tuple2class->getMember("t1").getValue();
         auto putMethod = TreeMapClass->getMethod("Put").getValue();
-        auto *putSym = symbolCache->getSymbol(putMethod.methodCall);
+        auto *putSym = symbolCache->getOrImportSymbol(putMethod.methodCall).orElseThrow();
         TU_ASSERT (putSym != nullptr && putSym->getSymbolType() == lyric_assembler::SymbolType::CALL);
         auto *putCall = cast_symbol_to_call(putSym);
         auto putAddress = putCall->getAddress();

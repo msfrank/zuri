@@ -26,7 +26,7 @@ build_std_log(
             lyric_object::AccessType::Public,
             {});
         auto functionUrl = declareFunctionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getSymbol(functionUrl));
+        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
         auto *code = call->callProc()->procCode();
         code->trap(static_cast<uint32_t>(StdLogTrap::LOG));
         code->writeOpcode(lyric_object::Opcode::OP_RETURN);
