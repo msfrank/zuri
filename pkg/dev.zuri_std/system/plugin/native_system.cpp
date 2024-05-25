@@ -75,6 +75,17 @@ NativeStdSystem::getTrap(uint32_t index) const
     TU_UNREACHABLE();
 }
 
+bool
+NativeStdSystem::load(lyric_runtime::BytecodeSegment *segment) const
+{
+    return true;
+}
+
+void
+NativeStdSystem::unload() const
+{
+}
+
 uint32_t
 NativeStdSystem::numTraps() const
 {

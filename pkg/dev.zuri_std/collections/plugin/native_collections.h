@@ -9,6 +9,8 @@ class NativeStdCollections : public lyric_runtime::NativeInterface {
 
 public:
     NativeStdCollections() = default;
+    bool load(lyric_runtime::BytecodeSegment *segment) const override;
+    void unload() const override;
     lyric_runtime::NativeFunc getTrap(uint32_t index) const override;
     uint32_t numTraps() const override;
 };
