@@ -45,5 +45,5 @@ build_std_collections_Option(
 
     TU_RAISE_IF_STATUS(compileOptionResult);
 
-    return lyric_assembler::AssemblerStatus::ok();
+    return {};
 }

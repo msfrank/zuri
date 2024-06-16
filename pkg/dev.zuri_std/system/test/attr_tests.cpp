@@ -24,7 +24,7 @@ TEST_F(StdSystemAttr, EvaluateAttrWithIntrinsicValue) {
         lyric_packaging::PackageSpecifier("test", "localhost", 0, 0, 0),
         R"(
         import from "//std/system" ...
-        val attr: Attr = Attr{ns = `test`, id = 1, 42}
+        val attr: Attr = Attr{`test`, 1, 42}
         attr.value
         )",
         options);

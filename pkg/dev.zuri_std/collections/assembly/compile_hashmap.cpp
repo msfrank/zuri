@@ -4,8 +4,11 @@
 #include <lyric_assembler/class_symbol.h>
 #include <lyric_assembler/concept_symbol.h>
 #include <lyric_assembler/fundamental_cache.h>
+#include <lyric_assembler/pack_builder.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
+#include <lyric_assembler/template_handle.h>
+#include <lyric_assembler/type_cache.h>
 #include <lyric_typing/callsite_reifier.h>
 #include <zuri_std_collections/lib_types.h>
 
@@ -19,6 +22,7 @@ build_std_collections_HashMap(
 {
     auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
+    auto *typeCache = state.typeCache();
 
     auto resolveObjectResult = parentBlock->resolveClass(
         lyric_parser::Assignable::forSingular({"Object"}));
@@ -27,16 +31,9 @@ build_std_collections_HashMap(
     auto *ObjectClass = cast_symbol_to_class(
         symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
 
-    auto KSpec = lyric_parser::Assignable::forSingular({"K"});
-    auto VSpec = lyric_parser::Assignable::forSingular({"V"});
-    auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
-    auto BoolSpec = lyric_parser::Assignable::forSingular({"Bool"});
-    auto NilSpec = lyric_parser::Assignable::forSingular({"Nil"});
-    auto KVTuple2Spec = lyric_parser::Assignable::forSingular({"Tuple2"}, {KSpec, VSpec});
-    auto EqualityKSpec = lyric_parser::Assignable::forSingular({"Equality"}, {
-        lyric_parser::Assignable::forSingular({"K"}),
-        lyric_parser::Assignable::forSingular({"K"})});
-    auto equalityUrl = fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Equality);
+    auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
+    auto BoolType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Bool);
+    auto NilType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Nil);
 
     lyric_object::TemplateParameter KParam;
     KParam.name = "K";
@@ -52,82 +49,59 @@ build_std_collections_HashMap(
     VParam.bound = lyric_object::BoundType::None;
     VParam.variance = lyric_object::VarianceType::Covariant;
 
+    auto equalityUrl = fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Equality);
+
     lyric_assembler::CallAddress equalsAddress;
     {
-        auto declareFunctionResult = parentBlock->declareFunction("HashMap.$equals",
-            {
-                {{}, "x1", "", KSpec, lyric_parser::BindingType::VALUE},
-                {{}, "x2", "", KSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {
-                {{},  "eq", "", EqualityKSpec, lyric_parser::BindingType::VALUE},
-            },
-            IntSpec,
-            lyric_object::AccessType::Public,
-            {
-                KParam,
-            });
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, parentBlock->declareFunction(
+            "HashMap.$equals", lyric_object::AccessType::Public, {KParam}));
+        auto *templateHandle = callSymbol->callTemplate();
+        auto KType = templateHandle->getPlaceholder("K");
+        lyric_assembler::TypeHandle *equalityKHandle;
+        TU_ASSIGN_OR_RETURN (equalityKHandle, typeCache->declareParameterizedType(equalityUrl, {KType, KType}));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("x1", "", KType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("x2", "", KType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendCtxParameter("eq", "", equalityKHandle->getTypeDef()));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, IntType));
+        auto *block = procHandle->procBlock();
 
-        if (declareFunctionResult.isStatus())
-            return declareFunctionResult.getStatus();
-        auto functionUrl = declareFunctionResult.getResult();
+        // push eq receiver onto the stack
+        lyric_assembler::DataReference eq;
+        TU_ASSIGN_OR_RETURN (eq, block->resolveReference("eq"));
+        TU_RETURN_IF_NOT_OK (block->load(eq));
 
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
-        auto *block = call->callProc()->procBlock();
-        tempo_utils::Status status;
-
-        // push ord receiver onto the stack
-        auto eqResult = block->resolveReference("eq");
-        if (eqResult.isStatus())
-            return eqResult.getStatus();
-        auto eq = eqResult.getResult();
-        status = block->load(eq);
-        if (!status.isOk())
-            return status;
-
-        // push Ordered concept descriptor onto the stack
-        auto *sym = symbolCache->getOrImportSymbol(equalityUrl).orElseThrow();
-        if (sym == nullptr)
-            return lyric_assembler::AssemblerStatus::forCondition(
-                lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing Equality concept");
-        if (sym->getSymbolType() != lyric_assembler::SymbolType::CONCEPT)
-            return lyric_assembler::AssemblerStatus::forCondition(
-                lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid Equality concept");
+        // push Equality concept descriptor onto the stack
+        lyric_assembler::AbstractSymbol *sym;
+        TU_ASSIGN_OR_RETURN (sym, symbolCache->getOrImportSymbol(equalityUrl));
         auto *equalitySymbol = cast_symbol_to_concept(sym);
-        auto resolveEqualsResult = equalitySymbol->resolveAction("equals", eq.typeDef);
-        if (resolveEqualsResult.isStatus())
-            return resolveEqualsResult.getStatus();
-        auto equals = resolveEqualsResult.getResult();
+        lyric_assembler::CallableInvoker invoker;
+        TU_RETURN_IF_NOT_OK (equalitySymbol->prepareAction("equals", eq.typeDef, invoker));
 
-        auto callsiteTypeArguments = eq.typeDef.getConcreteArguments();
-        lyric_typing::CallsiteReifier reifier(equals.getParameters(), equals.getRest(),
-            equals.getTemplateUrl(), equals.getTemplateParameters(),
-            std::vector<lyric_common::TypeDef>(callsiteTypeArguments.begin(), callsiteTypeArguments.end()),
-            typeSystem);
-        TU_RETURN_IF_NOT_OK (reifier.initialize());
+        auto eqTypeArguments = eq.typeDef.getConcreteArguments();
+        std::vector<lyric_common::TypeDef> callsiteTypeArguments(eqTypeArguments.begin(), eqTypeArguments.end());
+        lyric_typing::CallsiteReifier reifier(typeSystem);
+        TU_RETURN_IF_NOT_OK (reifier.initialize(invoker, callsiteTypeArguments));
 
         // push x1 and x2 onto the stack
-        auto x1Result = block->resolveReference("x1");
-        if (x1Result.isStatus())
-            return x1Result.getStatus();
-        auto x1 = x1Result.getResult();
+        lyric_assembler::DataReference x1;
+        TU_ASSIGN_OR_RETURN (x1, block->resolveReference("x1"));
         TU_RETURN_IF_NOT_OK (block->load(x1));
         TU_RETURN_IF_NOT_OK (reifier.reifyNextArgument(x1.typeDef));
 
-        auto x2Result = block->resolveReference("x2");
-        if (x2Result.isStatus())
-            return x2Result.getStatus();
-        auto x2 = x2Result.getResult();
+        lyric_assembler::DataReference x2;
+        TU_ASSIGN_OR_RETURN (x2, block->resolveReference("x2"));
         TU_RETURN_IF_NOT_OK (block->load(x2));
         TU_RETURN_IF_NOT_OK (reifier.reifyNextArgument(x2.typeDef));
 
         // return result of eq.equals()
-        auto invokeEqualsResult = equals.invoke(block, reifier);
-        if (invokeEqualsResult.isStatus())
-            return invokeEqualsResult.getStatus();
+        TU_RETURN_IF_STATUS (invoker.invoke(block, reifier));
 
-        equalsAddress = call->getAddress();
+        equalsAddress = callSymbol->getAddress();
     }
 
     auto declareHashMapClassResult = parentBlock->declareClass(
@@ -138,113 +112,117 @@ build_std_collections_HashMap(
     auto *HashMapClass = cast_symbol_to_class(
         symbolCache->getOrImportSymbol(declareHashMapClassResult.getResult()).orElseThrow());
 
-    {
-        auto declareMethodResult = HashMapClass->declareMethod("Size",
-            {},
-            {},
-            {},
-            IntSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_SIZE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = HashMapClass->declareMethod("Contains",
-            {
-                {{},"key", "", KSpec, lyric_parser::BindingType::VALUE}
-            },
-            {},
-            {},
-            BoolSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_CONTAINS));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = HashMapClass->declareMethod("Get",
-            {
-                {{},"key", "", KSpec, lyric_parser::BindingType::VALUE}
-            },
-            {},
-            {},
-            VSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_GET));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = HashMapClass->declareMethod("Put",
-            {
-                {{},"key", "", KSpec, lyric_parser::BindingType::VALUE},
-                {{},"value", "", VSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            VSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_PUT));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = HashMapClass->declareMethod("Remove",
-            {
-                {{},"key", "", KSpec, lyric_parser::BindingType::VALUE}
-            },
-            {},
-            {},
-            VSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_REMOVE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = HashMapClass->declareMethod("Clear",
-            {},
-            {},
-            {},
-            NilSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_CLEAR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        lyric_assembler::ParameterSpec restSpec;
-        restSpec.type = KVTuple2Spec;
-        restSpec.binding = lyric_parser::BindingType::VALUE;
-        restSpec.name = {};
-        auto declareCtorResult = HashMapClass->declareCtor(
-            {},
-            Option<lyric_assembler::ParameterSpec>(restSpec),
-            {
-                {{}, "eq", "", EqualityKSpec, lyric_parser::BindingType::VALUE}
-            },
-            lyric_object::AccessType::Public,
-            static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
-        auto *proc = call->callProc();
-        auto *code = proc->procCode();
+    auto *templateHandle = HashMapClass->classTemplate();
+    auto KType = templateHandle->getPlaceholder("K");
+    auto VType = templateHandle->getPlaceholder("V");
 
-        // push $compare call descriptor onto the stack
-        auto status = code->loadCall(equalsAddress);
+    lyric_assembler::TypeHandle *tuple2KVHandle;
+    TU_ASSIGN_OR_RETURN (tuple2KVHandle, typeCache->declareParameterizedType(
+        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Tuple2), {KType, VType}));
+    auto Tuple2KVType = tuple2KVHandle->getTypeDef();
+
+    lyric_assembler::TypeHandle *equalityKHandle;
+    TU_ASSIGN_OR_RETURN (equalityKHandle, typeCache->declareParameterizedType(equalityUrl, {KType, KType}));
+    auto EqualityKType = equalityKHandle->getTypeDef();
+
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, HashMapClass->declareMethod(
+            "Size", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, IntType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::HASHMAP_SIZE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, HashMapClass->declareMethod(
+            "Contains", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("key", "", KType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, BoolType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::HASHMAP_CONTAINS));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, HashMapClass->declareMethod(
+            "Get", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("key", "", KType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, VType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::HASHMAP_GET));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, HashMapClass->declareMethod(
+            "Put", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("key", "", KType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", VType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, VType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::HASHMAP_PUT));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, HashMapClass->declareMethod(
+            "Remove", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("key", "", KType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, VType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::HASHMAP_REMOVE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, HashMapClass->declareMethod(
+            "Clear", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, NilType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::HASHMAP_CLEAR));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, HashMapClass->declareCtor(
+            lyric_object::AccessType::Public, static_cast<tu_uint32>(StdCollectionsTrap::HASHMAP_ALLOC)));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendRestParameter("", Tuple2KVType));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendCtxParameter("eq", "", EqualityKType));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, lyric_common::TypeDef::noReturn()));
+        auto *codeBuilder = procHandle->procCode();
+
+        // push HashMap.$equals call descriptor onto the stack
+        auto status = codeBuilder->loadCall(equalsAddress);
         if (!status.isOk())
             return status;
 
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::HASHMAP_CTOR));
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::HASHMAP_CTOR));
 
-        auto *procBlock = proc->procBlock();
-        auto IntType = procBlock->resolveAssignable(IntSpec).orElseThrow();
+        auto *procBlock = procHandle->procBlock();
         auto *Tuple2sym = symbolCache->getOrImportSymbol(fundamentalCache->getTupleUrl(2)).orElseThrow();
         TU_ASSERT (Tuple2sym != nullptr && Tuple2sym->getSymbolType() == lyric_assembler::SymbolType::CLASS);
         auto *Tuple2class = cast_symbol_to_class(Tuple2sym);
@@ -258,42 +236,42 @@ build_std_collections_HashMap(
 
         // initialize counter to 0
         auto counter = procBlock->declareTemporary(IntType, lyric_parser::BindingType::VARIABLE).orElseThrow();
-        code->loadInt(0);
+        codeBuilder->loadInt(0);
         procBlock->store(counter);
         // top of the loop
-        auto topLabel = code->makeLabel().orElseThrow();
+        auto topLabel = codeBuilder->makeLabel().orElseThrow();
         // check if counter is less than va size
         procBlock->load(counter);
-        code->writeOpcode(lyric_object::Opcode::OP_VA_SIZE);
-        code->writeOpcode(lyric_object::Opcode::OP_I64_CMP);
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_VA_SIZE);
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_I64_CMP);
         // if counter equals va size then return
-        auto patchIfRemaining = code->jumpIfLessThan().orElseThrow();
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        auto patchIfRemaining = codeBuilder->jumpIfLessThan().orElseThrow();
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
         // otherwise process next va item
-        auto continueLabel = code->makeLabel().orElseThrow();
-        code->patch(patchIfRemaining, continueLabel).orThrow();
+        auto continueLabel = codeBuilder->makeLabel().orElseThrow();
+        codeBuilder->patch(patchIfRemaining, continueLabel).orThrow();
         // load item and push item key onto stack
         procBlock->load(counter);
-        code->writeOpcode(lyric_object::Opcode::OP_VA_LOAD);
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_VA_LOAD);
         procBlock->load(t0);
-        code->rdropValue(1);
+        codeBuilder->rdropValue(1);
         // load item and push item value onto stack
         procBlock->load(counter);
-        code->writeOpcode(lyric_object::Opcode::OP_VA_LOAD);
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_VA_LOAD);
         procBlock->load(t1);
-        code->rdropValue(1);
+        codeBuilder->rdropValue(1);
         // call put
-        code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
-        code->callVirtual(putAddress, 2, lyric_object::CALL_RECEIVER_FOLLOWS);
-        code->popValue();
+        codeBuilder->loadSynthetic(lyric_assembler::SyntheticType::THIS);
+        codeBuilder->callVirtual(putAddress, 2, lyric_object::CALL_RECEIVER_FOLLOWS);
+        codeBuilder->popValue();
         // increment counter
         procBlock->load(counter);
-        code->loadInt(1);
-        code->writeOpcode(lyric_object::Opcode::OP_I64_ADD);
+        codeBuilder->loadInt(1);
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_I64_ADD);
         procBlock->store(counter);
         // jump unconditionally to the top of the loop
-        code->jump(topLabel).orThrow();
+        codeBuilder->jump(topLabel).orThrow();
     }
 
-    return lyric_assembler::AssemblerStatus::ok();
+    return {};
 }

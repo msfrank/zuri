@@ -11,6 +11,7 @@ tempo_utils::Result<lyric_assembler::StructSymbol *>
 build_std_system_Operation(
     lyric_assembler::AssemblyState &state,
     lyric_assembler::BlockHandle *block,
+    lyric_assembler::StructSymbol *AttrStruct,
     lyric_typing::TypeSystem *typeSystem);
 
 tempo_utils::Status

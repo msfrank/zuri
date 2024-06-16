@@ -2,6 +2,7 @@
 
 #include <lyric_assembler/call_symbol.h>
 #include <lyric_assembler/class_symbol.h>
+#include <lyric_assembler/fundamental_cache.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
 #include <zuri_std_time/lib_types.h>
@@ -13,6 +14,7 @@ build_std_time_Instant(
     lyric_assembler::AssemblyState &state,
     lyric_assembler::BlockHandle *block)
 {
+    auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
     auto resolveObjectResult = block->resolveClass(
@@ -29,35 +31,28 @@ build_std_time_Instant(
     auto *InstantClass = cast_symbol_to_class(
         symbolCache->getOrImportSymbol(declareInstantClassResult.getResult()).orElseThrow());
 
-    auto StringSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"String"}));
-    auto IntSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Int"}));
+    auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
 
     {
-        auto declareCtorResult = InstantClass->declareCtor(
-            {},
-            {},
-            {},
-            lyric_object::AccessType::Public,
-            static_cast<tu_uint32>(StdTimeTrap::INSTANT_ALLOC));
-        auto *call = cast_symbol_to_call(
-            symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<tu_uint32>(StdTimeTrap::INSTANT_CTOR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, InstantClass->declareCtor(
+            lyric_object::AccessType::Public, static_cast<tu_uint32>(StdTimeTrap::INSTANT_ALLOC)));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, lyric_common::TypeDef::noReturn()));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdTimeTrap::INSTANT_CTOR));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = InstantClass->declareMethod("ToEpochMillis",
-            {},
-            {},
-            {},
-            IntSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(
-            symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<tu_uint32>(StdTimeTrap::INSTANT_TO_EPOCH_MILLIS));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, InstantClass->declareMethod(
+            "ToEpochMillis", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, IntType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdTimeTrap::INSTANT_TO_EPOCH_MILLIS));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 
-    return tempo_utils::Status();
+    return {};
 }

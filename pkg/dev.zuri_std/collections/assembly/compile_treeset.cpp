@@ -5,8 +5,11 @@
 #include <lyric_assembler/concept_symbol.h>
 #include <lyric_assembler/fundamental_cache.h>
 #include <lyric_assembler/impl_handle.h>
+#include <lyric_assembler/pack_builder.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
+#include <lyric_assembler/template_handle.h>
+#include <lyric_assembler/type_cache.h>
 #include <lyric_typing/callsite_reifier.h>
 #include <zuri_std_collections/lib_types.h>
 
@@ -52,15 +55,12 @@ build_std_collections_TreeSet(
 {
     auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
+    auto *typeCache = state.typeCache();
 
-    auto TSpec = lyric_parser::Assignable::forSingular({"T"});
-    auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
-    auto BoolSpec = lyric_parser::Assignable::forSingular({"Bool"});
-    auto NilSpec = lyric_parser::Assignable::forSingular({"Nil"});
-    auto IterableTSpec = lyric_parser::Assignable::forSingular({"Iterable"}, {TSpec});
-    auto IteratorTSpec = lyric_parser::Assignable::forSingular({"Iterator"}, {TSpec});
-    auto OrderedTSpec = lyric_parser::Assignable::forSingular({"Ordered"}, {
-        lyric_parser::Assignable::forSingular({"T"})});
+    auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
+    auto BoolType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Bool);
+    auto NilType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Nil);
+
     auto orderedUrl = fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Ordered);
 
     lyric_assembler::CallAddress compareAddress;
@@ -72,190 +72,167 @@ build_std_collections_TreeSet(
         TParam.bound = lyric_object::BoundType::None;
         TParam.variance = lyric_object::VarianceType::Invariant;
 
-        auto declareFunctionResult = parentBlock->declareFunction("TreeSet.$compare",
-            {
-                {{}, "x1", "", TSpec, lyric_parser::BindingType::VALUE},
-                {{}, "x2", "", TSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {
-                {{}, "ord", "", OrderedTSpec, lyric_parser::BindingType::VALUE},
-            },
-            IntSpec,
-            lyric_object::AccessType::Public,
-            {
-                TParam,
-            });
-
-        if (declareFunctionResult.isStatus())
-            return declareFunctionResult.getStatus();
-        auto functionUrl = declareFunctionResult.getResult();
-
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(functionUrl).orElseThrow());
-        auto *block = call->callProc()->procBlock();
-        tempo_utils::Status status;
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, parentBlock->declareFunction(
+            "TreeSet.$compare", lyric_object::AccessType::Public, {TParam}));
+        auto *templateHandle = callSymbol->callTemplate();
+        auto TType = templateHandle->getPlaceholder("T");
+        lyric_assembler::TypeHandle *orderedTHandle;
+        TU_ASSIGN_OR_RETURN (orderedTHandle, typeCache->declareParameterizedType(orderedUrl, {TType}));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("x1", "", TType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("x2", "", TType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendCtxParameter("ord", "", orderedTHandle->getTypeDef()));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, IntType));
+        auto *block = procHandle->procBlock();
 
         // push ord receiver onto the stack
-        auto ordResult = block->resolveReference("ord");
-        if (ordResult.isStatus())
-            return ordResult.getStatus();
-        auto ord = ordResult.getResult();
-        status = block->load(ord);
-        if (!status.isOk())
-            return status;
+        lyric_assembler::DataReference ord;
+        TU_ASSIGN_OR_RETURN (ord, block->resolveReference("ord"));
+        TU_RETURN_IF_NOT_OK (block->load(ord));
 
         // push Ordered concept descriptor onto the stack
-        auto *sym = symbolCache->getOrImportSymbol(orderedUrl).orElseThrow();
-        if (sym == nullptr)
-            return lyric_assembler::AssemblerStatus::forCondition(
-                lyric_assembler::AssemblerCondition::kAssemblerInvariant, "missing Ordered concept");
-        if (sym->getSymbolType() != lyric_assembler::SymbolType::CONCEPT)
-            return lyric_assembler::AssemblerStatus::forCondition(
-                lyric_assembler::AssemblerCondition::kAssemblerInvariant, "invalid Ordered concept");
+        lyric_assembler::AbstractSymbol *sym;
+        TU_ASSIGN_OR_RETURN (sym, symbolCache->getOrImportSymbol(orderedUrl));
         auto *orderedSymbol = cast_symbol_to_concept(sym);
-        auto resolveCompareResult = orderedSymbol->resolveAction("compare", ord.typeDef);
-        if (resolveCompareResult.isStatus())
-            return resolveCompareResult.getStatus();
-        auto compare = resolveCompareResult.getResult();
+        lyric_assembler::CallableInvoker invoker;
+        TU_RETURN_IF_NOT_OK (orderedSymbol->prepareAction("compare", ord.typeDef, invoker));
 
-        auto callsiteTypeArguments = ord.typeDef.getConcreteArguments();
-        lyric_typing::CallsiteReifier reifier(compare.getParameters(), compare.getRest(),
-            compare.getTemplateUrl(), compare.getTemplateParameters(),
-            std::vector<lyric_common::TypeDef>(callsiteTypeArguments.begin(), callsiteTypeArguments.end()),
-            typeSystem);
-        TU_RETURN_IF_NOT_OK (reifier.initialize());
+        auto ordTypeArguments = ord.typeDef.getConcreteArguments();
+        std::vector<lyric_common::TypeDef> callsiteTypeArguments(ordTypeArguments.begin(), ordTypeArguments.end());
+        lyric_typing::CallsiteReifier reifier(typeSystem);
+        TU_RETURN_IF_NOT_OK (reifier.initialize(invoker, callsiteTypeArguments));
 
         // push x1 and x2 onto the stack
-        auto x1Result = block->resolveReference("x1");
-        if (x1Result.isStatus())
-            return x1Result.getStatus();
-        auto x1 = x1Result.getResult();
+        lyric_assembler::DataReference x1;
+        TU_ASSIGN_OR_RETURN (x1, block->resolveReference("x1"));
         TU_RETURN_IF_NOT_OK (block->load(x1));
         TU_RETURN_IF_NOT_OK (reifier.reifyNextArgument(x1.typeDef));
 
-        auto x2Result = block->resolveReference("x2");
-        if (x2Result.isStatus())
-            return x2Result.getStatus();
-        auto x2 = x2Result.getResult();
+        lyric_assembler::DataReference x2;
+        TU_ASSIGN_OR_RETURN (x2, block->resolveReference("x2"));
         TU_RETURN_IF_NOT_OK (block->load(x2));
         TU_RETURN_IF_NOT_OK (reifier.reifyNextArgument(x2.typeDef));
 
         // return result of ord.compare()
-        auto invokeCompareResult = compare.invoke(block, reifier);
-        if (invokeCompareResult.isStatus())
-            return invokeCompareResult.getStatus();
+        TU_RETURN_IF_STATUS (invoker.invoke(block, reifier));
 
-        compareAddress = call->getAddress();
-    }
-    {
-        lyric_assembler::ParameterSpec restSpec;
-        restSpec.type = TSpec;
-        restSpec.binding = lyric_parser::BindingType::VALUE;
-        restSpec.name = {};
-        auto declareCtorResult = TreeSetClass->declareCtor(
-            {},
-            Option<lyric_assembler::ParameterSpec>(restSpec),
-            {
-                {{}, "ord", "", OrderedTSpec, lyric_parser::BindingType::VALUE}
-            },
-            lyric_object::AccessType::Public,
-            static_cast<uint32_t>(StdCollectionsTrap::TREESET_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-
-        // push $compare call descriptor onto the stack
-        auto status = code->loadCall(compareAddress);
-        if (!status.isOk())
-            return status;
-
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_CTOR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = TreeSetClass->declareMethod("Size",
-            {},
-            {},
-            {},
-            IntSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_SIZE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = TreeSetClass->declareMethod("Contains",
-            {
-                {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE}
-            },
-            {},
-            {},
-            BoolSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_CONTAINS));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = TreeSetClass->declareMethod("Add",
-            {
-                {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            BoolSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_ADD));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = TreeSetClass->declareMethod("Remove",
-            {
-                {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE}
-            },
-            {},
-            {},
-            BoolSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_REMOVE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = TreeSetClass->declareMethod("Clear",
-            {},
-            {},
-            {},
-            NilSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_CLEAR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        compareAddress = callSymbol->getAddress();
     }
 
-    lyric_common::TypeDef treesetIterableImplType;
-    TU_ASSIGN_OR_RETURN (treesetIterableImplType, TreeSetClass->declareImpl(IterableTSpec));
-    auto *TreesetIterableImpl = TreeSetClass->getImpl(treesetIterableImplType);
-    TU_ASSERT (TreesetIterableImpl != nullptr);
+    auto *templateHandle = TreeSetClass->classTemplate();
+    auto TType = templateHandle->getPlaceholder("T");
+
+    lyric_assembler::TypeHandle *orderedTHandle;
+    TU_ASSIGN_OR_RETURN (orderedTHandle, typeCache->declareParameterizedType(orderedUrl, {TType}));
+    auto OrderedTType = orderedTHandle->getTypeDef();
+
+    lyric_assembler::TypeHandle *iterableTHandle;
+    TU_ASSIGN_OR_RETURN (iterableTHandle, typeCache->declareParameterizedType(
+        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Iterable), {TType}));
+    auto IterableTType = iterableTHandle->getTypeDef();
+
+    lyric_assembler::TypeHandle *iteratorTHandle;
+    TU_ASSIGN_OR_RETURN (iteratorTHandle, typeCache->declareParameterizedType(
+        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Iterator), {TType}));
+    auto IteratorTType = iteratorTHandle->getTypeDef();
 
     {
-        auto declareExtensionResult = TreesetIterableImpl->declareExtension("Iterate",
-            {},
-            {},
-            {},
-            IteratorTSpec);
-        auto extension = declareExtensionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(extension.methodCall).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->loadClass(TreeSetIteratorClass->getAddress());
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_ITERATE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, TreeSetClass->declareCtor(
+            lyric_object::AccessType::Public, static_cast<tu_uint32>(StdCollectionsTrap::TREESET_ALLOC)));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendRestParameter("", TType));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendCtxParameter("ord", "", OrderedTType));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, lyric_common::TypeDef::noReturn()));
+        auto *codeBuilder = procHandle->procCode();
+
+        // push TreeSet.$compare call descriptor onto the stack
+        TU_RETURN_IF_NOT_OK (codeBuilder->loadCall(compareAddress));
+
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_CTOR));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, TreeSetClass->declareMethod(
+            "Size", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, IntType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_SIZE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, TreeSetClass->declareMethod(
+            "Contains", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", TType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, BoolType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_CONTAINS));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, TreeSetClass->declareMethod(
+            "Add", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", TType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, BoolType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_ADD));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, TreeSetClass->declareMethod(
+            "Remove", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", TType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, BoolType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_REMOVE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, TreeSetClass->declareMethod(
+            "Clear", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, NilType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_CLEAR));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 
-    return lyric_assembler::AssemblerStatus::ok();
+    lyric_assembler::ImplHandle *treesetIterableImplHandle;
+    TU_ASSIGN_OR_RETURN (treesetIterableImplHandle, TreeSetClass->declareImpl(IterableTType));
+
+    {
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, treesetIterableImplHandle->defineExtension("Iterate", {}, IteratorTType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->loadClass(TreeSetIteratorClass->getAddress());
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_ITERATE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+
+    return {};
 }

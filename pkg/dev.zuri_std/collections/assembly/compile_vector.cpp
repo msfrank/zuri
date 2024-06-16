@@ -4,8 +4,11 @@
 #include <lyric_assembler/class_symbol.h>
 #include <lyric_assembler/fundamental_cache.h>
 #include <lyric_assembler/impl_handle.h>
+#include <lyric_assembler/pack_builder.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
+#include <lyric_assembler/template_handle.h>
+#include <lyric_assembler/type_cache.h>
 #include <zuri_std_collections/lib_types.h>
 
 #include "compile_vector.h"
@@ -48,145 +51,143 @@ build_std_collections_Vector(
     lyric_assembler::BlockHandle *parentBlock,
     lyric_typing::TypeSystem *typeSystem)
 {
-    auto *symbolCache = state.symbolCache();
+    auto *fundamentalCache = state.fundamentalCache();
+    auto *typeCache = state.typeCache();
 
-    auto TSpec = lyric_parser::Assignable::forSingular({"T"});
-    auto IntSpec = lyric_parser::Assignable::forSingular({"Int"});
-    auto NilSpec = lyric_parser::Assignable::forSingular({"Nil"});
-    auto IterableTSpec = lyric_parser::Assignable::forSingular({"Iterable"}, {TSpec});
-    auto IteratorTSpec = lyric_parser::Assignable::forSingular({"Iterator"}, {TSpec});
+    auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
+    auto NilType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Nil);
 
-    {
-        lyric_assembler::ParameterSpec restSpec;
-        restSpec.type = TSpec;
-        restSpec.binding = lyric_parser::BindingType::VALUE;
-        restSpec.name = {};
-        auto declareCtorResult = VectorClass->declareCtor(
-            {},
-            Option<lyric_assembler::ParameterSpec>(restSpec),
-            {},
-            lyric_object::AccessType::Public,
-            static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_CTOR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = VectorClass->declareMethod("Size",
-            {},
-            {},
-            {},
-            IntSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_SIZE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = VectorClass->declareMethod("At",
-            {
-                {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE}
-            },
-            {},
-            {},
-            TSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_AT));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = VectorClass->declareMethod("Insert",
-            {
-                {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE},
-                {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            NilSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_INSERT));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = VectorClass->declareMethod("Append",
-            {
-                {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            NilSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_APPEND));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = VectorClass->declareMethod("Replace",
-            {
-                {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE},
-                {{}, "value", "", TSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            TSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_UPDATE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = VectorClass->declareMethod("Remove",
-            {
-                {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            TSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_REMOVE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = VectorClass->declareMethod("Clear",
-            {},
-            {},
-            {},
-            NilSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_CLEAR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
+    auto *templateHandle = VectorClass->classTemplate();
+    auto TType = templateHandle->getPlaceholder("T");
 
-    lyric_common::TypeDef vectorIterableImplType;
-    TU_ASSIGN_OR_RETURN (vectorIterableImplType, VectorClass->declareImpl(IterableTSpec));
-    auto *VectorIterableImpl = VectorClass->getImpl(vectorIterableImplType);
-    TU_ASSERT (VectorIterableImpl != nullptr);
+    lyric_assembler::TypeHandle *iterableTHandle;
+    TU_ASSIGN_OR_RETURN (iterableTHandle, typeCache->declareParameterizedType(
+        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Iterable), {TType}));
+    auto IterableTType = iterableTHandle->getTypeDef();
+
+    lyric_assembler::TypeHandle *iteratorTHandle;
+    TU_ASSIGN_OR_RETURN (iteratorTHandle, typeCache->declareParameterizedType(
+        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Iterator), {TType}));
+    auto IteratorTType = iteratorTHandle->getTypeDef();
 
     {
-        auto declareExtensionResult = VectorIterableImpl->declareExtension("Iterate",
-            {},
-            {},
-            {},
-            IteratorTSpec);
-        auto extension = declareExtensionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(extension.methodCall).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->loadClass(VectorIteratorClass->getAddress());
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::VECTOR_ITERATE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, VectorClass->declareCtor(
+            lyric_object::AccessType::Public, static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_ALLOC)));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendRestParameter("", TType));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, lyric_common::TypeDef::noReturn()));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_CTOR));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, VectorClass->declareMethod(
+            "Size", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, IntType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_SIZE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, VectorClass->declareMethod(
+            "At", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("index", "", IntType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, TType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_AT));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, VectorClass->declareMethod(
+            "Insert", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("index", "", IntType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", TType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, NilType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_INSERT));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, VectorClass->declareMethod(
+            "Append", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", TType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, NilType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_APPEND));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, VectorClass->declareMethod(
+            "Replace", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("index", "", IntType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", TType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, TType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_UPDATE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, VectorClass->declareMethod(
+            "Remove", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("index", "", IntType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, TType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_REMOVE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, VectorClass->declareMethod(
+            "Clear", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, NilType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_CLEAR));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 
-    return lyric_assembler::AssemblerStatus::ok();
+    lyric_assembler::ImplHandle *vectorIterableImplHandle;
+    TU_ASSIGN_OR_RETURN (vectorIterableImplHandle, VectorClass->declareImpl(IterableTType));
+
+    {
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, vectorIterableImplHandle->defineExtension("Iterate", {}, IteratorTType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->loadClass(VectorIteratorClass->getAddress());
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::VECTOR_ITERATE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+
+    return {};
 }

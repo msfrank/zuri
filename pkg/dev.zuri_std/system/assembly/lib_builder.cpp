@@ -66,7 +66,7 @@ build(int argc, char *argv[])
     TU_RETURN_IF_NOT_OK (build_std_system_Future(moduleEntry, rootBlock));
 
     lyric_assembler::StructSymbol *OperationStruct = nullptr;
-    TU_ASSIGN_OR_RETURN (OperationStruct, build_std_system_Operation(assemblyState, rootBlock, typeSystem));
+    TU_ASSIGN_OR_RETURN (OperationStruct, build_std_system_Operation(assemblyState, rootBlock, AttrStruct, typeSystem));
 
     TU_RETURN_IF_NOT_OK (build_std_system_AppendOperation(OperationStruct, assemblyState, rootBlock, typeSystem));
     TU_RETURN_IF_NOT_OK (build_std_system_InsertOperation(OperationStruct, assemblyState, rootBlock, typeSystem));

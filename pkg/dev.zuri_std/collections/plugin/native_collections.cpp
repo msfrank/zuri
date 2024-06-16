@@ -116,7 +116,7 @@ NativeStdCollections::load(lyric_runtime::BytecodeSegment *segment) const
 }
 
 void
-NativeStdCollections::unload() const
+NativeStdCollections::unload(lyric_runtime::BytecodeSegment *segment) const
 {
 }
 

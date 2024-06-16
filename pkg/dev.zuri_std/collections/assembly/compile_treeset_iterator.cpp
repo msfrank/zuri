@@ -4,8 +4,11 @@
 #include <lyric_assembler/class_symbol.h>
 #include <lyric_assembler/fundamental_cache.h>
 #include <lyric_assembler/impl_handle.h>
+#include <lyric_assembler/pack_builder.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
+#include <lyric_assembler/template_handle.h>
+#include <lyric_assembler/type_cache.h>
 #include <zuri_std_collections/lib_types.h>
 
 #include "compile_treeset_iterator.h"
@@ -47,58 +50,50 @@ build_std_collections_TreeSetIterator(
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {
-    auto *symbolCache = state.symbolCache();
+    auto *fundamentalCache = state.fundamentalCache();
+    auto *typeCache = state.typeCache();
 
-    auto TSpec = lyric_parser::Assignable::forSingular({"T"});
-    auto BoolSpec = lyric_parser::Assignable::forSingular({"Bool"});
-    auto IteratorTSpec = lyric_parser::Assignable::forSingular({"Iterator"}, {TSpec});
+    auto BoolType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Bool);
 
-    {
-        lyric_assembler::ParameterSpec restSpec;
-        restSpec.type = TSpec;
-        restSpec.binding = lyric_parser::BindingType::VALUE;
-        restSpec.name = {};
-        auto declareCtorResult = TreeSetIteratorClass->declareCtor(
-            {},
-            Option<lyric_assembler::ParameterSpec>(restSpec),
-            {},
-            lyric_object::AccessType::Public,
-            static_cast<uint32_t>(StdCollectionsTrap::TREESET_ITERATOR_ALLOC));
-        auto *call = cast_symbol_to_call(
-            symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
+    auto *templateHandle = TreeSetIteratorClass->classTemplate();
+    auto TType = templateHandle->getPlaceholder("T");
 
-    lyric_common::TypeDef iteratorImplType;
-    TU_ASSIGN_OR_RETURN (iteratorImplType, TreeSetIteratorClass->declareImpl(IteratorTSpec));
-    auto *IteratorImpl = TreeSetIteratorClass->getImpl(iteratorImplType);
-    TU_ASSERT (IteratorImpl != nullptr);
+    lyric_assembler::TypeHandle *iteratorTHandle;
+    TU_ASSIGN_OR_RETURN (iteratorTHandle, typeCache->declareParameterizedType(
+        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Iterator), {TType}));
+    auto IteratorTType = iteratorTHandle->getTypeDef();
 
     {
-        auto declareExtensionResult = IteratorImpl->declareExtension("Valid",
-            {},
-            {},
-            {},
-            BoolSpec);
-        auto extension = declareExtensionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(extension.methodCall).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_ITERATOR_VALID));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareExtensionResult = IteratorImpl->declareExtension("Next",
-            {},
-            {},
-            {},
-            TSpec);
-        auto extension = declareExtensionResult.getResult();
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(extension.methodCall).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdCollectionsTrap::TREESET_ITERATOR_NEXT));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, TreeSetIteratorClass->declareCtor(
+            lyric_object::AccessType::Public, static_cast<tu_uint32>(StdCollectionsTrap::TREESET_ITERATOR_ALLOC)));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendRestParameter("", TType));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, lyric_common::TypeDef::noReturn()));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 
-    return lyric_assembler::AssemblerStatus::ok();
+    lyric_assembler::ImplHandle *iteratorImplHandle;
+    TU_ASSIGN_OR_RETURN (iteratorImplHandle, TreeSetIteratorClass->declareImpl(IteratorTType));
+
+    {
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, iteratorImplHandle->defineExtension("Valid", {}, BoolType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_ITERATOR_VALID));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+    {
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, iteratorImplHandle->defineExtension("Next", {}, TType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdCollectionsTrap::TREESET_ITERATOR_NEXT));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+
+    return {};
 }

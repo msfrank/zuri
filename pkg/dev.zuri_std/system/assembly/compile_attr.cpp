@@ -3,6 +3,8 @@
 #include <lyric_assembler/call_symbol.h>
 #include <lyric_assembler/class_symbol.h>
 #include <lyric_assembler/field_symbol.h>
+#include <lyric_assembler/fundamental_cache.h>
+#include <lyric_assembler/pack_builder.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/struct_symbol.h>
 #include <lyric_assembler/symbol_cache.h>
@@ -39,34 +41,47 @@ build_std_system_Attr(
     lyric_assembler::AssemblyState &state,
     lyric_assembler::BlockHandle *block)
 {
+    auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto UrlSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Url"}));
-    auto IntSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Int"}));
-    auto ValueSpec = lyric_parser::Assignable::forUnion({
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Intrinsic"})),
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Element"})),
-    });
+    auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
+    auto UrlType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Url);
+    auto IntrinsicType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Intrinsic);
+    auto ElementType = lyric_common::TypeDef::forConcrete(lyric_common::SymbolUrl::fromString("#Element"));
+    auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, ElementType });
 
-    auto declareNsResult = AttrStruct->declareMember("ns", UrlSpec);
+    auto declareNsResult = AttrStruct->declareMember("ns", UrlType);
     if (declareNsResult.isStatus())
         return declareNsResult.getStatus();
     auto *NsField = cast_symbol_to_field(
         symbolCache->getOrImportSymbol(declareNsResult.getResult().symbolUrl).orElseThrow());
 
-    auto declareIdResult = AttrStruct->declareMember("id", IntSpec);
+    auto declareIdResult = AttrStruct->declareMember("id", IntType);
     if (declareIdResult.isStatus())
         return declareIdResult.getStatus();
     auto *IdField = cast_symbol_to_field(
         symbolCache->getOrImportSymbol(declareIdResult.getResult().symbolUrl).orElseThrow());
 
-    auto declareValueResult = AttrStruct->declareMember("value", ValueSpec);
+    auto declareValueResult = AttrStruct->declareMember("value", ValueType);
     if (declareValueResult.isStatus())
         return declareValueResult.getStatus();
     auto *ValueField = cast_symbol_to_field(
         symbolCache->getOrImportSymbol(declareValueResult.getResult().symbolUrl).orElseThrow());
 
     {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, AttrStruct->declareCtor(
+            lyric_object::AccessType::Public, static_cast<tu_uint32>(StdSystemTrap::ATTR_ALLOC)));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("ns", "", UrlType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("id", "", IntType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", ValueType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, lyric_common::TypeDef::noReturn()));
+        auto *codeBuilder = procHandle->procCode();
+
         auto *SuperStruct = AttrStruct->superStruct();
         auto superCtorUrl = SuperStruct->getCtor();
         if (!symbolCache->hasSymbol(superCtorUrl))
@@ -79,31 +94,20 @@ build_std_system_Attr(
         auto *superCtorCall = cast_symbol_to_call(superCtorSym);
         superCtorCall->touch();
 
-        auto declareCtorResult = AttrStruct->declareCtor(
-            {
-                {{}, "ns", "ns", UrlSpec, lyric_parser::BindingType::VALUE},
-                {{}, "id", "id", IntSpec, lyric_parser::BindingType::VALUE},
-                {{}, "value", "", ValueSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            lyric_object::AccessType::Public,
-            static_cast<uint32_t>(StdSystemTrap::ATTR_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
         // call the super constructor
-        code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
-        code->callVirtual(superCtorCall->getAddress(), 0);
+        codeBuilder->loadSynthetic(lyric_assembler::SyntheticType::THIS);
+        codeBuilder->callVirtual(superCtorCall->getAddress(), 0);
         // load the ns argument and store it in member
-        code->loadArgument(lyric_assembler::ArgumentOffset(0));
-        code->storeField(NsField->getAddress());
+        codeBuilder->loadArgument(lyric_assembler::ArgumentOffset(0));
+        codeBuilder->storeField(NsField->getAddress());
         // load the id argument and store it in member
-        code->loadArgument(lyric_assembler::ArgumentOffset(1));
-        code->storeField(IdField->getAddress());
+        codeBuilder->loadArgument(lyric_assembler::ArgumentOffset(1));
+        codeBuilder->storeField(IdField->getAddress());
         // load the value argument and store it in member
-        code->loadArgument(lyric_assembler::ArgumentOffset(2));
-        code->storeField(ValueField->getAddress());
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        codeBuilder->loadArgument(lyric_assembler::ArgumentOffset(2));
+        codeBuilder->storeField(ValueField->getAddress());
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 
-    return lyric_assembler::AssemblerStatus::ok();
+    return {};
 }

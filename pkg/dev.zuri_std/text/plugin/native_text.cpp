@@ -37,7 +37,7 @@ NativeStdText::load(lyric_runtime::BytecodeSegment *segment) const
 }
 
 void
-NativeStdText::unload() const
+NativeStdText::unload(lyric_runtime::BytecodeSegment *segment) const
 {
 }
 

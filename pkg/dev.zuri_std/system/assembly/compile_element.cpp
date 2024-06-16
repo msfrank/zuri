@@ -3,6 +3,8 @@
 #include <lyric_assembler/call_symbol.h>
 #include <lyric_assembler/class_symbol.h>
 #include <lyric_assembler/field_symbol.h>
+#include <lyric_assembler/fundamental_cache.h>
+#include <lyric_assembler/pack_builder.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/struct_symbol.h>
 #include <lyric_assembler/symbol_cache.h>
@@ -41,32 +43,43 @@ build_std_system_Element(
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {
+    auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto UrlSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Url"}));
-    auto IntSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Int"}));
-    auto ValueSpec = lyric_parser::Assignable::forUnion({
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Intrinsic"})),
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Attr"})),
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Element"})),
-    });
-    auto SeqSpec = lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Seq"}));
-    auto IteratorTSpec = lyric_parser::Assignable::forSingular(
-        lyric_common::SymbolPath({"Iterator"}), {ValueSpec});
+    auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
+    auto SeqType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Seq);
+    auto UrlType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Url);
+    auto IntrinsicType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Intrinsic);
+    auto AttrType = lyric_common::TypeDef::forConcrete(lyric_common::SymbolUrl::fromString("#Attr"));
+    auto ElementType = lyric_common::TypeDef::forConcrete(lyric_common::SymbolUrl::fromString("#Element"));
+    auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, AttrType, ElementType });
 
-    auto declareNsResult = ElementStruct->declareMember("ns", UrlSpec);
+    auto declareNsResult = ElementStruct->declareMember("ns", UrlType);
     if (declareNsResult.isStatus())
         return declareNsResult.getStatus();
     auto *NsField = cast_symbol_to_field(
         symbolCache->getOrImportSymbol(declareNsResult.getResult().symbolUrl).orElseThrow());
 
-    auto declareIdResult = ElementStruct->declareMember("id", IntSpec);
+    auto declareIdResult = ElementStruct->declareMember("id", IntType);
     if (declareIdResult.isStatus())
         return declareIdResult.getStatus();
     auto *IdField = cast_symbol_to_field(
         symbolCache->getOrImportSymbol(declareIdResult.getResult().symbolUrl).orElseThrow());
 
     {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, ElementStruct->declareCtor(
+            lyric_object::AccessType::Public, static_cast<tu_uint32>(StdSystemTrap::ELEMENT_ALLOC)));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("ns", "", UrlType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("id", "", IntType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendRestParameter("", ValueType));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, lyric_common::TypeDef::noReturn()));
+        auto *codeBuilder = procHandle->procCode();
+
         auto *SuperStruct = ElementStruct->superStruct();
         auto superCtorUrl = SuperStruct->getCtor();
         if (!symbolCache->hasSymbol(superCtorUrl))
@@ -79,59 +92,47 @@ build_std_system_Element(
         auto *superCtorCall = cast_symbol_to_call(superCtorSym);
         superCtorCall->touch();
 
-        auto declareCtorResult = ElementStruct->declareCtor(
-            {
-                {{}, "ns", "ns", UrlSpec, lyric_parser::BindingType::VALUE},
-                {{}, "id", "id", IntSpec, lyric_parser::BindingType::VALUE},
-            },
-            Option<lyric_assembler::ParameterSpec>({{}, "children", "", ValueSpec, lyric_parser::BindingType::VALUE}),
-            lyric_object::AccessType::Public,
-            static_cast<uint32_t>(StdSystemTrap::ELEMENT_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-
         // call the super constructor
-        code->loadSynthetic(lyric_assembler::SyntheticType::THIS);
-        code->callVirtual(superCtorCall->getAddress(), 0);
+        codeBuilder->loadSynthetic(lyric_assembler::SyntheticType::THIS);
+        codeBuilder->callVirtual(superCtorCall->getAddress(), 0);
 
         // load the ns argument and store it in member
-        code->loadArgument(lyric_assembler::ArgumentOffset(0));
-        code->storeField(NsField->getAddress());
+        codeBuilder->loadArgument(lyric_assembler::ArgumentOffset(0));
+        codeBuilder->storeField(NsField->getAddress());
 
         // load the id argument and store it in member
-        code->loadArgument(lyric_assembler::ArgumentOffset(1));
-        code->storeField(IdField->getAddress());
+        codeBuilder->loadArgument(lyric_assembler::ArgumentOffset(1));
+        codeBuilder->storeField(IdField->getAddress());
 
         // invoke the Element constructor
-        code->trap(static_cast<tu_uint32>(StdSystemTrap::ELEMENT_CTOR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        codeBuilder->trap(static_cast<tu_uint32>(StdSystemTrap::ELEMENT_CTOR));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = ElementStruct->declareMethod("Size",
-            {},
-            {},
-            {},
-            IntSpec);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<tu_uint32>(StdSystemTrap::ELEMENT_SIZE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, ElementStruct->declareMethod(
+            "Size", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, IntType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdSystemTrap::ELEMENT_SIZE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = ElementStruct->declareMethod("GetOrElse",
-            {
-                {{}, "index", "", IntSpec, lyric_parser::BindingType::VALUE},
-                {{}, "default", "", ValueSpec, lyric_parser::BindingType::VALUE},
-            },
-            {},
-            {},
-            ValueSpec);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<uint32_t>(StdSystemTrap::ELEMENT_GET_OR_ELSE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, ElementStruct->declareMethod(
+            "GetOrElse", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("index", "", IntType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("default", "", ValueType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, ValueType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdSystemTrap::ELEMENT_GET_OR_ELSE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 
-
-    return tempo_utils::Status();
+    return {};
 }

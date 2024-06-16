@@ -3,8 +3,11 @@
 #include <lyric_assembler/call_symbol.h>
 #include <lyric_assembler/class_symbol.h>
 #include <lyric_assembler/fundamental_cache.h>
+#include <lyric_assembler/pack_builder.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
+#include <lyric_assembler/template_handle.h>
+#include <lyric_assembler/type_cache.h>
 #include <zuri_std_system/lib_types.h>
 
 #include "compile_future.h"
@@ -17,6 +20,7 @@ build_std_system_Future(
     auto *state = moduleEntry.getState();
     auto *fundamentalCache = state->fundamentalCache();
     auto *symbolCache = state->symbolCache();
+    auto *typeCache = state->typeCache();
 
     auto resolveObjectResult = block->resolveClass(
         lyric_parser::Assignable::forSingular({"Object"}));
@@ -24,6 +28,9 @@ build_std_system_Future(
         return resolveObjectResult.getStatus();
     auto *ObjectClass = cast_symbol_to_class(
         symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
+
+    auto BoolType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Bool);
+    auto StatusType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Status);
 
     lyric_object::TemplateParameter TParam;
     TParam.name = "T";
@@ -39,67 +46,64 @@ build_std_system_Future(
     auto *FutureClass = cast_symbol_to_class(
         symbolCache->getOrImportSymbol(declareFutureClassResult.getResult()).orElseThrow());
 
-    auto TSpec = lyric_parser::Assignable::forSingular({"T"});
-    auto FutureTSpec = lyric_parser::Assignable::forSingular(declareFutureClassResult.getResult(), {TSpec});
-    auto StatusSpec = lyric_parser::Assignable::forSingular(
-        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Status));
-    auto BoolSpec = lyric_parser::Assignable::forSingular(
-        fundamentalCache->getFundamentalUrl(lyric_assembler::FundamentalSymbol::Bool));
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, FutureClass->declareCtor(
+            lyric_object::AccessType::Public, static_cast<tu_uint32>(StdSystemTrap::FUTURE_ALLOC)));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, lyric_common::TypeDef::noReturn()));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_CTOR));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+    }
+
+    auto *templateHandle = FutureClass->classTemplate();
+    auto TType = templateHandle->getPlaceholder("T");
+
+    lyric_assembler::TypeHandle *futureTHandle;
+    TU_ASSIGN_OR_RETURN (futureTHandle, typeCache->declareParameterizedType(
+        FutureClass->getSymbolUrl(), {TType}));
+    auto FutureTType = futureTHandle->getTypeDef();
 
     {
-        auto declareCtorResult = FutureClass->declareCtor(
-            {},
-            {},
-            {},
-            lyric_object::AccessType::Public,
-            static_cast<tu_uint32>(StdSystemTrap::FUTURE_ALLOC));
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareCtorResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_CTOR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, FutureClass->declareMethod(
+            "Complete", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("result", "", TType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, BoolType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_COMPLETE));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = FutureClass->declareMethod("Complete",
-            {
-                {{}, "result", "", TSpec, lyric_parser::BindingType::VALUE}
-            },
-            {},
-            {},
-            BoolSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_COMPLETE));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, FutureClass->declareMethod(
+            "Reject", lyric_object::AccessType::Public));
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("status", "", StatusType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, BoolType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_REJECT));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {
-        auto declareMethodResult = FutureClass->declareMethod("Reject",
-            {
-                {{}, "status", "", StatusSpec, lyric_parser::BindingType::VALUE}
-            },
-            {},
-            {},
-            BoolSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        auto *code = call->callProc()->procCode();
-        code->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_REJECT));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
-    }
-    {
-        auto declareMethodResult = FutureClass->declareMethod("Cancel",
-            {},
-            {},
-            {},
-            BoolSpec,
-            lyric_object::AccessType::Public);
-        auto *call = cast_symbol_to_call(symbolCache->getOrImportSymbol(declareMethodResult.getResult()).orElseThrow());
-        moduleEntry.compileBlock(R"(
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, FutureClass->declareMethod(
+            "Cancel", lyric_object::AccessType::Public));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, BoolType));
+        TU_RETURN_IF_STATUS (moduleEntry.compileBlock(R"(
             val cancelled: Cancelled = Cancelled{message = "cancelled"}
             this.Reject(cancelled)
-            )", call->callProc()->procBlock());
+            )", procHandle->procBlock()));
     }
 
-
-    return tempo_utils::Status();
+    return {};
 }

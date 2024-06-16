@@ -31,7 +31,7 @@ NativeStdLog::load(lyric_runtime::BytecodeSegment *segment) const
 }
 
 void
-NativeStdLog::unload() const
+NativeStdLog::unload(lyric_runtime::BytecodeSegment *segment) const
 {
 }
 

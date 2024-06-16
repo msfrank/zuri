@@ -23,7 +23,7 @@ TEST_F(StdSystemOperation, EvaluateEmitOperationWithIntrinsicValue)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
-        val op: EmitOperation = EmitOperation{value = 42}
+        val op: EmitOperation = EmitOperation{42}
         op.value
     )", options);
 
@@ -34,7 +34,7 @@ TEST_F(StdSystemOperation, EvaluateEmitOperationWithStringValue)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
-        val op: EmitOperation = EmitOperation{value = "hello, world!"}
+        val op: EmitOperation = EmitOperation{"hello, world!"}
         op.value
     )", options);
 
@@ -45,7 +45,7 @@ TEST_F(StdSystemOperation, EvaluateEmitOperationWithUrlValue)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
-        val op: EmitOperation = EmitOperation{value = `https://zuri.dev`}
+        val op: EmitOperation = EmitOperation{`https://zuri.dev`}
         op.value
     )", options);
 
@@ -56,7 +56,7 @@ TEST_F(StdSystemOperation, EvaluateAppendOperationWithIntrinsicValue)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
-        val op: AppendOperation = AppendOperation{path = "/", value = 42}
+        val op: AppendOperation = AppendOperation{"/", 42}
         op.value
     )", options);
 
@@ -67,7 +67,7 @@ TEST_F(StdSystemOperation, EvaluateInsertOperationWithIntrinsicValue)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
-        val op: InsertOperation = InsertOperation{path = "/", index = 0, value = 42}
+        val op: InsertOperation = InsertOperation{"/", 0, 42}
         op.value
     )", options);
 
@@ -78,7 +78,7 @@ TEST_F(StdSystemOperation, EvaluateUpdateOperationWithIntrinsicValue)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
-        val op: UpdateOperation = UpdateOperation{path = "/", ns = `foo`, id = 0, value = 42}
+        val op: UpdateOperation = UpdateOperation{"/", `foo`, 0, 42}
         op.value
     )", options);
 
@@ -89,7 +89,7 @@ TEST_F(StdSystemOperation, EvaluateReplaceOperationWithIntrinsicValue)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/system" ...
-        val op: ReplaceOperation = ReplaceOperation{path = "/", value = 42}
+        val op: ReplaceOperation = ReplaceOperation{"/", 42}
         op.value
     )", options);
 

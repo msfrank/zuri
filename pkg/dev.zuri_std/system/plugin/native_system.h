@@ -10,7 +10,7 @@ class NativeStdSystem : public lyric_runtime::NativeInterface {
 public:
     NativeStdSystem() = default;
     bool load(lyric_runtime::BytecodeSegment *segment) const override;
-    void unload() const override;
+    void unload(lyric_runtime::BytecodeSegment *segment) const override;
     lyric_runtime::NativeFunc getTrap(uint32_t index) const override;
     uint32_t numTraps() const override;
 };

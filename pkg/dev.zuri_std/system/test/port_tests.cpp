@@ -37,7 +37,7 @@ TEST_F(StdSystemPort, EvaluateSendEmitOperationWithStringValue)
     auto result = lyric_test::LyricProtocolTester::runSingleModuleInMockSandbox(R"(
         import from "//std/system" ...
         val port: Port = Acquire(`dev.zuri.proto:test`)
-        port.Send(EmitOperation{value = "hello, world!"})
+        port.Send(EmitOperation{"hello, world!"})
     )", protocolTesterOptions);
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellBool(true))));
@@ -94,8 +94,8 @@ TEST_F(StdSystemPort, EvaluateSendEmitOperationWithAttrValue)
     auto result = lyric_test::LyricProtocolTester::runSingleModuleInMockSandbox(R"(
         import from "//std/system" ...
         val port: Port = Acquire(`dev.zuri.proto:test`)
-        val root: Attr = Attr{ns = `io.fathomdata:ns:richtext-1`, id = 29, "Hello, world"}
-        port.Send(EmitOperation{value = root})
+        val root: Attr = Attr{`io.fathomdata:ns:richtext-1`, 29, "Hello, world"}
+        port.Send(EmitOperation{root})
     )", protocolTesterOptions);
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellBool(true))));
@@ -125,8 +125,8 @@ TEST_F(StdSystemPort, EvaluateSendEmitOperationWithElementValue)
     auto result = lyric_test::LyricProtocolTester::runSingleModuleInMockSandbox(R"(
         import from "//std/system" ...
         val port: Port = Acquire(`dev.zuri.proto:test`)
-        val root: Element = Element{ns = `io.fathomdata:ns:richtext-1`, id = 29, "Hello, world"}
-        port.Send(EmitOperation{value = root})
+        val root: Element = Element{`io.fathomdata:ns:richtext-1`, 29, "Hello, world"}
+        port.Send(EmitOperation{root})
     )", protocolTesterOptions);
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellBool(true))));
