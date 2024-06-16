@@ -39,7 +39,7 @@ TEST_F(StdOption, TestEvaluateNewOption)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
-        val opt: Option[Int] = Option[Int]{value = 42}
+        val opt: Option[Int] = Option[Int]{42}
         opt
     )", options);
 
@@ -65,7 +65,7 @@ TEST_F(StdOption, TestEvaluateOptionGet)
 {
     auto result = lyric_test::LyricTester::runSingleModule(R"(
         import from "//std/collections" ...
-        val opt: Option[Int] = Option[Int]{value = 42}
+        val opt: Option[Int] = Option[Int]{42}
         opt.Get()
     )", options);
 

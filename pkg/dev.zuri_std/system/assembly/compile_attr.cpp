@@ -47,6 +47,7 @@ build_std_system_Attr(
     auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
     auto UrlType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Url);
     auto IntrinsicType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Intrinsic);
+    auto UndefType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Undef);
     auto ElementType = lyric_common::TypeDef::forConcrete(lyric_common::SymbolUrl::fromString("#Element"));
     auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, ElementType });
 
@@ -68,6 +69,19 @@ build_std_system_Attr(
     auto *ValueField = cast_symbol_to_field(
         symbolCache->getOrImportSymbol(declareValueResult.getResult().symbolUrl).orElseThrow());
 
+    lyric_common::SymbolUrl valueInitializerUrl;
+    {
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, block->declareFunction(
+            "Attr.$init$value", lyric_object::AccessType::Public, {}));
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall( {}, UndefType));
+        auto *codeBuilder = procHandle->procCode();
+        TU_RETURN_IF_NOT_OK (codeBuilder->loadUndef());
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        valueInitializerUrl = callSymbol->getSymbolUrl();
+    }
+
     {
         lyric_assembler::CallSymbol *callSymbol;
         TU_ASSIGN_OR_RETURN (callSymbol, AttrStruct->declareCtor(
@@ -75,11 +89,12 @@ build_std_system_Attr(
         lyric_assembler::PackBuilder packBuilder;
         TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("ns", "", UrlType, false));
         TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("id", "", IntType, false));
-        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("value", "", ValueType, false));
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListOptParameter("value", "", ValueType, false));
         lyric_assembler::ParameterPack parameterPack;
         TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
         lyric_assembler::ProcHandle *procHandle;
         TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, lyric_common::TypeDef::noReturn()));
+        callSymbol->putInitializer("value", valueInitializerUrl);
         auto *codeBuilder = procHandle->procCode();
 
         auto *SuperStruct = AttrStruct->superStruct();

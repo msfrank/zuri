@@ -19,6 +19,19 @@ protected:
     }
 };
 
+TEST_F(StdSystemAttr, EvaluateAttrWithDefaultValue) {
+    auto result = lyric_test::LyricTester::runSingleModule(
+        lyric_packaging::PackageSpecifier("test", "localhost", 0, 0, 0),
+        R"(
+        import from "//std/system" ...
+        val attr: Attr = Attr{`test`, 1}
+        attr.value
+        )",
+        options);
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellUndef())));
+}
+
 TEST_F(StdSystemAttr, EvaluateAttrWithIntrinsicValue) {
     auto result = lyric_test::LyricTester::runSingleModule(
         lyric_packaging::PackageSpecifier("test", "localhost", 0, 0, 0),
@@ -30,4 +43,19 @@ TEST_F(StdSystemAttr, EvaluateAttrWithIntrinsicValue) {
         options);
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(42))));
+}
+
+TEST_F(StdSystemAttr, EvaluateAttrWithElementValue) {
+    auto result = lyric_test::LyricTester::runSingleModule(
+        lyric_packaging::PackageSpecifier("test", "localhost", 0, 0, 0),
+        R"(
+        import from "//std/system" ...
+        val root: Element = Element{`io.fathomdata:ns:richtext-1`, 29, "Hello, world"}
+        val attr: Attr = Attr{`test`, 1, root}
+        attr.value
+        )",
+        options);
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(
+        RunModule(DataCellRef(lyric_common::SymbolPath({"Element"})))));
 }

@@ -21,7 +21,7 @@ build_std_collections_Option(
 
             val _value: T | Nil
 
-            init(named value: T | Nil = nil) {
+            init(value: T | Nil = nil) {
                 set this._value = value
             }
 
