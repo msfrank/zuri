@@ -23,12 +23,9 @@ build_std_system_Operation(
     auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto resolveRecordResult = block->resolveStruct(
-        lyric_parser::Assignable::forSingular({"Record"}));
-    if (resolveRecordResult.isStatus())
-        return resolveRecordResult.getStatus();
-    auto *RecordStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(resolveRecordResult.getResult()).orElseThrow());
+    lyric_assembler::StructSymbol *RecordStruct;
+    TU_ASSIGN_OR_RETURN (RecordStruct, block->resolveStruct(
+        fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Record)));
 
     auto declareOperationStructResult = block->declareStruct("Operation",
         RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Sealed, true);

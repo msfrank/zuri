@@ -24,12 +24,9 @@ build_std_collections_HashMap(
     auto *symbolCache = state.symbolCache();
     auto *typeCache = state.typeCache();
 
-    auto resolveObjectResult = parentBlock->resolveClass(
-        lyric_parser::Assignable::forSingular({"Object"}));
-    if (resolveObjectResult.isStatus())
-        return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *ObjectClass;
+    TU_ASSIGN_OR_RETURN (ObjectClass, parentBlock->resolveClass(
+        fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Object)));
 
     auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
     auto BoolType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Bool);

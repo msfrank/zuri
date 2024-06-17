@@ -18,14 +18,12 @@ declare_std_system_Element(
     lyric_assembler::AssemblyState &state,
     lyric_assembler::BlockHandle *block)
 {
+    auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto resolveRecordResult = block->resolveStruct(
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Record"})));
-    if (resolveRecordResult.isStatus())
-        return resolveRecordResult.getStatus();
-    auto *RecordStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(resolveRecordResult.getResult()).orElseThrow());
+    lyric_assembler::StructSymbol *RecordStruct;
+    TU_ASSIGN_OR_RETURN (RecordStruct, block->resolveStruct(
+        fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Record)));
 
     auto declareElementStructResult = block->declareStruct("Element",
         RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Any);

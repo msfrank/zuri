@@ -21,12 +21,9 @@ build_std_system_Port(
     auto *symbolCache = state.symbolCache();
     auto *typeCache = state.typeCache();
 
-    auto resolveObjectResult = block->resolveClass(
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Object"})));
-    if (resolveObjectResult.isStatus())
-        return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *ObjectClass;
+    TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
+        fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Object)));
 
     auto declarePortClassResult = block->declareClass("Port",
         ObjectClass,

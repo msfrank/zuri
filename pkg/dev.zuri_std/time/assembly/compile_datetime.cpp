@@ -2,6 +2,7 @@
 
 #include <lyric_assembler/call_symbol.h>
 #include <lyric_assembler/class_symbol.h>
+#include <lyric_assembler/fundamental_cache.h>
 #include <lyric_assembler/pack_builder.h>
 #include <lyric_assembler/proc_handle.h>
 #include <lyric_assembler/symbol_cache.h>
@@ -14,14 +15,12 @@ build_std_time_Datetime(
     lyric_assembler::AssemblyState &state,
     lyric_assembler::BlockHandle *block)
 {
+    auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto resolveObjectResult = block->resolveClass(
-        lyric_parser::Assignable::forSingular(lyric_common::SymbolPath({"Object"})));
-    if (resolveObjectResult.isStatus())
-        return resolveObjectResult.getStatus();
-    auto *ObjectClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(resolveObjectResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *ObjectClass;
+    TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
+        fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Object)));
 
     auto declareDatetimeClassResult = block->declareClass(
         "Datetime", ObjectClass, lyric_object::AccessType::Public, {});
