@@ -97,6 +97,8 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set_target_properties(std-collections-plugin PROPERTIES MACOSX_RPATH TRUE)
 endif()
 
+set_target_properties(std-collections-plugin PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 target_include_directories(std-collections-plugin PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_BINARY_DIR}/include

@@ -39,7 +39,10 @@ target_link_libraries(ZuriRuntime
 # build zuri program
 add_executable(zuri src/main.cpp)
 
-set_target_properties(zuri PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_target_properties(zuri PROPERTIES
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+    INSTALL_RPATH ${BIN_RPATH}
+    )
 
 target_include_directories(zuri PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

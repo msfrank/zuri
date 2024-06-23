@@ -5,6 +5,7 @@ if (NOT TARGET zuri::zuri)
 endif ()
 
 # zuri packages
+set(ZURI_STD_PACKAGE_ID                 "@ZURI_STD_PACKAGE_ID@")
 set(ZURI_STD_PACKAGE_AUTHORITY          "@ZURI_STD_PACKAGE_AUTHORITY@")
 set(ZURI_STD_PACKAGE_URL                "@ZURI_STD_PACKAGE_URL@")
 

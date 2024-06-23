@@ -91,13 +91,15 @@ endif()
 # set the optimization level
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZATION_LEVEL}")
 
-# set rpath for executable targets based on relative path from the executable
+# define the rpath for executable and library targets
 if (APPLE)
-    set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
+    set(BIN_RPATH "@executable_path/../lib")
+    set(LIB_RPATH "@loader_path")
 elseif(WIN32)
     # do nothing
 else()
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+    set(BIN_RPATH "$ORIGIN/../lib")
+    set(LIB_RPATH "$ORIGIN/")
 endif()
 
 #######################################################################
@@ -194,6 +196,7 @@ set(ZURI_PACKAGE_GROUP                      "dev.zuri")
 # zuri std package
 set(ZURI_STD_PACKAGE_NAME                   "std")
 set(ZURI_STD_PACKAGE_VERSION                "${FULL_VERSION}")
+set(ZURI_STD_PACKAGE_ID                     "${ZURI_PACKAGE_GROUP}_${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}")
 set(ZURI_STD_PACKAGE_AUTHORITY              "${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}@zuri.dev")
 set(ZURI_STD_PACKAGE_URL                    "dev.zuri.pkg://${ZURI_STD_PACKAGE_AUTHORITY}")
 
