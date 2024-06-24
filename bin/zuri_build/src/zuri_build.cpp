@@ -18,7 +18,7 @@ tempo_utils::Status
 run_zuri_build(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::current_path());
-    tempo_config::PathParser distributionRootParser(ZURI_RUNTIME_DISTRIBUTION_ROOT);
+    tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
     tempo_config::PathParser buildRootParser(std::filesystem::path{});
     tempo_config::PathParser installRootParser(std::filesystem::path{});
     tempo_config::IntegerParser jobParallelismParser(0);

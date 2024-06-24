@@ -52,6 +52,11 @@ EphemeralSession::configure()
 
     lyric_runtime::InterpreterStateOptions options;
 
+    auto preludeLocationString = m_configStore.getGlobalNode("preludeLocation").toValue().getValue();
+    if (!preludeLocationString.empty()) {
+        options.preludeLocation = lyric_common::AssemblyLocation::fromString(preludeLocationString);
+    }
+
     // construct the loader chain
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
     loaderChain.push_back(m_builder->getBootstrapLoader());
@@ -63,7 +68,7 @@ EphemeralSession::configure()
     TU_ASSIGN_OR_RETURN(m_state, lyric_runtime::InterpreterState::create(options));
 
     // configuration was completed successfully
-    return tempo_utils::Status();
+    return {};
 }
 
 tempo_utils::Result<std::string>

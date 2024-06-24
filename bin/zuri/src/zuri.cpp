@@ -14,7 +14,7 @@ run_zuri(int argc, const char *argv[])
 {
 
     tempo_config::PathParser workspaceRootParser(std::filesystem::path{});
-    tempo_config::PathParser distributionRootParser(ZURI_RUNTIME_DISTRIBUTION_ROOT);
+    tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
     tempo_config::PathParser sessionRootParser(std::filesystem::path{});
     tempo_config::BooleanParser colorizeOutputParser(false);
     tempo_config::IntegerParser verboseParser(0);
@@ -25,7 +25,7 @@ run_zuri(int argc, const char *argv[])
 
     std::vector<tempo_command::Default> shellDefaults = {
         {"workspaceRoot", workspaceRootParser.getDefault(),
-            "Specify an alternative workspace root directory", "DIR"},
+            "Load config from workspace", "DIR"},
         {"distributionRoot", distributionRootParser.getDefault(),
             "Specify an alternative distribution root directory", "DIR"},
         {"sessionId", {}, "Resume the specified session", "ID"},
