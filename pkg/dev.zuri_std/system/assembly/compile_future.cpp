@@ -56,6 +56,7 @@ build_std_system_Future(
 
     auto *templateHandle = FutureClass->classTemplate();
     auto TType = templateHandle->getPlaceholder("T");
+    auto TOrStatusType = lyric_common::TypeDef::forUnion({TType, StatusType});
 
     lyric_assembler::TypeHandle *futureTHandle;
     TU_ASSIGN_OR_RETURN (futureTHandle, typeCache->declareParameterizedType(
@@ -100,6 +101,42 @@ build_std_system_Future(
             val cancelled: Cancelled = Cancelled{message = "cancelled"}
             this.Reject(cancelled)
             )", procHandle->procBlock()));
+    }
+    {
+        lyric_object::TemplateParameter UParam;
+        UParam.name = "U";
+        UParam.index = 0;
+        UParam.typeDef = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Any);
+        UParam.bound = lyric_object::BoundType::None;
+        UParam.variance = lyric_object::VarianceType::Invariant;
+
+        lyric_assembler::CallSymbol *callSymbol;
+        TU_ASSIGN_OR_RETURN (callSymbol, FutureClass->declareMethod(
+            "Then", lyric_object::AccessType::Public, {UParam}));
+
+        auto *functionTemplateHandle = callSymbol->callTemplate();
+        auto UType = functionTemplateHandle->getPlaceholder("U");
+        auto UOrStatusType = lyric_common::TypeDef::forUnion({UType, StatusType});
+
+        lyric_assembler::TypeHandle *thenFunctionHandle;
+        TU_ASSIGN_OR_RETURN (thenFunctionHandle, typeCache->declareFunctionType(
+            UOrStatusType, {TOrStatusType}, {}));
+        auto ThenFunctionType = thenFunctionHandle->getTypeDef();
+
+        lyric_assembler::TypeHandle *futureUHandle;
+        TU_ASSIGN_OR_RETURN (futureUHandle, typeCache->declareParameterizedType(
+            FutureClass->getSymbolUrl(), {UType}));
+        auto FutureUType = futureUHandle->getTypeDef();
+
+        lyric_assembler::PackBuilder packBuilder;
+        TU_RETURN_IF_NOT_OK (packBuilder.appendListParameter("f", "", ThenFunctionType, false));
+        lyric_assembler::ParameterPack parameterPack;
+        TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
+        lyric_assembler::ProcHandle *procHandle;
+        TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, FutureUType));
+        auto *codeBuilder = procHandle->procCode();
+        codeBuilder->trap(static_cast<tu_uint32>(StdSystemTrap::FUTURE_THEN));
+        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
 
     return {};

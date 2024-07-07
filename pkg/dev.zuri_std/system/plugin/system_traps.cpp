@@ -223,7 +223,8 @@ std_system_spawn(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     TU_ASSERT (workerTask != nullptr);
 
     // push a new frame onto the worker task call stack
-    if (!closure->applyClosure(workerTask, state))
+    std::vector<lyric_runtime::DataCell> args;
+    if (!closure->applyClosure(workerTask, args, state))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to apply closure");
 

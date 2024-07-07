@@ -167,6 +167,13 @@ run_zuri(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionIdString, sessionIdParser,
         shellConfig, "sessionId"));
 
+    // if distribution root is relative, then make it absolute
+    if (distributionRoot.is_relative()) {
+        auto executableDir = std::filesystem::path(argv[0]).parent_path();
+        distributionRoot = executableDir / distributionRoot;
+    }
+    TU_LOG_V << "using distribution root " << distributionRoot;
+
     tempo_config::ConfigMap toolConfig;
     tempo_config::ConfigMap vendorConfig;
 

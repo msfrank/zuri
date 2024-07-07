@@ -7,6 +7,7 @@ include(GoogleTest)
 set(TEST_CASES
     attr_tests.cpp
     element_tests.cpp
+    future_tests.cpp
     operation_tests.cpp
     port_tests.cpp
     queue_tests.cpp

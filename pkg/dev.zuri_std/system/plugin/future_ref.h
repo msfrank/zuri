@@ -48,6 +48,10 @@ public:
     bool resolveFuture(lyric_runtime::DataCell &result) override;
     std::string toString() const override;
 
+    bool isFinished() const;
+    std::shared_ptr<lyric_runtime::Promise> getPromise() const;
+
+    tempo_utils::Status forward(uv_async_t *async);
     tempo_utils::Status complete(const lyric_runtime::DataCell &result);
     tempo_utils::Status reject(const lyric_runtime::DataCell &result);
 
@@ -58,6 +62,7 @@ protected:
 private:
     FutureState m_state;
     std::shared_ptr<lyric_runtime::Promise> m_promise;
+    std::vector<uv_async_t *> m_deps;
 
     void checkState();
 };
@@ -79,6 +84,10 @@ tempo_utils::Status future_reject(
     lyric_runtime::InterpreterState *state);
 
 tempo_utils::Status future_cancel(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state);
+
+tempo_utils::Status future_then(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 

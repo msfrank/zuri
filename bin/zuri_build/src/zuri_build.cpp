@@ -191,12 +191,16 @@ run_zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(targets, targetsParser,
         commandConfig, "targets"));
 
-    // load the workspace config from the workspace root
-    auto loadConfigResult = load_workspace_config(workspaceRoot, distributionRoot);
-    if (loadConfigResult.isStatus())
-        return loadConfigResult.getStatus();
-    auto config = loadConfigResult.getResult();
+    // if distribution root is relative, then make it absolute
+    if (distributionRoot.is_relative()) {
+        auto executableDir = std::filesystem::path(argv[0]).parent_path();
+        distributionRoot = executableDir / distributionRoot;
+    }
+    TU_LOG_V << "using distribution root " << distributionRoot;
 
+    // load the workspace config from the workspace root
+    std::shared_ptr<tempo_config::WorkspaceConfig> config;
+    TU_ASSIGN_OR_RETURN (config, load_workspace_config(workspaceRoot, distributionRoot));
     workspaceRoot = config->getWorkspaceRoot();
 
     // if build root was not defined in commandConfig, then default to subdirectory of the workspace root
@@ -218,16 +222,11 @@ run_zuri_build(int argc, const char *argv[])
 
     // construct the builder based on workspace config and config overrides
     lyric_build::LyricBuilder builder(configStore, builderOptions);
-
-    auto configureStatus = builder.configure();
-    if (!configureStatus.isOk())
-        return configureStatus;
+    TU_RETURN_IF_NOT_OK (builder.configure());
 
     //
-    auto computeTargetResult = builder.computeTargets(targets, {}, {}, {});
-    if (computeTargetResult.isStatus())
-        return computeTargetResult.getStatus();
-    auto targetComputationSet = computeTargetResult.getResult();
+    lyric_build::TargetComputationSet targetComputationSet;
+    TU_ASSIGN_OR_RETURN (targetComputationSet, builder.computeTargets(targets, {}, {}, {}));
 
     auto diagnostics = targetComputationSet.getDiagnostics();
     diagnostics->printDiagnostics();

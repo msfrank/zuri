@@ -11,11 +11,10 @@ add_custom_command (
     OUTPUT
         ${CMAKE_CURRENT_BINARY_DIR}/install/examples_helloworld-${FULL_VERSION}.zpk
     COMMAND
-      zuri-build -vv
+      zuri-build -v
         -W ${CMAKE_CURRENT_BINARY_DIR}
         -B ${CMAKE_CURRENT_BINARY_DIR}
         -I ${PACKAGE_DIRECTORY}
-        --distribution-root ${CMAKE_BINARY_DIR}/resources
         package:
     WORKING_DIRECTORY
       ${CMAKE_CURRENT_BINARY_DIR}

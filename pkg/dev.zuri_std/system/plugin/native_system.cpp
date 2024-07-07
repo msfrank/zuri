@@ -39,6 +39,8 @@ NativeStdSystem::getTrap(uint32_t index) const
             return future_reject;
         case StdSystemTrap::FUTURE_CANCEL:
             return future_cancel;
+        case StdSystemTrap::FUTURE_THEN:
+            return future_then;
         case StdSystemTrap::APPEND_OPERATION_ALLOC:
             return append_operation_alloc;
         case StdSystemTrap::INSERT_OPERATION_ALLOC:
