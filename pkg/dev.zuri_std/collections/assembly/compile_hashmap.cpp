@@ -16,7 +16,7 @@
 
 tempo_utils::Status
 build_std_collections_HashMap(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *parentBlock,
     lyric_typing::TypeSystem *typeSystem)
 {
@@ -101,13 +101,9 @@ build_std_collections_HashMap(
         equalsAddress = callSymbol->getAddress();
     }
 
-    auto declareHashMapClassResult = parentBlock->declareClass(
-        "HashMap", ObjectClass, lyric_object::AccessType::Public,
-        {KParam, VParam});
-    if (declareHashMapClassResult.isStatus())
-        return declareHashMapClassResult.getStatus();
-    auto *HashMapClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareHashMapClassResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *HashMapClass;
+    TU_ASSIGN_OR_RETURN (HashMapClass, parentBlock->declareClass(
+        "HashMap", ObjectClass, lyric_object::AccessType::Public, {KParam, VParam}));
 
     auto *templateHandle = HashMapClass->classTemplate();
     auto KType = templateHandle->getPlaceholder("K");
@@ -232,7 +228,7 @@ build_std_collections_HashMap(
         auto putAddress = putCall->getAddress();
 
         // initialize counter to 0
-        auto counter = procBlock->declareTemporary(IntType, lyric_parser::BindingType::VARIABLE).orElseThrow();
+        auto counter = procBlock->declareTemporary(IntType, /* isVariable= */ true).orElseThrow();
         codeBuilder->loadInt(0);
         procBlock->store(counter);
         // top of the loop

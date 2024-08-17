@@ -147,7 +147,7 @@ HashMapEq::operator()(const HashMapKey& lhs, const HashMapKey& rhs) const
 {
     auto *currentCoro = m_state->currentCoro();
 
-    TU_ASSERT (m_cmp.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (m_cmp.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
 
     std::vector<lyric_runtime::DataCell> args {lhs.cell, rhs.cell, m_eq};
     lyric_runtime::InterpreterStatus status;

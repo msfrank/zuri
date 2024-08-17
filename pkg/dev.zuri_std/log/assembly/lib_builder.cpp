@@ -25,7 +25,7 @@ build(int argc, char *argv[])
     auto span = scopeManager.makeSpan();
     span->setOperationName("buildZuriZtdLog");
 
-    auto location = lyric_common::AssemblyLocation::fromString("/log");
+    auto location = lyric_common::ModuleLocation::fromString("/log");
 
     // build the loader chain
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
@@ -36,23 +36,23 @@ build(int argc, char *argv[])
 
     auto sharedModuleCache = lyric_importer::ModuleCache::create(loader);
 
-    lyric_assembler::AssemblyState assemblyState(location, sharedModuleCache, &scopeManager);
+    lyric_assembler::ObjectState objectState(location, sharedModuleCache, &scopeManager);
 
     // initialize the assembler
-    TU_RETURN_IF_NOT_OK (assemblyState.initialize());
+    TU_RETURN_IF_NOT_OK (objectState.initialize());
 
     // define the module entry point
-    lyric_compiler::ModuleEntry moduleEntry(&assemblyState);
+    lyric_compiler::ModuleEntry moduleEntry(&objectState);
     TU_RETURN_IF_NOT_OK (moduleEntry.initialize());
 
     auto *root = moduleEntry.getRoot();
     auto *rootBlock = root->namespaceBlock();
 
-    TU_RETURN_IF_NOT_OK (build_std_log(assemblyState, rootBlock));
+    TU_RETURN_IF_NOT_OK (build_std_log(objectState, rootBlock));
 
     // serialize state to object
     lyric_object::LyricObject object;
-    TU_ASSIGN_OR_RETURN (object, assemblyState.toAssembly());
+    TU_ASSIGN_OR_RETURN (object, objectState.toObject());
 
     // write object to file
     tempo_utils::FileWriter writer(destinationPath, object.bytesView(),
@@ -61,7 +61,7 @@ build(int argc, char *argv[])
         return writer.getStatus();
 
     TU_LOG_INFO << "wrote output to " << destinationPath;
-    return tempo_utils::Status();
+    return {};
 }
 
 int

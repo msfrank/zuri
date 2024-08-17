@@ -54,7 +54,7 @@ EphemeralSession::configure()
 
     auto preludeLocationString = m_configStore.getGlobalNode("preludeLocation").toValue().getValue();
     if (!preludeLocationString.empty()) {
-        options.preludeLocation = lyric_common::AssemblyLocation::fromString(preludeLocationString);
+        options.preludeLocation = lyric_common::ModuleLocation::fromString(preludeLocationString);
     }
 
     // construct the loader chain
@@ -95,7 +95,7 @@ EphemeralSession::parseLine(const char *data, size_t size)
     return fragment;
 }
 
-tempo_utils::Result<lyric_common::AssemblyLocation>
+tempo_utils::Result<lyric_common::ModuleLocation>
 EphemeralSession::compileFragment(const std::string &fragment)
 {
     auto moduleName = tempo_utils::UUID::randomUUID().toString();
@@ -104,7 +104,7 @@ EphemeralSession::compileFragment(const std::string &fragment)
 
     // write the fragment to the fragment store
     m_fragmentStore->insertFragment(fragmentUrl, fragment, ToUnixMillis(absl::Now()));
-    auto moduleLocation = lyric_common::AssemblyLocation::fromUrl(fragmentUrl);
+    auto moduleLocation = lyric_common::ModuleLocation::fromUrl(fragmentUrl);
 
     // configure the build task
     lyric_build::TaskId target("compile_module", fragmentUrl.toString());
@@ -136,7 +136,7 @@ EphemeralSession::compileFragment(const std::string &fragment)
     auto cache = m_builder->getCache();
     lyric_build::TraceId moduleTrace(targetState.getHash(), target.getDomain(), target.getId());
     auto generation = cache->loadTrace(moduleTrace);
-    modulePath.replace_extension(lyric_common::kAssemblyFileSuffix);
+    modulePath.replace_extension(lyric_common::kObjectFileSuffix);
     lyric_build::ArtifactId moduleArtifact(generation, targetState.getHash(), fragmentUrl);
 
     // read the object from the build cache
@@ -149,14 +149,14 @@ EphemeralSession::compileFragment(const std::string &fragment)
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandInvariant,
             "failed to load fragment object");
 
-    m_fragmentStore->insertAssembly(moduleLocation, object);
+    m_fragmentStore->insertObject(moduleLocation, object);
 
     // construct module location based on the source path
     return moduleLocation;
 }
 
 tempo_utils::Result<lyric_runtime::DataCell>
-EphemeralSession::executeFragment(const lyric_common::AssemblyLocation &location)
+EphemeralSession::executeFragment(const lyric_common::ModuleLocation &location)
 {
     // initialize the heap and interpreter state
     auto initStatus = m_state->reload(location);

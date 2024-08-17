@@ -58,7 +58,7 @@ FragmentStore::listResourcesRecursively(
 }
 
 tempo_utils::Result<bool>
-FragmentStore::hasAssembly(const lyric_common::AssemblyLocation &location) const
+FragmentStore::hasModule(const lyric_common::ModuleLocation &location) const
 {
     auto url = location.toUrl();
     if (url.schemeView() != "x.fragment")
@@ -66,26 +66,26 @@ FragmentStore::hasAssembly(const lyric_common::AssemblyLocation &location) const
     return m_meta.contains(url);
 }
 
-tempo_utils::Result<Option<lyric_common::AssemblyLocation>>
-FragmentStore::resolveAssembly(const lyric_common::AssemblyLocation &location) const
+tempo_utils::Result<Option<lyric_common::ModuleLocation>>
+FragmentStore::resolveModule(const lyric_common::ModuleLocation &location) const
 {
     auto url = location.toUrl();
     if (url.schemeView() != "x.fragment")
-        return Option<lyric_common::AssemblyLocation>();
+        return Option<lyric_common::ModuleLocation>();
     return Option(location);
 }
 
 tempo_utils::Result<Option<lyric_object::LyricObject>>
-FragmentStore::loadAssembly(const lyric_common::AssemblyLocation &location)
+FragmentStore::loadModule(const lyric_common::ModuleLocation &location)
 {
-    if (!m_assemblies.contains(location))
+    if (!m_objects.contains(location))
         return Option<lyric_object::LyricObject>();
-    return Option(m_assemblies.at(location));
+    return Option(m_objects.at(location));
 }
 
 tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>>
 FragmentStore::loadPlugin(
-    const lyric_common::AssemblyLocation &location,
+    const lyric_common::ModuleLocation &location,
     const lyric_object::PluginSpecifier &specifier)
 {
     return Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>();
@@ -109,9 +109,9 @@ FragmentStore::insertFragment(
 }
 
 void
-FragmentStore::insertAssembly(
-    const lyric_common::AssemblyLocation &assemblyLocation,
+FragmentStore::insertObject(
+    const lyric_common::ModuleLocation &assemblyLocation,
     const lyric_object::LyricObject &object)
 {
-    m_assemblies[assemblyLocation] = object;
+    m_objects[assemblyLocation] = object;
 }

@@ -15,11 +15,10 @@
 
 tempo_utils::Result<lyric_assembler::ClassSymbol *>
 declare_std_collections_TreeSetIterator(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
@@ -32,19 +31,13 @@ declare_std_collections_TreeSetIterator(
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Contravariant;
 
-    auto declareTreeSetIteratorClassResult = block->declareClass("TreeSetIterator",
-        ObjectClass, lyric_object::AccessType::Public, {TParam});
-    if (declareTreeSetIteratorClassResult.isStatus())
-        return declareTreeSetIteratorClassResult.getStatus();
-    auto *TreeSetIteratorClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareTreeSetIteratorClassResult.getResult()).orElseThrow());
-    return TreeSetIteratorClass;
+    return block->declareClass("TreeSetIterator", ObjectClass, lyric_object::AccessType::Public, {TParam});
 }
 
 tempo_utils::Status
 build_std_collections_TreeSetIterator(
     lyric_assembler::ClassSymbol *TreeSetIteratorClass,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {

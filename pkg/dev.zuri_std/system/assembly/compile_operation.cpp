@@ -15,24 +15,20 @@
 
 tempo_utils::Result<lyric_assembler::StructSymbol *>
 build_std_system_Operation(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_assembler::StructSymbol *AttrStruct,
     lyric_typing::TypeSystem *typeSystem)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::StructSymbol *RecordStruct;
     TU_ASSIGN_OR_RETURN (RecordStruct, block->resolveStruct(
         fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Record)));
 
-    auto declareOperationStructResult = block->declareStruct("Operation",
-        RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Sealed, true);
-    if (declareOperationStructResult.isStatus())
-        return declareOperationStructResult.getStatus();
-    auto *OperationStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(declareOperationStructResult.getResult()).orElseThrow());
+    lyric_assembler::StructSymbol *OperationStruct;
+    TU_ASSIGN_OR_RETURN (OperationStruct, block->declareStruct(
+        "Operation", RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Sealed, true));
 
     auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
     auto StringType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::String);
@@ -86,19 +82,16 @@ build_std_system_Operation(
 tempo_utils::Status
 build_std_system_AppendOperation(
     lyric_assembler::StructSymbol *OperationStruct,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {
     auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto declareAppendOperationStructResult = block->declareStruct("AppendOperation",
-        OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
-    if (declareAppendOperationStructResult.isStatus())
-        return declareAppendOperationStructResult.getStatus();
-    auto *AppendOperationStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(declareAppendOperationStructResult.getResult()).orElseThrow());
+    lyric_assembler::StructSymbol *AppendOperationStruct;
+    TU_ASSIGN_OR_RETURN (AppendOperationStruct, block->declareStruct(
+        "AppendOperation", OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final));
 
     //
     OperationStruct->putSealedType(AppendOperationStruct->getAssignableType());
@@ -110,18 +103,12 @@ build_std_system_AppendOperation(
     auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, AttrType, ElementType });
 
     // declare the "path" member
-    auto declarePathMemberResult = AppendOperationStruct->declareMember("path", StringType);
-    if (declarePathMemberResult.isStatus())
-        return declarePathMemberResult.getStatus();
-    auto *PathField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declarePathMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *PathField;
+    TU_ASSIGN_OR_RETURN (PathField, AppendOperationStruct->declareMember("path", StringType));
 
     // declare the "value" member
-    auto declareValueMemberResult = AppendOperationStruct->declareMember("value", ValueType);
-    if (declareValueMemberResult.isStatus())
-        return declareValueMemberResult.getStatus();
-    auto *ValueField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *ValueField;
+    TU_ASSIGN_OR_RETURN (ValueField, AppendOperationStruct->declareMember("value", ValueType));
 
     {
         lyric_assembler::CallSymbol *callSymbol;
@@ -192,19 +179,16 @@ build_std_system_AppendOperation(
 tempo_utils::Status
 build_std_system_InsertOperation(
     lyric_assembler::StructSymbol *OperationStruct,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {
     auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto declareInsertOperationStructResult = block->declareStruct("InsertOperation",
-        OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
-    if (declareInsertOperationStructResult.isStatus())
-        return declareInsertOperationStructResult.getStatus();
-    auto *InsertOperationStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(declareInsertOperationStructResult.getResult()).orElseThrow());
+    lyric_assembler::StructSymbol *InsertOperationStruct;
+    TU_ASSIGN_OR_RETURN (InsertOperationStruct, block->declareStruct(
+        "InsertOperation", OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final));
 
     //
     OperationStruct->putSealedType(InsertOperationStruct->getAssignableType());
@@ -217,25 +201,16 @@ build_std_system_InsertOperation(
     auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, AttrType, ElementType });
 
     // declare the "path" member
-    auto declarePathMemberResult = InsertOperationStruct->declareMember("path", StringType);
-    if (declarePathMemberResult.isStatus())
-        return declarePathMemberResult.getStatus();
-    auto *PathField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declarePathMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *PathField;
+    TU_ASSIGN_OR_RETURN (PathField, InsertOperationStruct->declareMember("path", StringType));
 
     // declare the "index" member
-    auto declareIndexMemberResult = InsertOperationStruct->declareMember("index", IntType);
-    if (declareIndexMemberResult.isStatus())
-        return declareIndexMemberResult.getStatus();
-    auto *IndexField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareIndexMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *IndexField;
+    TU_ASSIGN_OR_RETURN (IndexField, InsertOperationStruct->declareMember("index", IntType));
 
     // declare the "value" member
-    auto declareValueMemberResult = InsertOperationStruct->declareMember("value", ValueType);
-    if (declareValueMemberResult.isStatus())
-        return declareValueMemberResult.getStatus();
-    auto *ValueField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *ValueField;
+    TU_ASSIGN_OR_RETURN (ValueField, InsertOperationStruct->declareMember("value", ValueType));
 
     {
         lyric_assembler::CallSymbol *callSymbol;
@@ -313,19 +288,16 @@ build_std_system_InsertOperation(
 tempo_utils::Status
 build_std_system_UpdateOperation(
     lyric_assembler::StructSymbol *OperationStruct,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {
     auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto declareUpdateOperationStructResult = block->declareStruct("UpdateOperation",
-        OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
-    if (declareUpdateOperationStructResult.isStatus())
-        return declareUpdateOperationStructResult.getStatus();
-    auto *UpdateOperationStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(declareUpdateOperationStructResult.getResult()).orElseThrow());
+    lyric_assembler::StructSymbol *UpdateOperationStruct;
+    TU_ASSIGN_OR_RETURN (UpdateOperationStruct, block->declareStruct(
+        "UpdateOperation", OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final));
 
     //
     OperationStruct->putSealedType(UpdateOperationStruct->getAssignableType());
@@ -339,32 +311,20 @@ build_std_system_UpdateOperation(
     auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, AttrType, ElementType });
 
     // declare the "path" member
-    auto declarePathMemberResult = UpdateOperationStruct->declareMember("path", StringType);
-    if (declarePathMemberResult.isStatus())
-        return declarePathMemberResult.getStatus();
-    auto *PathField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declarePathMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *PathField;
+    TU_ASSIGN_OR_RETURN (PathField, UpdateOperationStruct->declareMember("path", StringType));
 
     // declare the "ns" member
-    auto declareNsMemberResult = UpdateOperationStruct->declareMember("ns", UrlType);
-    if (declareNsMemberResult.isStatus())
-        return declareNsMemberResult.getStatus();
-    auto *NsField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareNsMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *NsField;
+    TU_ASSIGN_OR_RETURN (NsField, UpdateOperationStruct->declareMember("ns", UrlType));
 
     // declare the "id" member
-    auto declareIdMemberResult = UpdateOperationStruct->declareMember("id", IntType);
-    if (declareIdMemberResult.isStatus())
-        return declareIdMemberResult.getStatus();
-    auto *IdField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareIdMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *IdField;
+    TU_ASSIGN_OR_RETURN (IdField, UpdateOperationStruct->declareMember("id", IntType));
 
     // declare the "value" member
-    auto declareValueMemberResult = UpdateOperationStruct->declareMember("value", ValueType);
-    if (declareValueMemberResult.isStatus())
-        return declareValueMemberResult.getStatus();
-    auto *ValueField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *ValueField;
+    TU_ASSIGN_OR_RETURN (ValueField, UpdateOperationStruct->declareMember("value", ValueType));
 
     {
         lyric_assembler::CallSymbol *callSymbol;
@@ -450,19 +410,16 @@ build_std_system_UpdateOperation(
 tempo_utils::Status
 build_std_system_ReplaceOperation(
     lyric_assembler::StructSymbol *OperationStruct,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {
     auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto declareReplaceOperationStructResult = block->declareStruct("ReplaceOperation",
-        OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
-    if (declareReplaceOperationStructResult.isStatus())
-        return declareReplaceOperationStructResult.getStatus();
-    auto *ReplaceOperationStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(declareReplaceOperationStructResult.getResult()).orElseThrow());
+    lyric_assembler::StructSymbol *ReplaceOperationStruct;
+    TU_ASSIGN_OR_RETURN (ReplaceOperationStruct, block->declareStruct(
+        "ReplaceOperation", OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final));
 
     //
     OperationStruct->putSealedType(ReplaceOperationStruct->getAssignableType());
@@ -474,18 +431,12 @@ build_std_system_ReplaceOperation(
     auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, AttrType, ElementType });
 
     // declare the "path" member
-    auto declarePathMemberResult = ReplaceOperationStruct->declareMember("path", StringType);
-    if (declarePathMemberResult.isStatus())
-        return declarePathMemberResult.getStatus();
-    auto *PathField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declarePathMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *PathField;
+    TU_ASSIGN_OR_RETURN (PathField, ReplaceOperationStruct->declareMember("path", StringType));
 
     // declare the "value" member
-    auto declareValueMemberResult = ReplaceOperationStruct->declareMember("value", ValueType);
-    if (declareValueMemberResult.isStatus())
-        return declareValueMemberResult.getStatus();
-    auto *ValueField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *ValueField;
+    TU_ASSIGN_OR_RETURN (ValueField, ReplaceOperationStruct->declareMember("value", ValueType));
 
     {
         lyric_assembler::CallSymbol *callSymbol;
@@ -556,19 +507,16 @@ build_std_system_ReplaceOperation(
 tempo_utils::Status
 build_std_system_EmitOperation(
     lyric_assembler::StructSymbol *OperationStruct,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {
     auto *fundamentalCache = state.fundamentalCache();
     auto *symbolCache = state.symbolCache();
 
-    auto declareEmitOperationStructResult = block->declareStruct("EmitOperation",
-        OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final);
-    if (declareEmitOperationStructResult.isStatus())
-        return declareEmitOperationStructResult.getStatus();
-    auto *EmitOperationStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(declareEmitOperationStructResult.getResult()).orElseThrow());
+    lyric_assembler::StructSymbol *EmitOperationStruct;
+    TU_ASSIGN_OR_RETURN (EmitOperationStruct, block->declareStruct(
+        "EmitOperation", OperationStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Final));
 
     //
     OperationStruct->putSealedType(EmitOperationStruct->getAssignableType());
@@ -579,11 +527,8 @@ build_std_system_EmitOperation(
     auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, AttrType, ElementType });
 
     // declare the "value" member
-    auto declareValueMemberResult = EmitOperationStruct->declareMember("value", ValueType);
-    if (declareValueMemberResult.isStatus())
-        return declareValueMemberResult.getStatus();
-    auto *IdField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareValueMemberResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *ValueField;
+    TU_ASSIGN_OR_RETURN (ValueField, EmitOperationStruct->declareMember("value", ValueType));
 
     {
         lyric_assembler::CallSymbol *callSymbol;
@@ -613,7 +558,7 @@ build_std_system_EmitOperation(
         codeBuilder->callVirtual(superCtorCall->getAddress(), 0);
         // load the value argument and store it in member
         codeBuilder->loadArgument(lyric_assembler::ArgumentOffset(0));
-        codeBuilder->storeField(IdField->getAddress());
+        codeBuilder->storeField(ValueField->getAddress());
         codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
     }
     {

@@ -17,11 +17,10 @@
 
 tempo_utils::Result<lyric_assembler::ClassSymbol *>
 declare_std_collections_TreeSet(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
@@ -34,20 +33,14 @@ declare_std_collections_TreeSet(
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Invariant;
 
-    auto declareTreeSetClassResult = block->declareClass("TreeSet",
-        ObjectClass, lyric_object::AccessType::Public, {TParam});
-    if (declareTreeSetClassResult.isStatus())
-        return declareTreeSetClassResult.getStatus();
-    auto *TreeSetClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareTreeSetClassResult.getResult()).orElseThrow());
-    return TreeSetClass;
+    return block->declareClass("TreeSet", ObjectClass, lyric_object::AccessType::Public, {TParam});
 }
 
 tempo_utils::Status
 build_std_collections_TreeSet(
     lyric_assembler::ClassSymbol *TreeSetClass,
     lyric_assembler::ClassSymbol *TreeSetIteratorClass,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *parentBlock,
     lyric_typing::TypeSystem *typeSystem)
 {

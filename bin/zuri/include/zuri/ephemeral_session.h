@@ -27,8 +27,8 @@ public:
     tempo_utils::Status configure();
 
     tempo_utils::Result<std::string> parseLine(const char *data, size_t size);
-    tempo_utils::Result<lyric_common::AssemblyLocation> compileFragment(const std::string &fragment);
-    tempo_utils::Result<lyric_runtime::DataCell> executeFragment(const lyric_common::AssemblyLocation &location);
+    tempo_utils::Result<lyric_common::ModuleLocation> compileFragment(const std::string &fragment);
+    tempo_utils::Result<lyric_runtime::DataCell> executeFragment(const lyric_common::ModuleLocation &location);
 
 private:
     std::string m_sessionId;

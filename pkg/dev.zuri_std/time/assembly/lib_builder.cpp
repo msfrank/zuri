@@ -28,7 +28,7 @@ build(int argc, char *argv[])
     auto span = scopeManager.makeSpan();
     span->setOperationName("buildZuriZtdTime");
 
-    auto location = lyric_common::AssemblyLocation::fromString("/time");
+    auto location = lyric_common::ModuleLocation::fromString("/time");
 
     // build the loader chain
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
@@ -39,27 +39,27 @@ build(int argc, char *argv[])
 
     auto sharedModuleCache = lyric_importer::ModuleCache::create(loader);
 
-    lyric_assembler::AssemblyState assemblyState(location, sharedModuleCache, &scopeManager);
+    lyric_assembler::ObjectState objectState(location, sharedModuleCache, &scopeManager);
 
     // initialize the assembler
-    TU_RETURN_IF_NOT_OK (assemblyState.initialize());
+    TU_RETURN_IF_NOT_OK (objectState.initialize());
 
     // define the module entry point
-    lyric_compiler::ModuleEntry moduleEntry(&assemblyState);
+    lyric_compiler::ModuleEntry moduleEntry(&objectState);
     TU_RETURN_IF_NOT_OK (moduleEntry.initialize());
 
     auto *typeSystem = moduleEntry.getTypeSystem();
     auto *root = moduleEntry.getRoot();
     auto *rootBlock = root->namespaceBlock();
 
-    TU_RETURN_IF_NOT_OK (build_std_time_Instant(assemblyState, rootBlock));
-    TU_RETURN_IF_NOT_OK (build_std_time_Timezone(assemblyState, rootBlock));
-    TU_RETURN_IF_NOT_OK (build_std_time_Datetime(assemblyState, rootBlock));
-    TU_RETURN_IF_NOT_OK (build_std_time(assemblyState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_time_Instant(objectState, rootBlock));
+    TU_RETURN_IF_NOT_OK (build_std_time_Timezone(objectState, rootBlock));
+    TU_RETURN_IF_NOT_OK (build_std_time_Datetime(objectState, rootBlock));
+    TU_RETURN_IF_NOT_OK (build_std_time(objectState, rootBlock, typeSystem));
 
     // serialize state to object
     lyric_object::LyricObject object;
-    TU_ASSIGN_OR_RETURN (object, assemblyState.toAssembly());
+    TU_ASSIGN_OR_RETURN (object, objectState.toObject());
 
     // write object to file
     tempo_utils::FileWriter writer(destinationPath, object.bytesView(),
@@ -68,7 +68,7 @@ build(int argc, char *argv[])
         return writer.getStatus();
 
     TU_LOG_INFO << "wrote output to " << destinationPath;
-    return tempo_utils::Status();
+    return {};
 }
 
 int

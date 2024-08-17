@@ -32,7 +32,7 @@ TEST_F(StdText, TestEvaluateNewText)
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
         DataCellRef(
             lyric_common::SymbolUrl(
-                lyric_common::AssemblyLocation::fromString(ZURI_STD_TEXT_LOCATION),
+                lyric_common::ModuleLocation::fromString(ZURI_STD_TEXT_LOCATION),
                 lyric_common::SymbolPath({"Text"}))))));
 }
 

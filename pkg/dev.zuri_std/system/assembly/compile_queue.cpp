@@ -14,11 +14,10 @@
 
 tempo_utils::Status
 build_std_system_Queue(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
     auto *typeCache = state.typeCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
@@ -36,12 +35,9 @@ build_std_system_Queue(
 
     auto futureUrl = lyric_common::SymbolUrl::fromString("#Future");
 
-    auto declareQueueClassResult = block->declareClass("Queue",
-        ObjectClass, lyric_object::AccessType::Public, {TParam});
-    if (declareQueueClassResult.isStatus())
-        return declareQueueClassResult.getStatus();
-    auto *QueueClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareQueueClassResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *QueueClass;
+    TU_ASSIGN_OR_RETURN (QueueClass, block->declareClass(
+        "Queue", ObjectClass, lyric_object::AccessType::Public, {TParam}));
 
     {
         lyric_assembler::CallSymbol *callSymbol;

@@ -14,27 +14,19 @@
 tempo_utils::Status
 build_std_system_Port(
     lyric_assembler::StructSymbol *OperationStruct,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
     auto *typeCache = state.typeCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
         fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Object)));
 
-    auto declarePortClassResult = block->declareClass("Port",
-        ObjectClass,
-        lyric_object::AccessType::Public,
-        {},
-        lyric_object::DeriveType::Sealed,
-        true);
-    if (declarePortClassResult.isStatus())
-        return declarePortClassResult.getStatus();
-    auto *PortClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declarePortClassResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *PortClass;
+    TU_ASSIGN_OR_RETURN (PortClass, block->declareClass(
+        "Port", ObjectClass, lyric_object::AccessType::Public, {}, lyric_object::DeriveType::Sealed, true));
 
     auto BoolType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Bool);
     auto OperationType = OperationStruct->getAssignableType();

@@ -14,29 +14,23 @@
 
 tempo_utils::Result<lyric_assembler::StructSymbol *>
 declare_std_system_Attr(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::StructSymbol *RecordStruct;
     TU_ASSIGN_OR_RETURN (RecordStruct, block->resolveStruct(
         fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Record)));
 
-    auto declareAttrStructResult = block->declareStruct("Attr",
-        RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Any);
-    if (declareAttrStructResult.isStatus())
-        return declareAttrStructResult.getStatus();
-    auto *AttrStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(declareAttrStructResult.getResult()).orElseThrow());
-    return AttrStruct;
+    return block->declareStruct(
+        "Attr", RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Any);
 }
 
 tempo_utils::Status
 build_std_system_Attr(
     lyric_assembler::StructSymbol *AttrStruct,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
@@ -49,23 +43,14 @@ build_std_system_Attr(
     auto ElementType = lyric_common::TypeDef::forConcrete(lyric_common::SymbolUrl::fromString("#Element"));
     auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, ElementType });
 
-    auto declareNsResult = AttrStruct->declareMember("ns", UrlType);
-    if (declareNsResult.isStatus())
-        return declareNsResult.getStatus();
-    auto *NsField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareNsResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *NsField;
+    TU_ASSIGN_OR_RETURN (NsField, AttrStruct->declareMember("ns", UrlType));
 
-    auto declareIdResult = AttrStruct->declareMember("id", IntType);
-    if (declareIdResult.isStatus())
-        return declareIdResult.getStatus();
-    auto *IdField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareIdResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *IdField;
+    TU_ASSIGN_OR_RETURN (IdField, AttrStruct->declareMember("id", IntType));
 
-    auto declareValueResult = AttrStruct->declareMember("value", ValueType);
-    if (declareValueResult.isStatus())
-        return declareValueResult.getStatus();
-    auto *ValueField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareValueResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *ValueField;
+    TU_ASSIGN_OR_RETURN (ValueField, AttrStruct->declareMember("value", ValueType));
 
     lyric_common::SymbolUrl valueInitializerUrl;
     {

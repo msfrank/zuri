@@ -12,22 +12,18 @@
 
 tempo_utils::Status
 build_std_text_Text(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
         fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Object)));
 
-    auto declareTextClassResult = block->declareClass(
-        "Text", ObjectClass, lyric_object::AccessType::Public, {});
-    if (declareTextClassResult.isStatus())
-        return declareTextClassResult.getStatus();
-    auto *TextClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareTextClassResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *TextClass;
+    TU_ASSIGN_OR_RETURN (TextClass, block->declareClass(
+        "Text", ObjectClass, lyric_object::AccessType::Public, {}));
 
     auto StringType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::String);
     auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);

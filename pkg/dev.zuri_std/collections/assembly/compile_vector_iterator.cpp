@@ -15,11 +15,10 @@
 
 tempo_utils::Result<lyric_assembler::ClassSymbol *>
 declare_std_collections_VectorIterator(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
@@ -32,19 +31,13 @@ declare_std_collections_VectorIterator(
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Contravariant;
 
-    auto declareVectorIteratorClassResult = block->declareClass("VectorIterator",
-        ObjectClass, lyric_object::AccessType::Public, {TParam});
-    if (declareVectorIteratorClassResult.isStatus())
-        return declareVectorIteratorClassResult.getStatus();
-    auto *VectorIteratorClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareVectorIteratorClassResult.getResult()).orElseThrow());
-    return VectorIteratorClass;
+    return block->declareClass("VectorIterator", ObjectClass, lyric_object::AccessType::Public, {TParam});
 }
 
 tempo_utils::Status
 build_std_collections_VectorIterator(
     lyric_assembler::ClassSymbol *VectorIteratorClass,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {

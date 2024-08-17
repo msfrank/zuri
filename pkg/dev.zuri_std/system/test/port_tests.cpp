@@ -73,9 +73,9 @@ TEST_F(StdSystemPort, EvaluateReceiveEmitOperationWithStringValue)
         val port: Port = Acquire(`dev.zuri.proto:test`)
         val fut: Future[Operation] = port.Receive()
         match Await(fut) {
-          case emit: EmitOperation
+          when emit: EmitOperation
             match emit.value {
-              case x: String
+              when x: String
                 x == "hello, world!"
               else false
             }

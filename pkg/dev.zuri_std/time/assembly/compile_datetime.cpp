@@ -12,22 +12,18 @@
 
 tempo_utils::Status
 build_std_time_Datetime(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
         fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Object)));
 
-    auto declareDatetimeClassResult = block->declareClass(
-        "Datetime", ObjectClass, lyric_object::AccessType::Public, {});
-    if (declareDatetimeClassResult.isStatus())
-        return declareDatetimeClassResult.getStatus();
-    auto *DatetimeClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareDatetimeClassResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *DatetimeClass;
+    TU_ASSIGN_OR_RETURN (DatetimeClass, block->declareClass(
+        "Datetime", ObjectClass, lyric_object::AccessType::Public, {}));
 
     auto InstantType = lyric_common::TypeDef::forConcrete(lyric_common::SymbolUrl::fromString("#Instant"));
     auto TimezoneType = lyric_common::TypeDef::forConcrete(lyric_common::SymbolUrl::fromString("#Timezone"));

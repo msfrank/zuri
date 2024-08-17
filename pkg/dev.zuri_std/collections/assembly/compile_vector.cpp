@@ -15,11 +15,10 @@
 
 tempo_utils::Result<lyric_assembler::ClassSymbol *>
 declare_std_collections_Vector(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
@@ -32,20 +31,14 @@ declare_std_collections_Vector(
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Covariant;
 
-    auto declareVectorClassResult = block->declareClass("Vector",
-        ObjectClass, lyric_object::AccessType::Public, {TParam});
-    if (declareVectorClassResult.isStatus())
-        return declareVectorClassResult.getStatus();
-    auto *VectorClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareVectorClassResult.getResult()).orElseThrow());
-    return VectorClass;
+    return block->declareClass("Vector", ObjectClass, lyric_object::AccessType::Public, {TParam});
 }
 
 tempo_utils::Status
 build_std_collections_Vector(
     lyric_assembler::ClassSymbol *VectorClass,
     lyric_assembler::ClassSymbol *VectorIteratorClass,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *parentBlock,
     lyric_typing::TypeSystem *typeSystem)
 {

@@ -23,22 +23,22 @@ public:
         lyric_build::ResourceMatcherFunc matcherFunc,
         const std::string &token) override;
 
-    tempo_utils::Result<bool> hasAssembly(
-        const lyric_common::AssemblyLocation &location) const override;
-    tempo_utils::Result<Option<lyric_common::AssemblyLocation>> resolveAssembly(
-        const lyric_common::AssemblyLocation &location) const override;
-    tempo_utils::Result<Option<lyric_object::LyricObject>> loadAssembly(
-        const lyric_common::AssemblyLocation &location) override;
+    tempo_utils::Result<bool> hasModule(
+        const lyric_common::ModuleLocation &location) const override;
+    tempo_utils::Result<Option<lyric_common::ModuleLocation>> resolveModule(
+        const lyric_common::ModuleLocation &location) const override;
+    tempo_utils::Result<Option<lyric_object::LyricObject>> loadModule(
+        const lyric_common::ModuleLocation &location) override;
     tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>> loadPlugin(
-        const lyric_common::AssemblyLocation &location,
+        const lyric_common::ModuleLocation &location,
         const lyric_object::PluginSpecifier &specifier) override;
 
     std::string insertFragment(
         const tempo_utils::Url &fragmentUrl,
         std::string_view fragment,
         tu_uint64 lastModifiedMillis);
-    void insertAssembly(
-        const lyric_common::AssemblyLocation &assemblyLocation,
+    void insertObject(
+        const lyric_common::ModuleLocation &location,
         const lyric_object::LyricObject &object);
 
 private:
@@ -47,8 +47,8 @@ private:
         std::string,
         std::shared_ptr<const tempo_utils::ImmutableBytes>> m_content;
     absl::flat_hash_map<
-        lyric_common::AssemblyLocation,
-        lyric_object::LyricObject> m_assemblies;
+        lyric_common::ModuleLocation,
+        lyric_object::LyricObject> m_objects;
 };
 
 #endif //ZURI_FRAGMENT_STORE_H

@@ -31,7 +31,7 @@ build(int argc, char *argv[])
     auto span = scopeManager.makeSpan();
     span->setOperationName("buildZuriZtdText");
 
-    auto location = lyric_common::AssemblyLocation::fromString("/system");
+    auto location = lyric_common::ModuleLocation::fromString("/system");
 
     // build the loader chain
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
@@ -42,13 +42,13 @@ build(int argc, char *argv[])
 
     auto sharedModuleCache = lyric_importer::ModuleCache::create(loader);
 
-    lyric_assembler::AssemblyState assemblyState(location, sharedModuleCache, &scopeManager);
+    lyric_assembler::ObjectState objectState(location, sharedModuleCache, &scopeManager);
 
     // initialize the assembler
-    TU_RETURN_IF_NOT_OK (assemblyState.initialize());
+    TU_RETURN_IF_NOT_OK (objectState.initialize());
 
     // define the module entry point
-    lyric_compiler::ModuleEntry moduleEntry(&assemblyState);
+    lyric_compiler::ModuleEntry moduleEntry(&objectState);
     TU_RETURN_IF_NOT_OK (moduleEntry.initialize());
 
     auto *typeSystem = moduleEntry.getTypeSystem();
@@ -56,31 +56,31 @@ build(int argc, char *argv[])
     auto *rootBlock = root->namespaceBlock();
 
     lyric_assembler::StructSymbol *AttrStruct = nullptr;
-    TU_ASSIGN_OR_RETURN (AttrStruct, declare_std_system_Attr(assemblyState, rootBlock));
+    TU_ASSIGN_OR_RETURN (AttrStruct, declare_std_system_Attr(objectState, rootBlock));
 
     lyric_assembler::StructSymbol *ElementStruct = nullptr;
-    TU_ASSIGN_OR_RETURN (ElementStruct, declare_std_system_Element(assemblyState, rootBlock));
+    TU_ASSIGN_OR_RETURN (ElementStruct, declare_std_system_Element(objectState, rootBlock));
 
-    TU_RETURN_IF_NOT_OK (build_std_system_Attr(AttrStruct, assemblyState, rootBlock));
-    TU_RETURN_IF_NOT_OK (build_std_system_Element(ElementStruct, assemblyState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_system_Attr(AttrStruct, objectState, rootBlock));
+    TU_RETURN_IF_NOT_OK (build_std_system_Element(ElementStruct, objectState, rootBlock, typeSystem));
     TU_RETURN_IF_NOT_OK (build_std_system_Future(moduleEntry, rootBlock));
 
     lyric_assembler::StructSymbol *OperationStruct = nullptr;
-    TU_ASSIGN_OR_RETURN (OperationStruct, build_std_system_Operation(assemblyState, rootBlock, AttrStruct, typeSystem));
+    TU_ASSIGN_OR_RETURN (OperationStruct, build_std_system_Operation(objectState, rootBlock, AttrStruct, typeSystem));
 
-    TU_RETURN_IF_NOT_OK (build_std_system_AppendOperation(OperationStruct, assemblyState, rootBlock, typeSystem));
-    TU_RETURN_IF_NOT_OK (build_std_system_InsertOperation(OperationStruct, assemblyState, rootBlock, typeSystem));
-    TU_RETURN_IF_NOT_OK (build_std_system_UpdateOperation(OperationStruct, assemblyState, rootBlock, typeSystem));
-    TU_RETURN_IF_NOT_OK (build_std_system_ReplaceOperation(OperationStruct, assemblyState, rootBlock, typeSystem));
-    TU_RETURN_IF_NOT_OK (build_std_system_EmitOperation(OperationStruct, assemblyState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_system_AppendOperation(OperationStruct, objectState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_system_InsertOperation(OperationStruct, objectState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_system_UpdateOperation(OperationStruct, objectState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_system_ReplaceOperation(OperationStruct, objectState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_system_EmitOperation(OperationStruct, objectState, rootBlock, typeSystem));
 
-    TU_RETURN_IF_NOT_OK (build_std_system_Port(OperationStruct, assemblyState, rootBlock));
-    TU_RETURN_IF_NOT_OK (build_std_system_Queue(assemblyState, rootBlock));
-    TU_RETURN_IF_NOT_OK (build_std_system(assemblyState, rootBlock, typeSystem));
+    TU_RETURN_IF_NOT_OK (build_std_system_Port(OperationStruct, objectState, rootBlock));
+    TU_RETURN_IF_NOT_OK (build_std_system_Queue(objectState, rootBlock));
+    TU_RETURN_IF_NOT_OK (build_std_system(objectState, rootBlock, typeSystem));
 
     // serialize state to object
     lyric_object::LyricObject object;
-    TU_ASSIGN_OR_RETURN (object, assemblyState.toAssembly());
+    TU_ASSIGN_OR_RETURN (object, objectState.toObject());
 
     // write object to file
     tempo_utils::FileWriter writer(destinationPath, object.bytesView(),
@@ -90,7 +90,7 @@ build(int argc, char *argv[])
     }
 
     TU_LOG_INFO << "wrote output to " << destinationPath;
-    return tempo_utils::Status();
+    return {};
 }
 
 int

@@ -137,7 +137,7 @@ allocate_next_attr(
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (descriptor.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
 
     int index = stackBase + nextAttr.getIndex();
     if (currentCoro->dataStackSize() <= index)
@@ -180,7 +180,7 @@ allocate_next_element(
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (descriptor.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
 
     std::vector<lyric_runtime::DataCell> args;
     for (tu_uint32 i = 0; i < nextElement.numElementChildren(); i++) {
@@ -281,7 +281,7 @@ allocate_append_operation(
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (descriptor.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
     int index = stackBase + operation.getValue().getIndex();
 
     if (currentCoro->dataStackSize() <= index)
@@ -327,7 +327,7 @@ allocate_insert_operation(
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (descriptor.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
     int index = stackBase + operation.getValue().getIndex();
 
     if (currentCoro->dataStackSize() <= index)
@@ -374,7 +374,7 @@ allocate_update_operation(
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (descriptor.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
     int index = stackBase + operation.getValue().getIndex();
 
     if (currentCoro->dataStackSize() <= index)
@@ -420,7 +420,7 @@ allocate_replace_operation(
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (descriptor.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
     int index = stackBase + operation.getValue().getIndex();
 
     if (currentCoro->dataStackSize() <= index)
@@ -462,7 +462,7 @@ allocate_emit_operation(
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CALL);
-    TU_ASSERT (descriptor.data.descriptor.assembly == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (descriptor.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
 
     auto index = stackBase + operation.getValue().getIndex();
 

@@ -19,7 +19,6 @@ build_std_system_Future(
 {
     auto *state = moduleEntry.getState();
     auto *fundamentalCache = state->fundamentalCache();
-    auto *symbolCache = state->symbolCache();
     auto *typeCache = state->typeCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
@@ -36,12 +35,9 @@ build_std_system_Future(
     TParam.bound = lyric_object::BoundType::None;
     TParam.variance = lyric_object::VarianceType::Invariant;
 
-    auto declareFutureClassResult = block->declareClass("Future",
-        ObjectClass, lyric_object::AccessType::Public, {TParam}, lyric_object::DeriveType::Final);
-    if (declareFutureClassResult.isStatus())
-        return declareFutureClassResult.getStatus();
-    auto *FutureClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareFutureClassResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *FutureClass;
+    TU_ASSIGN_OR_RETURN (FutureClass, block->declareClass(
+        "Future", ObjectClass, lyric_object::AccessType::Public, {TParam}, lyric_object::DeriveType::Final));
 
     {
         lyric_assembler::CallSymbol *callSymbol;

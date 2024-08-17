@@ -11,22 +11,18 @@
 
 tempo_utils::Status
 build_std_time_Instant(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
         fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Object)));
 
-    auto declareInstantClassResult = block->declareClass(
-        "Instant", ObjectClass, lyric_object::AccessType::Public, {});
-    if (declareInstantClassResult.isStatus())
-        return declareInstantClassResult.getStatus();
-    auto *InstantClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareInstantClassResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *InstantClass;
+    TU_ASSIGN_OR_RETURN (InstantClass, block->declareClass(
+        "Instant", ObjectClass, lyric_object::AccessType::Public, {}));
 
     auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
 

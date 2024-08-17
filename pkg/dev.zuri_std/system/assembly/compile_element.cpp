@@ -15,29 +15,23 @@
 
 tempo_utils::Result<lyric_assembler::StructSymbol *>
 declare_std_system_Element(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::StructSymbol *RecordStruct;
     TU_ASSIGN_OR_RETURN (RecordStruct, block->resolveStruct(
         fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Record)));
 
-    auto declareElementStructResult = block->declareStruct("Element",
-        RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Any);
-    if (declareElementStructResult.isStatus())
-        return declareElementStructResult.getStatus();
-    auto *ElementStruct = cast_symbol_to_struct(
-        symbolCache->getOrImportSymbol(declareElementStructResult.getResult()).orElseThrow());
-    return ElementStruct;
+    return block->declareStruct(
+        "Element", RecordStruct, lyric_object::AccessType::Public, lyric_object::DeriveType::Any);
 }
 
 tempo_utils::Status
 build_std_system_Element(
     lyric_assembler::StructSymbol *ElementStruct,
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block,
     lyric_typing::TypeSystem *typeSystem)
 {
@@ -52,17 +46,11 @@ build_std_system_Element(
     auto ElementType = lyric_common::TypeDef::forConcrete(lyric_common::SymbolUrl::fromString("#Element"));
     auto ValueType = lyric_common::TypeDef::forUnion({ IntrinsicType, AttrType, ElementType });
 
-    auto declareNsResult = ElementStruct->declareMember("ns", UrlType);
-    if (declareNsResult.isStatus())
-        return declareNsResult.getStatus();
-    auto *NsField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareNsResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *NsField;
+    TU_ASSIGN_OR_RETURN (NsField, ElementStruct->declareMember("ns", UrlType));
 
-    auto declareIdResult = ElementStruct->declareMember("id", IntType);
-    if (declareIdResult.isStatus())
-        return declareIdResult.getStatus();
-    auto *IdField = cast_symbol_to_field(
-        symbolCache->getOrImportSymbol(declareIdResult.getResult().symbolUrl).orElseThrow());
+    lyric_assembler::FieldSymbol *IdField;
+    TU_ASSIGN_OR_RETURN (IdField, ElementStruct->declareMember("id", IntType));
 
     {
         lyric_assembler::CallSymbol *callSymbol;

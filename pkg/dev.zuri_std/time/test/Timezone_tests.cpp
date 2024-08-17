@@ -32,6 +32,6 @@ TEST_F(StdTimeTimezone, TestEvaluateNewTimezone)
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
         DataCellRef(
             lyric_common::SymbolUrl(
-                lyric_common::AssemblyLocation::fromString(ZURI_STD_TIME_LOCATION),
+                lyric_common::ModuleLocation::fromString(ZURI_STD_TIME_LOCATION),
                 lyric_common::SymbolPath({"Timezone"}))))));
 }

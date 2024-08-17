@@ -31,7 +31,7 @@ TEST_F(StdOption, TestEvaluateNewEmptyOption)
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
         DataCellRef(
             lyric_common::SymbolUrl(
-                lyric_common::AssemblyLocation::fromString(ZURI_STD_COLLECTIONS_LOCATION),
+                lyric_common::ModuleLocation::fromString(ZURI_STD_COLLECTIONS_LOCATION),
                 lyric_common::SymbolPath({"Option"}))))));
 }
 
@@ -46,7 +46,7 @@ TEST_F(StdOption, TestEvaluateNewOption)
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
         DataCellRef(
             lyric_common::SymbolUrl(
-                lyric_common::AssemblyLocation::fromString(ZURI_STD_COLLECTIONS_LOCATION),
+                lyric_common::ModuleLocation::fromString(ZURI_STD_COLLECTIONS_LOCATION),
                 lyric_common::SymbolPath({"Option"}))))));
 }
 

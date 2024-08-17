@@ -12,22 +12,18 @@
 
 tempo_utils::Status
 build_std_time_Timezone(
-    lyric_assembler::AssemblyState &state,
+    lyric_assembler::ObjectState &state,
     lyric_assembler::BlockHandle *block)
 {
     auto *fundamentalCache = state.fundamentalCache();
-    auto *symbolCache = state.symbolCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
     TU_ASSIGN_OR_RETURN (ObjectClass, block->resolveClass(
         fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Object)));
 
-    auto declareTimezoneClassResult = block->declareClass(
-        "Timezone", ObjectClass, lyric_object::AccessType::Public, {});
-    if (declareTimezoneClassResult.isStatus())
-        return declareTimezoneClassResult.getStatus();
-    auto *TimezoneClass = cast_symbol_to_class(
-        symbolCache->getOrImportSymbol(declareTimezoneClassResult.getResult()).orElseThrow());
+    lyric_assembler::ClassSymbol *TimezoneClass;
+    TU_ASSIGN_OR_RETURN (TimezoneClass, block->declareClass(
+        "Timezone", ObjectClass, lyric_object::AccessType::Public, {}));
 
     auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
 
