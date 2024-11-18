@@ -1,8 +1,8 @@
 
 set(LIB_NAME        "collections")
 
-set(ZURI_STD_COLLECTIONS_ASSEMBLY_NAME     "${LIB_NAME}.lyo")
-set(ZURI_STD_COLLECTIONS_ASSEMBLY_PATH     "${PACKAGE_BUILD_DIR}/${ZURI_STD_COLLECTIONS_ASSEMBLY_NAME}")
+set(ZURI_STD_COLLECTIONS_MODULE_NAME       "${LIB_NAME}.lyo")
+set(ZURI_STD_COLLECTIONS_MODULE_PATH       "${PACKAGE_BUILD_DIR}/${ZURI_STD_COLLECTIONS_MODULE_NAME}")
 set(ZURI_STD_COLLECTIONS_PLUGIN_BASENAME   "${LIB_NAME}.${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 set(ZURI_STD_COLLECTIONS_PLUGIN_NAME       "${ZURI_STD_COLLECTIONS_PLUGIN_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(ZURI_STD_COLLECTIONS_PLUGIN_PATH       "${PACKAGE_BUILD_DIR}/${ZURI_STD_COLLECTIONS_PLUGIN_NAME}")
@@ -42,7 +42,7 @@ target_include_directories(std-collections-builder PRIVATE
 
 target_compile_definitions(std-collections-builder PRIVATE
     "ZURI_BUILD_PACKAGES_DIR=\"${ZURI_BUILD_PACKAGES_DIR}\""
-    "DEFAULT_DESTINATION_PATH=\"${ZURI_STD_COLLECTIONS_ASSEMBLY_PATH}\""
+    "DEFAULT_DESTINATION_PATH=\"${ZURI_STD_COLLECTIONS_MODULE_PATH}\""
     )
 
 target_link_libraries(std-collections-builder
@@ -53,12 +53,12 @@ target_link_libraries(std-collections-builder
 
 # build assembly file
 add_custom_command (
-    OUTPUT ${ZURI_STD_COLLECTIONS_ASSEMBLY_PATH}
-    COMMAND std-collections-builder ${ZURI_STD_COLLECTIONS_ASSEMBLY_PATH}
-    COMMENT "generating ${ZURI_STD_COLLECTIONS_ASSEMBLY_NAME}"
+    OUTPUT ${ZURI_STD_COLLECTIONS_MODULE_PATH}
+    COMMAND std-collections-builder ${ZURI_STD_COLLECTIONS_MODULE_PATH}
+    COMMENT "generating ${ZURI_STD_COLLECTIONS_MODULE_NAME}"
     DEPENDS std-collections-builder
 )
-add_custom_target(std-collections-assembly DEPENDS ${ZURI_STD_COLLECTIONS_ASSEMBLY_PATH})
+add_custom_target(std-collections-assembly DEPENDS ${ZURI_STD_COLLECTIONS_MODULE_PATH})
 
 # build collections plugin as a shared library
 add_library(std-collections-plugin SHARED
@@ -115,7 +115,7 @@ add_custom_target(ZuriStdCollections DEPENDS std-collections-assembly std-collec
 
 # install targets
 install(TARGETS std-collections-plugin LIBRARY DESTINATION ${PACKAGE_INSTALL_DIR})
-install(FILES ${ZURI_STD_COLLECTIONS_ASSEMBLY_PATH} DESTINATION ${PACKAGE_INSTALL_DIR})
+install(FILES ${ZURI_STD_COLLECTIONS_MODULE_PATH} DESTINATION ${PACKAGE_INSTALL_DIR})
 
 # add testing subdirectory
 add_subdirectory(test)

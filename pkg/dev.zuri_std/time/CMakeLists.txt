@@ -1,8 +1,8 @@
 
 set(LIB_NAME "time")
 
-set(ZURI_STD_TIME_ASSEMBLY_NAME     "${LIB_NAME}.lyo")
-set(ZURI_STD_TIME_ASSEMBLY_PATH     "${PACKAGE_BUILD_DIR}/${ZURI_STD_TIME_ASSEMBLY_NAME}")
+set(ZURI_STD_TIME_MODULE_NAME       "${LIB_NAME}.lyo")
+set(ZURI_STD_TIME_MODULE_PATH       "${PACKAGE_BUILD_DIR}/${ZURI_STD_TIME_MODULE_NAME}")
 set(ZURI_STD_TIME_PLUGIN_BASENAME   "${LIB_NAME}.${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 set(ZURI_STD_TIME_PLUGIN_NAME       "${ZURI_STD_TIME_PLUGIN_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(ZURI_STD_TIME_PLUGIN_PATH       "${PACKAGE_BUILD_DIR}/${ZURI_STD_TIME_PLUGIN_NAME}")
@@ -36,7 +36,7 @@ target_include_directories(std-time-builder PRIVATE
 
 target_compile_definitions(std-time-builder PRIVATE
     "ZURI_BUILD_PACKAGES_DIR=\"${ZURI_BUILD_PACKAGES_DIR}\""
-    "DEFAULT_DESTINATION_PATH=\"${ZURI_STD_TIME_ASSEMBLY_PATH}\""
+    "DEFAULT_DESTINATION_PATH=\"${ZURI_STD_TIME_MODULE_PATH}\""
     )
 
 target_link_libraries(std-time-builder
@@ -47,12 +47,12 @@ target_link_libraries(std-time-builder
 
 # build assembly file
 add_custom_command (
-    OUTPUT ${ZURI_STD_TIME_ASSEMBLY_PATH}
-    COMMAND std-time-builder ${ZURI_STD_TIME_ASSEMBLY_PATH}
-    COMMENT "generating ${ZURI_STD_TIME_ASSEMBLY_NAME}"
+    OUTPUT ${ZURI_STD_TIME_MODULE_PATH}
+    COMMAND std-time-builder ${ZURI_STD_TIME_MODULE_PATH}
+    COMMENT "generating ${ZURI_STD_TIME_MODULE_NAME}"
     DEPENDS std-time-builder
     )
-add_custom_target(std-time-assembly DEPENDS ${ZURI_STD_TIME_ASSEMBLY_PATH})
+add_custom_target(std-time-assembly DEPENDS ${ZURI_STD_TIME_MODULE_PATH})
 
 # build string plugin as a shared library
 add_library(std-time-plugin SHARED
@@ -97,7 +97,7 @@ add_custom_target(ZuriStdTime DEPENDS std-time-assembly std-time-plugin)
 
 # install targets
 install(TARGETS std-time-plugin LIBRARY DESTINATION ${PACKAGE_INSTALL_DIR})
-install(FILES ${ZURI_STD_TIME_ASSEMBLY_PATH} DESTINATION ${PACKAGE_INSTALL_DIR})
+install(FILES ${ZURI_STD_TIME_MODULE_PATH} DESTINATION ${PACKAGE_INSTALL_DIR})
 
 # add testing subdirectory
 add_subdirectory(test)

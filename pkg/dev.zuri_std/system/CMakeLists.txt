@@ -1,8 +1,8 @@
 
 set(LIB_NAME        "system")
 
-set(ZURI_STD_SYSTEM_ASSEMBLY_NAME     "${LIB_NAME}.lyo")
-set(ZURI_STD_SYSTEM_ASSEMBLY_PATH     "${PACKAGE_BUILD_DIR}/${ZURI_STD_SYSTEM_ASSEMBLY_NAME}")
+set(ZURI_STD_SYSTEM_MODULE_NAME       "${LIB_NAME}.lyo")
+set(ZURI_STD_SYSTEM_MODULE_PATH       "${PACKAGE_BUILD_DIR}/${ZURI_STD_SYSTEM_MODULE_NAME}")
 set(ZURI_STD_SYSTEM_PLUGIN_BASENAME   "${LIB_NAME}.${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 set(ZURI_STD_SYSTEM_PLUGIN_NAME       "${ZURI_STD_SYSTEM_PLUGIN_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(ZURI_STD_SYSTEM_PLUGIN_PATH       "${PACKAGE_BUILD_DIR}/${ZURI_STD_SYSTEM_PLUGIN_NAME}")
@@ -42,7 +42,7 @@ target_include_directories(std-system-builder PRIVATE
 
 target_compile_definitions(std-system-builder PRIVATE
     "ZURI_BUILD_PACKAGES_DIR=\"${ZURI_BUILD_PACKAGES_DIR}\""
-    "DEFAULT_DESTINATION_PATH=\"${ZURI_STD_SYSTEM_ASSEMBLY_PATH}\""
+    "DEFAULT_DESTINATION_PATH=\"${ZURI_STD_SYSTEM_MODULE_PATH}\""
     )
 
 target_link_libraries(std-system-builder
@@ -53,12 +53,12 @@ target_link_libraries(std-system-builder
 
 # build assembly file
 add_custom_command (
-    OUTPUT ${ZURI_STD_SYSTEM_ASSEMBLY_PATH}
-    COMMAND std-system-builder ${ZURI_STD_SYSTEM_ASSEMBLY_PATH}
-    COMMENT "generating ${ZURI_STD_SYSTEM_ASSEMBLY_NAME}"
+    OUTPUT ${ZURI_STD_SYSTEM_MODULE_PATH}
+    COMMAND std-system-builder ${ZURI_STD_SYSTEM_MODULE_PATH}
+    COMMENT "generating ${ZURI_STD_SYSTEM_MODULE_NAME}"
     DEPENDS std-system-builder
 )
-add_custom_target(std-system-assembly DEPENDS ${ZURI_STD_SYSTEM_ASSEMBLY_PATH})
+add_custom_target(std-system-assembly DEPENDS ${ZURI_STD_SYSTEM_MODULE_PATH})
 
 # build system plugin as a shared library
 add_library(std-system-plugin SHARED
@@ -109,7 +109,7 @@ add_custom_target(ZuriStdSystem DEPENDS std-system-assembly std-system-plugin)
 
 # install targets
 install(TARGETS std-system-plugin LIBRARY DESTINATION ${PACKAGE_INSTALL_DIR})
-install(FILES ${ZURI_STD_SYSTEM_ASSEMBLY_PATH} DESTINATION ${PACKAGE_INSTALL_DIR})
+install(FILES ${ZURI_STD_SYSTEM_MODULE_PATH} DESTINATION ${PACKAGE_INSTALL_DIR})
 
 # add testing subdirectory
 add_subdirectory(test)

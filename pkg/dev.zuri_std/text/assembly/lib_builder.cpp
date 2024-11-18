@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
+#include <lyric_assembler/object_root.h>
 #include <lyric_bootstrap/bootstrap_loader.h>
-#include <lyric_compiler/module_entry.h>
 #include <lyric_packaging/package_loader.h>
 #include <lyric_runtime/chain_loader.h>
 #include <tempo_command/command_help.h>
@@ -39,16 +39,12 @@ build(int argc, char *argv[])
     lyric_assembler::ObjectState objectState(location, sharedModuleCache, &scopeManager);
 
     // initialize the assembler
-    TU_RETURN_IF_NOT_OK (objectState.initialize());
+    lyric_assembler::ObjectRoot *objectRoot;
+    TU_ASSIGN_OR_RETURN (objectRoot, objectState.defineRoot());
 
-    // define the module entry point
-    lyric_compiler::ModuleEntry moduleEntry(&objectState);
-    TU_RETURN_IF_NOT_OK (moduleEntry.initialize());
+    auto *globalNamespace = objectRoot->globalNamespace();
 
-    auto *root = moduleEntry.getRoot();
-    auto *rootBlock = root->namespaceBlock();
-
-    TU_RETURN_IF_NOT_OK (build_std_text_Text(objectState, rootBlock));
+    TU_RETURN_IF_NOT_OK (build_std_text_Text(objectState, globalNamespace));
 
     // serialize state to object
     lyric_object::LyricObject object;

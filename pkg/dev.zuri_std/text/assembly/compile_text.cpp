@@ -13,8 +13,9 @@
 tempo_utils::Status
 build_std_text_Text(
     lyric_assembler::ObjectState &state,
-    lyric_assembler::BlockHandle *block)
+    lyric_assembler::NamespaceSymbol *globalNamespace)
 {
+    auto *block = globalNamespace->namespaceBlock();
     auto *fundamentalCache = state.fundamentalCache();
 
     lyric_assembler::ClassSymbol *ObjectClass;
@@ -24,6 +25,9 @@ build_std_text_Text(
     lyric_assembler::ClassSymbol *TextClass;
     TU_ASSIGN_OR_RETURN (TextClass, block->declareClass(
         "Text", ObjectClass, lyric_object::AccessType::Public, {}));
+
+    TU_RETURN_IF_NOT_OK (globalNamespace->putBinding(
+        TextClass->getSymbolUrl().getSymbolName(), TextClass->getSymbolUrl(), TextClass->getAccessType()));
 
     auto StringType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::String);
     auto IntType = fundamentalCache->getFundamentalType(lyric_assembler::FundamentalSymbol::Int);
@@ -39,18 +43,20 @@ build_std_text_Text(
         TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
         lyric_assembler::ProcHandle *procHandle;
         TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, lyric_common::TypeDef::noReturn()));
-        auto *code = procHandle->procCode();
-        code->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_CTOR));
-        code->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        auto *procBuilder = procHandle->procCode();
+        auto *fragment = procBuilder->rootFragment();
+        fragment->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_CTOR), 0);
+        fragment->returnToCaller();
     }
     {
         lyric_assembler::CallSymbol *callSymbol;
         TU_ASSIGN_OR_RETURN (callSymbol, TextClass->declareMethod("Length", lyric_object::AccessType::Public));
         lyric_assembler::ProcHandle *procHandle;
         TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall({}, IntType));
-        auto *codeBuilder = procHandle->procCode();
-        codeBuilder->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_LENGTH));
-        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        auto *procBuilder = procHandle->procCode();
+        auto *fragment = procBuilder->rootFragment();
+        fragment->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_LENGTH), 0);
+        fragment->returnToCaller();
     }
     {
         lyric_assembler::CallSymbol *callSymbol;
@@ -61,9 +67,10 @@ build_std_text_Text(
         TU_ASSIGN_OR_RETURN (parameterPack, packBuilder.toParameterPack());
         lyric_assembler::ProcHandle *procHandle;
         TU_ASSIGN_OR_RETURN (procHandle, callSymbol->defineCall(parameterPack, CharType));
-        auto *codeBuilder = procHandle->procCode();
-        codeBuilder->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_AT));
-        codeBuilder->writeOpcode(lyric_object::Opcode::OP_RETURN);
+        auto *procBuilder = procHandle->procCode();
+        auto *fragment = procBuilder->rootFragment();
+        fragment->trap(static_cast<tu_uint32>(StdTextTrap::TEXT_AT), 0);
+        fragment->returnToCaller();
     }
 
     return {};

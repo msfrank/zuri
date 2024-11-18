@@ -9,6 +9,6 @@
 tempo_utils::Status
 build_std_text_Text(
     lyric_assembler::ObjectState &state,
-    lyric_assembler::BlockHandle *block);
+    lyric_assembler::NamespaceSymbol *globalNamespace);
 
 #endif // ZURI_STD_TEXT_COMPILE_TEXT_H
