@@ -1,0 +1,30 @@
+{
+    "zuri-build": {
+        "global": {
+            "sourceBasePath": "src",
+            "pluginSourceBasePath": "plugin",
+        },
+        "domains": {
+        },
+        "tasks": {
+            "provide_plugin:/log": {
+                "buildTarget": "fetch_external_file:/log"
+            },
+            "fetch_external_file:/log": {
+                "filePath": "@ZURI_STD_LOG_PLUGIN_FILEPATH@"
+            },
+            "provide_plugin:/text": {
+                "buildTarget": "fetch_external_file:/text"
+            },
+            "fetch_external_file:/text": {
+                "filePath": "@ZURI_STD_TEXT_PLUGIN_FILEPATH@"
+            },
+            "provide_plugin:/time": {
+                "buildTarget": "fetch_external_file:/time"
+            },
+            "fetch_external_file:/time": {
+                "filePath": "@ZURI_STD_TIME_PLUGIN_FILEPATH@"
+            },
+        }
+    }
+}

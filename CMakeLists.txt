@@ -190,6 +190,9 @@ string(REGEX REPLACE "[0-9]+\\.[0-9]+\\.([0-9]+)" "\\1"
 set(FULL_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 message(STATUS "version is ${FULL_VERSION}")
 
+#
+set(ZURI_PLATFORM_ID                        "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+
 # zuri package group
 set(ZURI_PACKAGE_GROUP                      "dev.zuri")
 
