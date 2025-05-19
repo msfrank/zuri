@@ -14,6 +14,10 @@
 #include <zuri_build/load_config.h>
 #include <zuri_build/zuri_build.h>
 
+#include "zuri_build/build_graph.h"
+#include "zuri_build/import_store.h"
+#include "zuri_build/target_store.h"
+
 tempo_utils::Status
 run_zuri_build(int argc, const char *argv[])
 {
@@ -208,9 +212,28 @@ run_zuri_build(int argc, const char *argv[])
         buildRoot = workspaceRoot / "build";
     }
 
-    // construct the config store from the workspace
-    lyric_build::ConfigStore configStore(config->getToolConfig(), config->getVendorConfig());
+    auto toolConfig = config->getToolConfig();
+    auto vendorConfig = config->getVendorConfig();
 
+    // construct the config store from the workspace
+    auto settingsConfig = toolConfig.mapAt("settings").toMap();
+    lyric_build::ConfigStore configStore(settingsConfig, config->getVendorConfig());
+
+    //
+    auto importsConfig = toolConfig.mapAt("imports").toMap();
+    auto importStore = std::make_shared<ImportStore>(importsConfig);
+    TU_RETURN_IF_NOT_OK (importStore->configure());
+
+    //
+    auto targetsConfig = toolConfig.mapAt("targets").toMap();
+    auto targetStore = std::make_shared<TargetStore>(targetsConfig);
+    TU_RETURN_IF_NOT_OK (targetStore->configure());
+
+    //
+    std::shared_ptr<BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RETURN (buildGraph, BuildGraph::create(targetStore, importStore));
+
+    // set builder options
     lyric_build::BuilderOptions builderOptions;
     builderOptions.workspaceRoot = workspaceRoot;
     builderOptions.buildRoot = buildRoot;
@@ -218,7 +241,6 @@ run_zuri_build(int argc, const char *argv[])
     if (jobParallelism != 0) {
         builderOptions.numThreads = jobParallelism;
     }
-
 
     // construct the builder based on workspace config and config overrides
     lyric_build::LyricBuilder builder(configStore, builderOptions);
@@ -235,5 +257,5 @@ run_zuri_build(int argc, const char *argv[])
     TU_CONSOLE_OUT << targetComputationSet.getTotalTasksCreated() << " tasks created, "
                    << targetComputationSet.getTotalTasksCached() << " tasks cached";
 
-    return tempo_command::CommandStatus::ok();
+    return {};
 }

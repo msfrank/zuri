@@ -3,9 +3,17 @@
 set(CMAKE_AUTOMOC OFF)
 
 # build ZuriBuildRuntime static archive
-add_library(ZuriBuildRuntime OBJECT
+add_library(ZuriBuildRuntime STATIC
+    src/build_graph.cpp
+    include/zuri_build/build_graph.h
+    src/import_store.cpp
+    include/zuri_build/import_store.h
     src/load_config.cpp
     include/zuri_build/load_config.h
+    src/target_cycle_detector.cpp
+    include/zuri_build/target_cycle_detector.h
+    src/target_store.cpp
+    include/zuri_build/target_store.h
     src/zuri_build.cpp
     include/zuri_build/zuri_build.h
     )
@@ -23,9 +31,11 @@ target_compile_definitions(ZuriBuildRuntime PRIVATE
     )
 
 target_link_libraries(ZuriBuildRuntime
+    PUBLIC
     lyric::lyric_build
     tempo::tempo_command
     tempo::tempo_utils
+    Boost::headers
     ${SANITIZER_LIBS}
     ${PROFILER_LIBS}
     )
@@ -43,6 +53,10 @@ target_include_directories(zuri-build PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/includ
 
 target_link_libraries(zuri-build ZuriBuildRuntime)
 
+# install targets
 install(TARGETS zuri-build EXPORT zuri-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
+
+# add testing subdirectory
+add_subdirectory(test)

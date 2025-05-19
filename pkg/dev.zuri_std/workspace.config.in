@@ -1,30 +1,56 @@
 {
     "zuri-build": {
-        "global": {
-            "sourceBasePath": "src",
-            "pluginSourceBasePath": "plugin",
+        "settings": {
+            "global": {
+                "sourceBasePath": "src",
+            },
+            "domains": {
+            },
+            "tasks": {
+                "provide_plugin:/collections": {
+                    "buildTarget": "fetch_external_file:/collections"
+                },
+                "fetch_external_file:/collections": {
+                    "filePath": "@ZURI_STD_COLLECTIONS_PLUGIN_FILEPATH@"
+                },
+                "provide_plugin:/log": {
+                    "buildTarget": "fetch_external_file:/log"
+                },
+                "fetch_external_file:/log": {
+                    "filePath": "@ZURI_STD_LOG_PLUGIN_FILEPATH@"
+                },
+                "provide_plugin:/system": {
+                    "buildTarget": "fetch_external_file:/system"
+                },
+                "fetch_external_file:/system": {
+                    "filePath": "@ZURI_STD_SYSTEM_PLUGIN_FILEPATH@"
+                },
+                "provide_plugin:/text": {
+                    "buildTarget": "fetch_external_file:/text"
+                },
+                "fetch_external_file:/text": {
+                    "filePath": "@ZURI_STD_TEXT_PLUGIN_FILEPATH@"
+                },
+                "provide_plugin:/time": {
+                    "buildTarget": "fetch_external_file:/time"
+                },
+                "fetch_external_file:/time": {
+                    "filePath": "@ZURI_STD_TIME_PLUGIN_FILEPATH@"
+                },
+            }
         },
-        "domains": {
-        },
-        "tasks": {
-            "provide_plugin:/log": {
-                "buildTarget": "fetch_external_file:/log"
-            },
-            "fetch_external_file:/log": {
-                "filePath": "@ZURI_STD_LOG_PLUGIN_FILEPATH@"
-            },
-            "provide_plugin:/text": {
-                "buildTarget": "fetch_external_file:/text"
-            },
-            "fetch_external_file:/text": {
-                "filePath": "@ZURI_STD_TEXT_PLUGIN_FILEPATH@"
-            },
-            "provide_plugin:/time": {
-                "buildTarget": "fetch_external_file:/time"
-            },
-            "fetch_external_file:/time": {
-                "filePath": "@ZURI_STD_TIME_PLUGIN_FILEPATH@"
-            },
+        "targets": {
+            "dev.zuri_std": {
+                "type": "library",
+                "version": "@FULL_VERSION@",
+                "libraryModules": [
+                    "/collections",
+                    "/log",
+                    "/system",
+                    "/text",
+                    "/time"
+                ]
+            }
         }
     }
 }
