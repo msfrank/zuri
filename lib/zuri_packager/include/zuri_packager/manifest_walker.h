@@ -5,7 +5,6 @@
 
 #include <tempo_utils/integer_types.h>
 
-#include "entry_path.h"
 #include "entry_walker.h"
 #include "package_types.h"
 

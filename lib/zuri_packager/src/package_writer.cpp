@@ -24,7 +24,7 @@ zuri_packager::PackageWriter::configure()
     if (appendEntryResult.isStatus())
         return appendEntryResult.getStatus();
     m_packageEntry = appendEntryResult.getResult();
-    return PackageStatus::ok();
+    return {};
 }
 
 bool

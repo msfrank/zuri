@@ -117,7 +117,7 @@ zuri_packager::ManifestEntry::putAttr(ManifestAttr *attr)
             PackageCondition::kPackageInvariant, "entry contains duplicate attr");
     }
     m_attrs[attrId] = attr->getAddress();
-    return PackageStatus::ok();
+    return {};
 }
 
 absl::flat_hash_map<
@@ -165,7 +165,7 @@ zuri_packager::ManifestEntry::putChild(ManifestEntry *child)
         return PackageStatus::forCondition(
             PackageCondition::kPackageInvariant, "invalid entry name");
     m_children[name] = child->getAddress();
-    return PackageStatus::ok();
+    return {};
 }
 
 absl::flat_hash_map<

@@ -7,7 +7,6 @@ add_library(zuri_packager SHARED)
 add_library(zuri::zuri_packager ALIAS zuri_packager)
 
 set(ZURI_PACKAGER_INCLUDES
-    include/zuri_packager/entry_path.h
     include/zuri_packager/entry_walker.h
     include/zuri_packager/zuri_manifest.h
     include/zuri_packager/manifest_attr.h
@@ -57,7 +56,6 @@ add_custom_command(
 )
 
 target_sources(zuri_packager PRIVATE
-    src/entry_path.cpp
     src/entry_walker.cpp
     src/zuri_manifest.cpp
     src/manifest_attr.cpp

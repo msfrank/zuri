@@ -9,7 +9,7 @@
 
 namespace zuri_packager {
 
-    constexpr const char *kLyricPackagingStatusNs = "dev.zuri.ns:lyric-packaging-status-1";
+    constexpr const char *kZuriPackagerStatusNs = "dev.zuri.ns:zuri-packager-status-1";
 
     enum class PackageCondition {
         kInvalidHeader,
@@ -23,7 +23,6 @@ namespace zuri_packager {
     class PackageStatus : public tempo_utils::TypedStatus<PackageCondition> {
     public:
         using TypedStatus::TypedStatus;
-        static PackageStatus ok();
         static bool convert(PackageStatus &dstStatus, const tempo_utils::Status &srcStatus);
 
     private:
@@ -83,7 +82,7 @@ namespace tempo_utils {
     template<>
     struct ConditionTraits<zuri_packager::PackageCondition> {
         using StatusType = zuri_packager::PackageStatus;
-        static constexpr const char *condition_namespace() { return zuri_packager::kLyricPackagingStatusNs; }
+        static constexpr const char *condition_namespace() { return zuri_packager::kZuriPackagerStatusNs; }
         static constexpr StatusCode make_status_code(zuri_packager::PackageCondition condition)
         {
             switch (condition) {

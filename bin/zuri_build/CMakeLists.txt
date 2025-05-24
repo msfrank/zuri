@@ -41,6 +41,7 @@ target_link_libraries(ZuriBuildRuntime
     lyric::lyric_build
     tempo::tempo_command
     tempo::tempo_utils
+    zuri::zuri_distributor
     zuri::zuri_packager
     Boost::headers
     ${SANITIZER_LIBS}

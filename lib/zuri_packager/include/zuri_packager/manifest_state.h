@@ -3,7 +3,6 @@
 
 #include <tempo_utils/url.h>
 
-#include "entry_path.h"
 #include "package_types.h"
 #include "zuri_manifest.h"
 

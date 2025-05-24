@@ -7,25 +7,15 @@ add_library(zuri_distributor SHARED)
 add_library(zuri::zuri_distributor ALIAS zuri_distributor)
 
 set(ZURI_DISTRIBUTOR_INCLUDES
+    include/zuri_distributor/distribution_loader.h
+    include/zuri_distributor/distributor_result.h
     include/zuri_distributor/package_config.h
     )
 set_target_properties(zuri_distributor PROPERTIES PUBLIC_HEADER "${ZURI_DISTRIBUTOR_INCLUDES}")
 
-# generate flatbuffer files for manifest IDL
-add_custom_command (
-    OUTPUT
-      ${CMAKE_CURRENT_BINARY_DIR}/include/zuri_distributor/generated/manifest.h
-    COMMAND
-      cmake -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/zuri_distributor/generated
-    COMMAND
-      ${FLATC} --cpp --scoped-enums --gen-mutable --gen-object-api --filename-suffix ''
-      -o ${CMAKE_CURRENT_BINARY_DIR}/include/zuri_distributor/generated
-      ${CMAKE_CURRENT_SOURCE_DIR}/share/manifest.fbs
-    DEPENDS
-      ${CMAKE_CURRENT_SOURCE_DIR}/share/manifest.fbs
-)
-
 target_sources(zuri_distributor PRIVATE
+    src/distribution_loader.cpp
+    src/distributor_result.cpp
     src/package_config.cpp
     )
 
@@ -66,9 +56,6 @@ install(TARGETS zuri_distributor EXPORT zuri-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/zuri_distributor
     )
-
-# install data
-install(FILES share/manifest.fbs DESTINATION ${CMAKE_INSTALL_DATADIR}/zuri_distributor)
 
 # add testing subdirectory
 #add_subdirectory(test)
