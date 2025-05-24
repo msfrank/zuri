@@ -12,42 +12,67 @@
 #include "manifest_entry.h"
 #include "manifest_state.h"
 #include "package_result.h"
+#include "package_specifier.h"
 
 namespace zuri_packager {
 
+    constexpr std::filesystem::perms kDefaultDirectoryPerms =
+        std::filesystem::perms::owner_all
+        | std::filesystem::perms::group_read
+        | std::filesystem::perms::group_exec
+        | std::filesystem::perms::others_read
+        | std::filesystem::perms::others_exec
+        ;
+
     struct PackageWriterOptions {
+        /**
+         *
+         */
+        std::filesystem::path installRoot = {};
+        /**
+         *
+         */
         int maxLinkDepth = 5;
     };
 
     class PackageWriter {
 
     public:
-        PackageWriter();
-        PackageWriter(const PackageWriterOptions &options);
+        explicit PackageWriter(const PackageSpecifier &specifier, const PackageWriterOptions &options = {});
 
         tempo_utils::Status configure();
 
-        bool hasEntry(const EntryPath &path) const;
+        bool hasEntry(const tempo_utils::UrlPath &path) const;
         bool hasEntry(EntryAddress parentDirectory, std::string_view name) const;
-        EntryAddress getEntry(const EntryPath &path) const;
+        EntryAddress getEntry(const tempo_utils::UrlPath &path) const;
 
-        tempo_utils::Result<EntryAddress> makeDirectory(const EntryPath &path, bool createIntermediate = false);
-        tempo_utils::Result<EntryAddress> makeDirectory(EntryAddress parentDirectory, std::string_view name);
-        tempo_utils::Result<EntryAddress> putFile(EntryAddress parentDirectory,
+        tempo_utils::Result<EntryAddress> makeDirectory(
+            const tempo_utils::UrlPath &path,
+            bool createIntermediate = false);
+        tempo_utils::Result<EntryAddress> makeDirectory(
+            EntryAddress parentDirectory,
+            std::string_view name);
+        tempo_utils::Result<EntryAddress> putFile(
+            EntryAddress parentDirectory,
             std::string_view name,
             std::shared_ptr<const tempo_utils::ImmutableBytes> bytes);
         tempo_utils::Result<EntryAddress> putFile(
-            const EntryPath &path,
+            const tempo_utils::UrlPath &path,
             std::shared_ptr<const tempo_utils::ImmutableBytes> bytes);
-        tempo_utils::Result<EntryAddress> linkToTarget(const EntryPath &path, EntryAddress target);
+        tempo_utils::Result<EntryAddress> linkToTarget(
+            const tempo_utils::UrlPath &path,
+            EntryAddress target);
 
-        tempo_utils::Result<std::shared_ptr<const tempo_utils::ImmutableBytes>> toBytes() const;
+        tempo_utils::Result<std::filesystem::path> writePackage() const;
 
     private:
+        PackageSpecifier m_specifier;
         PackageWriterOptions m_options;
         ManifestState m_state;
         ManifestEntry *m_packageEntry;
-        absl::flat_hash_map<EntryPath,std::shared_ptr<const tempo_utils::ImmutableBytes>> m_contents;
+        absl::flat_hash_map<
+            tempo_utils::UrlPath,
+            std::shared_ptr<const tempo_utils::ImmutableBytes>> m_contents;
 
     public:
         /**

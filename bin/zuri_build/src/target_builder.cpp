@@ -16,22 +16,24 @@ TargetBuilder::TargetBuilder(
     TU_ASSERT (!m_installRoot.empty());
 }
 
-tempo_utils::Status
+tempo_utils::Result<std::filesystem::path>
 TargetBuilder::buildTarget(const std::string &targetName)
 {
     std::vector<std::string> targetBuildOrder;
     TU_ASSIGN_OR_RETURN (targetBuildOrder, m_buildGraph->calculateBuildOrder(targetName));
+
+    std::filesystem::path targetPath;
 
     auto targetStore = m_buildGraph->getTargetStore();
     for (const auto &nextTarget : targetBuildOrder) {
         const auto &nextEntry = targetStore->getTarget(nextTarget);
         switch (nextEntry.type) {
             case TargetEntryType::Program: {
-                TU_RETURN_IF_NOT_OK (buildProgramTarget(nextTarget, nextEntry));
+                TU_ASSIGN_OR_RETURN (targetPath, buildProgramTarget(nextTarget, nextEntry));
                 break;
             }
             case TargetEntryType::Library: {
-                TU_RETURN_IF_NOT_OK (buildLibraryTarget(nextTarget, nextEntry));
+                TU_ASSIGN_OR_RETURN (targetPath, buildLibraryTarget(nextTarget, nextEntry));
                 break;
             }
             default:
@@ -40,17 +42,17 @@ TargetBuilder::buildTarget(const std::string &targetName)
         }
     }
 
-    return {};
+    return targetPath;
 }
 
-tempo_utils::Status
+tempo_utils::Result<std::filesystem::path>
 TargetBuilder::buildProgramTarget(const std::string &targetName, const TargetEntry &programTarget)
 {
     TU_ASSERT (programTarget.type == TargetEntryType::Program);
     return {};
 }
 
-tempo_utils::Status
+tempo_utils::Result<std::filesystem::path>
 TargetBuilder::buildLibraryTarget(const std::string &targetName, const TargetEntry &libraryTarget)
 {
     TU_ASSERT (libraryTarget.type == TargetEntryType::Library);
@@ -98,5 +100,5 @@ TargetBuilder::buildLibraryTarget(const std::string &targetName, const TargetEnt
         targetWriter.writeModule(artifactId.getLocation().toPath(), metadata, content);
     }
 
-    return {};
+    return targetWriter.writeTarget();
 }

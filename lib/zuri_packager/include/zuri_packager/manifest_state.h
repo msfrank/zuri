@@ -33,10 +33,10 @@ namespace zuri_packager {
         std::vector<ManifestAttr *>::const_iterator attrsEnd() const;
         int numAttrs() const;
 
-        bool hasEntry(const EntryPath &path) const;
+        bool hasEntry(const tempo_utils::UrlPath &path) const;
         ManifestEntry *getEntry(int index) const;
-        ManifestEntry *getEntry(const EntryPath &path) const;
-        tempo_utils::Result<ManifestEntry *> appendEntry(EntryType type, const EntryPath &path);
+        ManifestEntry *getEntry(const tempo_utils::UrlPath &path) const;
+        tempo_utils::Result<ManifestEntry *> appendEntry(EntryType type, const tempo_utils::UrlPath &path);
         std::vector<ManifestEntry *>::const_iterator entriesBegin() const;
         std::vector<ManifestEntry *>::const_iterator entriesEnd() const;
         int numEntries() const;
@@ -48,7 +48,7 @@ namespace zuri_packager {
         std::vector<ManifestEntry *> m_manifestEntries;
         std::vector<ManifestAttr *> m_manifestAttrs;
         absl::flat_hash_map<tempo_utils::Url,tu_uint32> m_namespaceIndex;
-        absl::flat_hash_map<EntryPath,tu_uint32> m_pathIndex;
+        absl::flat_hash_map<tempo_utils::UrlPath,tu_uint32> m_pathIndex;
     };
 }
 

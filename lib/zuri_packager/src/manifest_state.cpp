@@ -106,7 +106,7 @@ zuri_packager::ManifestState::numAttrs() const
 }
 
 bool
-zuri_packager::ManifestState::hasEntry(const EntryPath &path) const
+zuri_packager::ManifestState::hasEntry(const tempo_utils::UrlPath &path) const
 {
     return getEntry(path) != nullptr;
 }
@@ -120,7 +120,7 @@ zuri_packager::ManifestState::getEntry(int index) const
 }
 
 zuri_packager::ManifestEntry *
-zuri_packager::ManifestState::getEntry(const EntryPath &path) const
+zuri_packager::ManifestState::getEntry(const tempo_utils::UrlPath &path) const
 {
     if (!m_pathIndex.contains(path))
         return nullptr;
@@ -128,7 +128,7 @@ zuri_packager::ManifestState::getEntry(const EntryPath &path) const
 }
 
 tempo_utils::Result<zuri_packager::ManifestEntry *>
-zuri_packager::ManifestState::appendEntry(EntryType type, const EntryPath &path)
+zuri_packager::ManifestState::appendEntry(EntryType type, const tempo_utils::UrlPath &path)
 {
     if (m_pathIndex.contains(path))
         return PackageStatus::forCondition(
@@ -143,7 +143,7 @@ zuri_packager::ManifestState::appendEntry(EntryType type, const EntryPath &path)
         return entry;
     } else {
         // a non-empty path must have a parent
-        auto parentPath = EntryPath(path.getInit());
+        auto parentPath = path.getInit();
         if (!m_pathIndex.contains(parentPath))
             return PackageStatus::forCondition(
                 PackageCondition::kPackageInvariant, "entry is missing parent");

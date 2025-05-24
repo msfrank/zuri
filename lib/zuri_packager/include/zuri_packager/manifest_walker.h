@@ -21,9 +21,9 @@ namespace zuri_packager {
 
         EntryWalker getRoot() const;
 
-        bool hasEntry(const EntryPath &entryPath) const;
+        bool hasEntry(const tempo_utils::UrlPath &entryPath) const;
         EntryWalker getEntry(tu_uint32 index) const;
-        EntryWalker getEntry(const EntryPath &entryPath) const;
+        EntryWalker getEntry(const tempo_utils::UrlPath &entryPath) const;
         tu_uint32 numEntries() const;
 
     private:

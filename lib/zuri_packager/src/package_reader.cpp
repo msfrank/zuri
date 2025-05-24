@@ -54,7 +54,7 @@ get_file_entry_contents(
 }
 
 tempo_utils::Slice
-zuri_packager::PackageReader::getFileContents(const EntryPath &entryPath, bool followSymlinks) const
+zuri_packager::PackageReader::getFileContents(const tempo_utils::UrlPath &entryPath, bool followSymlinks) const
 {
     auto manifest = m_manifest.getManifest();
     auto entry = manifest.getEntry(entryPath);
@@ -73,7 +73,7 @@ zuri_packager::PackageReader::getFileContents(const EntryPath &entryPath, bool f
 }
 
 tu_uint32
-zuri_packager::PackageReader::getFileSize(const EntryPath &entryPath, bool followSymlinks) const
+zuri_packager::PackageReader::getFileSize(const tempo_utils::UrlPath &entryPath, bool followSymlinks) const
 {
     auto manifest = m_manifest.getManifest();
     auto entry = manifest.getEntry(entryPath);

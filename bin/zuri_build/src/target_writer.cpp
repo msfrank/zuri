@@ -19,14 +19,15 @@ TargetWriter::TargetWriter(
 tempo_utils::Status
 TargetWriter::configure()
 {
-    if (m_packagePath != nullptr)
+    if (m_packageWriter != nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is already configured");
 
-    auto packageTempname = absl::StrCat(m_specifier.toString(), ".XXXXXXXX");
-    auto packagePath = std::make_unique<tempo_utils::TempdirMaker>(m_installRoot, packageTempname);
-    TU_RETURN_IF_NOT_OK (packagePath->getStatus());
-    m_packagePath = std::move(packagePath);
+    zuri_packager::PackageWriterOptions options;
+    options.installRoot = m_installRoot;
+    auto packageWriter = std::make_unique<zuri_packager::PackageWriter>(m_specifier, options);
+    TU_RETURN_IF_NOT_OK (packageWriter->configure());
+    m_packageWriter = std::move(packageWriter);
 
     return {};
 }
@@ -35,39 +36,45 @@ using perms = std::filesystem::perms;
 
 tempo_utils::Status
 TargetWriter::writeModule(
-    const tempo_utils::UrlPath &filePath,
+    const tempo_utils::UrlPath &modulePath,
     const lyric_build::LyricMetadata &metadata,
     std::shared_ptr<const tempo_utils::ImmutableBytes> content)
 {
-    if (m_packagePath == nullptr)
+    if (m_packageWriter == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is not configured");
 
-    auto modulesRoot = m_packagePath->getTempdir() / "modules";
-    auto absolutePath = filePath.toFilesystemPath(modulesRoot);
+    auto modulesRoot = tempo_utils::UrlPath::fromString("/modules");
+    auto fullModulePath = modulesRoot.traverse(modulePath.toRelative());
 
-    auto parentPerms = perms::owner_all
-        | perms::group_read
-        | perms::group_exec
-        | perms::others_read
-        | perms::others_exec;
+    // auto parentPerms = perms::owner_all
+    //     | perms::group_read
+    //     | perms::group_exec
+    //     | perms::others_read
+    //     | perms::others_exec;
 
-    auto parentPath = absolutePath.parent_path();
-    tempo_utils::DirectoryMaker parentMaker(parentPath, parentPerms);
-    TU_RETURN_IF_NOT_OK (parentMaker.getStatus());
+    auto parentPath = fullModulePath.getInit();
+    zuri_packager::EntryAddress parentEntry;
+    TU_ASSIGN_OR_RETURN (parentEntry, m_packageWriter->makeDirectory(parentPath, true));
 
-    auto modulePerms = perms::owner_read
-        | perms::owner_write
-        | perms::group_read
-        | perms::others_read;
+    // auto modulePerms = perms::owner_read
+    //     | perms::owner_write
+    //     | perms::group_read
+    //     | perms::others_read;
 
-    tempo_utils::FileWriter fileWriter(absolutePath, content,
-        tempo_utils::FileWriterMode::CREATE_ONLY, modulePerms);
-    TU_RETURN_IF_NOT_OK (fileWriter.getStatus());
-
-    TU_LOG_INFO << "wrote module " << filePath << " to " << fileWriter.getAbsolutePath();
+    zuri_packager::EntryAddress moduleEntry;
+    TU_ASSIGN_OR_RETURN (moduleEntry, m_packageWriter->putFile(fullModulePath, content));
 
     return {};
+}
+
+tempo_utils::Result<std::filesystem::path>
+TargetWriter::writeTarget()
+{
+    if (m_packageWriter == nullptr)
+        return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+            "target writer is not configured");
+    return m_packageWriter->writePackage();
 }
 
 // static tempo_utils::Status

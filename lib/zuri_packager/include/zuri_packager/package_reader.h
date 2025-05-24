@@ -27,10 +27,10 @@ namespace zuri_packager {
         ZuriManifest getManifest() const;
 
         tempo_utils::Slice getFileContents(
-            const EntryPath &entryPath,
+            const tempo_utils::UrlPath &entryPath,
             bool followSymlinks = false) const;
         tu_uint32 getFileSize(
-            const EntryPath &entryPath,
+            const tempo_utils::UrlPath &entryPath,
             bool followSymlinks = false) const;
 
     private:

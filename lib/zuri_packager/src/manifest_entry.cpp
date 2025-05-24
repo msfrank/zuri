@@ -4,7 +4,7 @@
 
 zuri_packager::ManifestEntry::ManifestEntry(
     EntryType type,
-    const EntryPath &path,
+    const tempo_utils::UrlPath &path,
     EntryAddress address,
     ManifestState *state)
     : m_type(type),
@@ -24,7 +24,7 @@ zuri_packager::ManifestEntry::getEntryType() const
     return m_type;
 }
 
-zuri_packager::EntryPath
+tempo_utils::UrlPath
 zuri_packager::ManifestEntry::getEntryPath() const
 {
     return m_path;
@@ -34,7 +34,7 @@ std::string
 zuri_packager::ManifestEntry::getEntryName() const
 {
     if (m_path.isValid())
-        return m_path.getFilename();
+        return m_path.getLast().getPart();
     return {};
 }
 

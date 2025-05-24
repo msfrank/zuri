@@ -47,6 +47,6 @@ TEST(TargetBuilder, BuildLibrary) {
     auto *builder = testRunner->getBuilder();
     TargetBuilder targetBuilder(buildGraph, builder, std::filesystem::current_path());
 
-    auto status = targetBuilder.buildTarget("lib1");
-    ASSERT_THAT (status, tempo_test::IsOk());
+    auto buildTargetResult = targetBuilder.buildTarget("lib1");
+    ASSERT_THAT (buildTargetResult, tempo_test::IsResult());
 }

@@ -25,11 +25,11 @@ zuri_packager::ManifestWalker::isValid() const
 zuri_packager::EntryWalker
 zuri_packager::ManifestWalker::getRoot() const
 {
-    return getEntry(EntryPath::fromString("/"));
+    return getEntry(tempo_utils::UrlPath::fromString("/"));
 }
 
 bool
-zuri_packager::ManifestWalker::hasEntry(const EntryPath &entryPath) const
+zuri_packager::ManifestWalker::hasEntry(const tempo_utils::UrlPath &entryPath) const
 {
     auto *pathDescriptor = m_reader->findPath(entryPath.pathView());
     if (pathDescriptor == nullptr)
@@ -45,7 +45,7 @@ zuri_packager::ManifestWalker::getEntry(tu_uint32 offset) const
 }
 
 zuri_packager::EntryWalker
-zuri_packager::ManifestWalker::getEntry(const EntryPath &entryPath) const
+zuri_packager::ManifestWalker::getEntry(const tempo_utils::UrlPath &entryPath) const
 {
     auto *pathDescriptor = m_reader->findPath(entryPath.pathView());
     if (pathDescriptor == nullptr)

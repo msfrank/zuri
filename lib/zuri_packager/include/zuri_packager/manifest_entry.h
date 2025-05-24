@@ -15,12 +15,12 @@ namespace zuri_packager {
     public:
         ManifestEntry(
             EntryType type,
-            const EntryPath &path,
+            const tempo_utils::UrlPath &path,
             EntryAddress address,
             ManifestState *state);
 
         EntryType getEntryType() const;
-        EntryPath getEntryPath() const;
+        tempo_utils::UrlPath getEntryPath() const;
         std::string getEntryName() const;
         EntryAddress getAddress() const;
 
@@ -49,7 +49,7 @@ namespace zuri_packager {
 
     private:
         EntryType m_type;
-        EntryPath m_path;
+        tempo_utils::UrlPath m_path;
         EntryAddress m_address;
         tu_uint32 m_offset;
         tu_uint32 m_size;
