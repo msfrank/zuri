@@ -1,0 +1,124 @@
+namespace zpk1;
+
+file_identifier "ZPK1";                         // 4 byte magic for Lyric package version 1
+
+enum ManifestVersion : uint8 {
+    Unknown,
+    Version1,
+}
+
+enum TrueFalseNil : uint8 { Nil = 0, False, True }
+
+table Entry {
+    key: string (key);
+    value: uint32;
+}
+
+table TrueFalseNilValue { tfn: TrueFalseNil; }
+table Int64Value        { i64: int64; }
+table Float64Value      { f64: float64; }
+table UInt64Value       { u64: uint64; }
+table UInt32Value       { u32: uint32; }
+table UInt16Value       { u16: uint16; }
+table UInt8Value        { u8: uint8; }
+table StringValue       { utf8: string; }
+
+union Value {
+    TrueFalseNilValue,
+    Int64Value,
+    Float64Value,
+    UInt64Value,
+    UInt32Value,
+    UInt16Value,
+    UInt8Value,
+    StringValue,
+}
+
+table NamespaceDescriptor {
+    ns_url: string;
+}
+
+table AttrDescriptor {
+    attr_ns: uint32;                            // namespace of the attribute
+    attr_id: uint32;                            // id of the attribute
+    attr_value: Value;                          // value of the attribute
+}
+
+enum EntryType : uint8 {
+    Package,                                    // entry refers to the package itself
+    File,                                       // entry is a regular file
+    CompressedFile,                             // entry is a compressed file
+    Directory,                                  // entry is a directory
+    Link,                                       // entry is a symbolic link
+}
+
+// An EntryDescriptor describes a single entry in the manifest, and contains offsets
+// to each metadata attribute. The format of the EntryDescriptor has different
+// invariants depending on the entry_type:
+//
+// Package entry:
+//   * path must be empty
+//   * entry_offset must be INVALID_OFFSET_U32
+//   * entry_size must be zero
+//   * entry_dict must be INVALID_OFFSET_U32
+//   * entry_link must be INVALID_OFFSET_U32
+// File entry:
+//   * path must not be empty, must be a valid UTF-8 string.
+//   * entry_offset must not be INVALID_OFFSET_U32
+//   * entry_size may be zero. in this case, the entry refers to an empty file.
+//   * entry_dict must be INVALID_OFFSET_U32
+//   * entry_link must be INVALID_OFFSET_U32
+//   * entry_children must be empty
+// CompressedFile entry:
+//   * path must not be empty, must be a valid UTF-8 string.
+//   * entry_offset must not be INVALID_OFFSET_U32
+//   * entry_size may be zero. in this case, the entry refers to an empty file.
+//   * entry_dict may be INVALID_OFFSET_U32 if file is compressed using the
+//     default dictionary, otherwise it must refer to a valid META_ENTRY entry
+//   * entry_link must be INVALID_OFFSET_U32
+//   * entry_children must be empty
+// Directory entry:
+//   * path must not be empty, must be a valid UTF-8 string.
+//   * entry_offset must be INVALID_OFFSET_U32
+//   * entry_size must be zero.
+//   * entry_dict must be INVALID_OFFSET_U32
+//   * entry_link must be INVALID_OFFSET_U32
+// Link entry:
+//   * path must not be empty, must be a valid UTF-8 string.
+//   * entry_offset must be INVALID_OFFSET_U32
+//   * entry_size must be zero.
+//   * entry_dict must be INVALID_OFFSET_U32
+//   * entry_link must not be INVALID_OFFSET_U32, value must be less than the offset of the current entry (no loops allowed)
+//   * entry_children must be empty
+
+table EntryDescriptor {
+    path: string;                               // string containing url-encoded path of the entry
+    entry_type: EntryType;                      // the type of the entry
+    entry_attrs: [uint32];                      // array of attributes bound to the entry
+    entry_children: [uint32];                   // array of child entries
+    entry_offset: uint32;                       // byte offset of the entry in the package contents (not counting the file header)
+    entry_size: uint32;                         // size of the entry in bytes
+    entry_dict: uint32;                         // if entryType is COMPRESSED_FILE_ENTRY, then optional entry containing decompression dictionary
+    entry_link: uint32;                         // if entryType is LINK_ENTRY, then entry_link contains the offset to the target entry
+}
+
+table PathDescriptor {
+    path: string (key);                         // path to the entry
+    entry: uint32;                              // offset of the entry
+}
+
+// A Manifest describes a set of entries and associated metadata. Entries are
+// typrically files or directories, but can also contain supporting metadata.
+// Each entry in the manifest has an EntryDescriptor which both identifies the
+// location of the entry data in the manifest, and also contains metadata such
+// as the name, filesystem attributes, the content type, etc.
+
+table Manifest {
+    abi: ManifestVersion;                       // target ABI the manifest was generated for
+    namespaces: [NamespaceDescriptor];          // array of namespace descriptors
+    attrs: [AttrDescriptor];                    // array of attr descriptors
+    entries: [EntryDescriptor];                 // array of entry descriptors
+    paths: [PathDescriptor];                    // sorted array mapping entry path to offset
+}
+
+root_type Manifest;

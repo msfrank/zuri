@@ -1,5 +1,6 @@
 
 #include <absl/strings/str_join.h>
+#include <boost/graph/depth_first_search.hpp>
 
 #include <zuri_build/build_graph.h>
 
@@ -87,7 +88,7 @@ BuildGraph::create(
                 return tempo_config::ConfigStatus::forCondition(
                     tempo_config::ConfigCondition::kConfigInvariant,
                     "target '{}' refers to nonexistent target dependency '{}'", targetName, targetDep);
-            boost::add_edge(entry->second, targetVertex, *buildGraph);
+            boost::add_edge(targetVertex, entry->second, *buildGraph);
         }
 
         for (const auto &targetImport : targetEntry.imports) {
@@ -98,7 +99,7 @@ BuildGraph::create(
             const auto &importEntry = importStore->getImport(targetImport);
             switch (importEntry.type) {
                 case ImportEntryType::Target: {
-                    boost::add_edge(importsMap.at(targetImport), targetVertex, *buildGraph);
+                    boost::add_edge(targetVertex, importsMap.at(targetImport), *buildGraph);
                     break;
                 }
                 default:
@@ -115,4 +116,65 @@ BuildGraph::create(
         std::move(importsMap),
         std::move(requestedPackages),
         std::move(requestedRequirements)));
+}
+
+std::shared_ptr<TargetStore>
+BuildGraph::getTargetStore() const
+{
+    return m_targetStore;
+}
+
+std::shared_ptr<ImportStore>
+BuildGraph::getImportStore() const
+{
+    return m_importStore;
+}
+
+class BuildOrderingVisitor : public boost::default_dfs_visitor {
+public:
+    explicit BuildOrderingVisitor(std::vector<std::string> &targetBuildOrder)
+        : m_targetBuildOrder(targetBuildOrder)
+    {
+    }
+
+    BuildOrderingVisitor(const BuildOrderingVisitor &other)
+        : m_targetBuildOrder(other.m_targetBuildOrder)
+    {
+    }
+    void initialize_vertex(BuildGraphVertex v, const BuildGraphImpl &g) {};
+    void start_vertex(BuildGraphVertex v, const BuildGraphImpl &g) {};
+    void discover_vertex(BuildGraphVertex v, const BuildGraphImpl &g) {};
+    void examine_edge(BuildGraphEdge e, const BuildGraphImpl &g) {};
+    void tree_edge(BuildGraphEdge e, const BuildGraphImpl &g) {};
+    void back_edge(BuildGraphEdge e, const BuildGraphImpl &g) {};
+    void forward_or_cross_edge(BuildGraphEdge e, const BuildGraphImpl &g) {};
+
+    void finish_vertex(BuildGraphVertex v, const BuildGraphImpl &g) {
+        auto target_name = get(vertex_target_name_t(), g);
+        const std::string name = boost::get(target_name, v);
+        m_targetBuildOrder.push_back(name);
+    }
+
+private:
+    std::vector<std::string> &m_targetBuildOrder;
+};
+
+tempo_utils::Result<std::vector<std::string>>
+BuildGraph::calculateBuildOrder(const std::string &targetName) const
+{
+    auto entry = m_targetsMap.find(targetName);
+    if (entry == m_targetsMap.cend())
+        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kMissingValue,
+            "");
+
+    std::vector<std::string> targetBuildOrder;
+    BuildOrderingVisitor vis(targetBuildOrder);
+
+    std::vector<boost::default_color_type> colors(boost::num_vertices(*m_buildGraph));
+    auto vertex_index = boost::get(boost::vertex_index, *m_buildGraph);
+    auto colorMap = boost::make_iterator_property_map(colors.begin(), vertex_index, colors[0]);
+
+    boost::depth_first_visit(*m_buildGraph, entry->second, vis, colorMap);
+
+    return targetBuildOrder;
 }

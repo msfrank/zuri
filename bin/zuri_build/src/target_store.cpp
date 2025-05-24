@@ -8,6 +8,9 @@
 #include <tempo_config/parse_config.h>
 #include <zuri_build/target_store.h>
 
+#include "zuri_packager/packaging_conversions.h"
+#include "zuri_packager/zuri_manifest.h"
+
 TargetStore::TargetStore(const tempo_config::ConfigMap &targetsConfig)
     : m_targetsConfig(targetsConfig)
 {
@@ -56,7 +59,10 @@ public:
         TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
             targetEntry.type, targetEntryTypeParser, targetConfig, "type"));
 
-        // parse version
+        // parse specifier
+        zuri_packager::PackageSpecifierParser specifierParser;
+        TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
+            targetEntry.specifier, specifierParser, targetConfig, "specifier"));
 
         // parse depends
         tempo_config::StringParser dependencyParser;

@@ -7,7 +7,7 @@
 
 #include <zuri_build/build_graph.h>
 
-TEST(BuildQueue, ConfigureSingleTarget)
+TEST(BuildGraph, ConfigureSingleTarget)
 {
     tempo_config::ConfigNode targetsConfig;
     TU_ASSIGN_OR_RAISE (targetsConfig, tempo_config::read_config_string(R"(
@@ -27,7 +27,7 @@ TEST(BuildQueue, ConfigureSingleTarget)
     ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
 }
 
-TEST(BuildQueue, ConfigureMultipleTargetsNoDependencies)
+TEST(BuildGraph, ConfigureMultipleTargetsNoDependencies)
 {
     tempo_config::ConfigNode targetsConfig;
     TU_ASSIGN_OR_RAISE (targetsConfig, tempo_config::read_config_string(R"(
@@ -55,7 +55,7 @@ TEST(BuildQueue, ConfigureMultipleTargetsNoDependencies)
     ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
 }
 
-TEST(BuildQueue, ConfigureMultipleTargetsADependsBDependsC)
+TEST(BuildGraph, ConfigureMultipleTargetsADependsBDependsC)
 {
     tempo_config::ConfigNode targetsConfig;
     TU_ASSIGN_OR_RAISE (targetsConfig, tempo_config::read_config_string(R"(
@@ -85,7 +85,7 @@ TEST(BuildQueue, ConfigureMultipleTargetsADependsBDependsC)
     ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
 }
 
-TEST(BuildQueue, ConfigureMultipleTargetsADependsBAndC)
+TEST(BuildGraph, ConfigureMultipleTargetsADependsBAndC)
 {
     tempo_config::ConfigNode targetsConfig;
     TU_ASSIGN_OR_RAISE (targetsConfig, tempo_config::read_config_string(R"(
@@ -115,7 +115,8 @@ TEST(BuildQueue, ConfigureMultipleTargetsADependsBAndC)
     ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
 }
 
-TEST(BuildQueue, ConfigureFailsWhenDependencyCycleIsPresent)
+
+TEST(BuildGraph, DetermineTargetBuildOrder)
 {
     tempo_config::ConfigNode targetsConfig;
     TU_ASSIGN_OR_RAISE (targetsConfig, tempo_config::read_config_string(R"(
@@ -123,7 +124,7 @@ TEST(BuildQueue, ConfigureFailsWhenDependencyCycleIsPresent)
         "A": {
             "type": "Program",
             "programMain": "/prog1",
-            "depends": [ "B" ]
+            "depends": [ "B", "C" ]
         },
         "B": {
             "type": "Library",
@@ -132,8 +133,7 @@ TEST(BuildQueue, ConfigureFailsWhenDependencyCycleIsPresent)
         },
         "C": {
             "type": "Library",
-            "libraryModules": ["/prog3"],
-            "depends": [ "A" ]
+            "libraryModules": ["/prog3"]
         }
     }
     )"));
@@ -141,7 +141,22 @@ TEST(BuildQueue, ConfigureFailsWhenDependencyCycleIsPresent)
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
+    std::shared_ptr<BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
 
-    auto createBuildGraph = BuildGraph::create(targetStore, importStore);
-    ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
+    auto calculateC = buildGraph->calculateBuildOrder("C");
+    ASSERT_THAT (calculateC, tempo_test::IsResult());
+    auto orderC = calculateC.getResult();
+    ASSERT_THAT  (orderC, testing::ElementsAre("C"));
+
+    auto calculateB = buildGraph->calculateBuildOrder("B");
+    ASSERT_THAT (calculateB, tempo_test::IsResult());
+    auto orderB = calculateB.getResult();
+    ASSERT_THAT  (orderB, testing::ElementsAre("C", "B"));
+
+    auto calculateA = buildGraph->calculateBuildOrder("A");
+    ASSERT_THAT (calculateA, tempo_test::IsResult());
+    auto orderA = calculateA.getResult();
+    ASSERT_THAT  (orderA, testing::ElementsAre("C", "B", "A"));
 }
+

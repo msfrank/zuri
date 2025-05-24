@@ -1,10 +1,9 @@
 #ifndef ZURI_BUILD_TARGET_STORE_H
 #define ZURI_BUILD_TARGET_STORE_H
 
-#include <lyric_common/common_types.h>
 #include <lyric_common/module_location.h>
 #include <tempo_config/config_types.h>
-#include <tempo_utils/attr.h>
+#include <zuri_packager/package_specifier.h>
 
 enum class TargetEntryType {
     Invalid,
@@ -15,7 +14,7 @@ enum class TargetEntryType {
 
 struct TargetEntry {
     TargetEntryType type;
-    std::string version;
+    zuri_packager::PackageSpecifier specifier;
     std::vector<std::string> depends;
     std::vector<std::string> imports;
     std::vector<lyric_common::ModuleLocation> modules;

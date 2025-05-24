@@ -178,5 +178,46 @@ TEST(TargetCycleDetector, CircularDependency)
     ASSERT_EQ (1, targetCycleDetector->numCycles());
 
     auto cycle = *targetCycleDetector->cyclesBegin();
-    TU_LOG_ERROR << "cycle: " << absl::StrJoin(cycle, "->");
+    TU_LOG_ERROR << "cycle: " << absl::StrJoin(cycle, " depends on ");
+}
+
+TEST(TargetCycleDetector, MultipleCircularDependencies)
+{
+    tempo_config::ConfigNode targetsConfig;
+    TU_ASSIGN_OR_RAISE (targetsConfig, tempo_config::read_config_string(R"(
+    {
+        "A": {
+            "type": "Program",
+            "programMain": "/prog1",
+            "depends": [ "B", "C" ]
+        },
+        "B": {
+            "type": "Library",
+            "libraryModules": ["/prog2"],
+            "depends": [ "C" ]
+        },
+        "C": {
+            "type": "Library",
+            "libraryModules": ["/prog3"],
+            "depends": [ "A" ]
+        }
+    }
+    )"));
+    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    TU_RAISE_IF_NOT_OK (targetStore->configure());
+    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    TU_RAISE_IF_NOT_OK (importStore->configure());
+    std::shared_ptr<BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+
+    auto createTargetCycleDetector = TargetCycleDetector::create(buildGraph);
+    ASSERT_THAT (createTargetCycleDetector, tempo_test::IsResult());
+
+    auto targetCycleDetector = createTargetCycleDetector.getResult();
+    std::vector targetCycles(targetCycleDetector->cyclesBegin(), targetCycleDetector->cyclesEnd());
+    ASSERT_TRUE (targetCycleDetector->hasCycles());
+    ASSERT_EQ (2, targetCycleDetector->numCycles());
+
+    auto cycle = *targetCycleDetector->cyclesBegin();
+    TU_LOG_ERROR << "cycle: " << absl::StrJoin(cycle, " depends on ");
 }

@@ -168,6 +168,10 @@ include(GoogleTest)
 #
 #######################################################################
 
+# define path to flatc
+set(FLATC ${FLATBUFFERS_FLATC})
+message(STATUS "flatc command is ${FLATC}")
+
 #######################################################################
 #
 # define build constants
@@ -240,6 +244,7 @@ set(EMPTY_CPP "${CMAKE_BINARY_DIR}/empty.cpp")
 #######################################################################
 
 add_subdirectory(bin)
+add_subdirectory(lib)
 add_subdirectory(pkg)
 add_subdirectory(share)
 

@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-#ifndef ZURI_BUILD_WORKSPACE_UTILS_H
-#define ZURI_BUILD_WORKSPACE_UTILS_H
+#ifndef ZURI_BUILD_LOAD_CONFIG_H
+#define ZURI_BUILD_LOAD_CONFIG_H
 
-#include <lyric_build/config_store.h>
 #include <tempo_config/program_config.h>
 #include <tempo_config/workspace_config.h>
 
@@ -14,4 +13,4 @@ tempo_utils::Result<std::shared_ptr<tempo_config::WorkspaceConfig>> load_workspa
     const std::filesystem::path &searchPathStart,
     const std::filesystem::path &distributionRoot);
 
-#endif // ZURI_BUILD_WORKSPACE_UTILS_H
+#endif // ZURI_BUILD_LOAD_CONFIG_H

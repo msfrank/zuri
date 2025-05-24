@@ -36,6 +36,11 @@ public:
         std::shared_ptr<TargetStore> targetStore,
         std::shared_ptr<ImportStore> importStore);
 
+    std::shared_ptr<TargetStore> getTargetStore() const;
+    std::shared_ptr<ImportStore> getImportStore() const;
+
+    tempo_utils::Result<std::vector<std::string>> calculateBuildOrder(const std::string &targetName) const;
+
 private:
     std::shared_ptr<TargetStore> m_targetStore;
     std::shared_ptr<ImportStore> m_importStore;

@@ -6,14 +6,20 @@ set(CMAKE_AUTOMOC OFF)
 add_library(ZuriBuildRuntime STATIC
     src/build_graph.cpp
     include/zuri_build/build_graph.h
+    src/collect_modules_task.cpp
+    include/zuri_build/collect_modules_task.h
     src/import_store.cpp
     include/zuri_build/import_store.h
     src/load_config.cpp
     include/zuri_build/load_config.h
+    src/target_builder.cpp
+    include/zuri_build/target_builder.h
     src/target_cycle_detector.cpp
     include/zuri_build/target_cycle_detector.h
     src/target_store.cpp
     include/zuri_build/target_store.h
+    src/target_writer.cpp
+    include/zuri_build/target_writer.h
     src/zuri_build.cpp
     include/zuri_build/zuri_build.h
     )
@@ -35,6 +41,7 @@ target_link_libraries(ZuriBuildRuntime
     lyric::lyric_build
     tempo::tempo_command
     tempo::tempo_utils
+    zuri::zuri_packager
     Boost::headers
     ${SANITIZER_LIBS}
     ${PROFILER_LIBS}

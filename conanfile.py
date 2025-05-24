@@ -47,8 +47,11 @@ class Zuri(ConanFile):
         cmake_layout(self)
 
     def generate(self):
+        flatbuffers = self.dependencies['flatbuffers'].buildenv_info.vars(self)
+
         tc = CMakeToolchain(self)
         tc.variables['ZURI_PACKAGE_VERSION'] = self.version
+        tc.variables['FLATBUFFERS_FLATC'] = flatbuffers.get('FLATBUFFERS_FLATC')
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()

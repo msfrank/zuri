@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include <lyric_build/build_conversions.h>
-#include <lyric_build/config_store.h>
 #include <lyric_build/lyric_builder.h>
 #include <tempo_command/command_config.h>
 #include <tempo_command/command_help.h>
@@ -213,11 +212,10 @@ run_zuri_build(int argc, const char *argv[])
     }
 
     auto toolConfig = config->getToolConfig();
-    auto vendorConfig = config->getVendorConfig();
 
     // construct the config store from the workspace
     auto settingsConfig = toolConfig.mapAt("settings").toMap();
-    lyric_build::ConfigStore configStore(settingsConfig, config->getVendorConfig());
+    lyric_build::TaskSettings taskSettings(settingsConfig);
 
     //
     auto importsConfig = toolConfig.mapAt("imports").toMap();
@@ -243,19 +241,19 @@ run_zuri_build(int argc, const char *argv[])
     }
 
     // construct the builder based on workspace config and config overrides
-    lyric_build::LyricBuilder builder(configStore, builderOptions);
+    lyric_build::LyricBuilder builder(taskSettings, builderOptions);
     TU_RETURN_IF_NOT_OK (builder.configure());
 
+    // //
+    // lyric_build::TargetComputationSet targetComputationSet;
+    // TU_ASSIGN_OR_RETURN (targetComputationSet, builder.computeTargets(targets, {}, {}, {}));
     //
-    lyric_build::TargetComputationSet targetComputationSet;
-    TU_ASSIGN_OR_RETURN (targetComputationSet, builder.computeTargets(targets, {}, {}, {}));
-
-    auto diagnostics = targetComputationSet.getDiagnostics();
-    diagnostics->printDiagnostics();
-
-    TU_CONSOLE_OUT << "build completed in " << targetComputationSet.getElapsedTime().count() << "ms";
-    TU_CONSOLE_OUT << targetComputationSet.getTotalTasksCreated() << " tasks created, "
-                   << targetComputationSet.getTotalTasksCached() << " tasks cached";
+    // auto diagnostics = targetComputationSet.getDiagnostics();
+    // diagnostics->printDiagnostics();
+    //
+    // TU_CONSOLE_OUT << "build completed in " << targetComputationSet.getElapsedTime().count() << "ms";
+    // TU_CONSOLE_OUT << targetComputationSet.getTotalTasksCreated() << " tasks created, "
+    //                << targetComputationSet.getTotalTasksCached() << " tasks cached";
 
     return {};
 }
