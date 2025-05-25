@@ -27,13 +27,13 @@ protected:
 
 TEST_F(PackageReader, OpenPackageFile)
 {
-    zuri_packager::PackageSpecifier specifier(packageName, "foocorp", 1, 0, 0);
+    auto specifier = zuri_packager::PackageSpecifier::fromString("foo-1.0.0@foocorp");
     zuri_packager::PackageWriter writer(specifier);
     ASSERT_THAT (writer.configure(), tempo_test::IsOk());
 
     auto path = tempo_utils::UrlPath::fromString("/file.txt");
-    auto src = tempo_utils::MemoryBytes::copy("hello, world!");
-    writer.putFile(path, src);
+    auto content = tempo_utils::MemoryBytes::copy("hello, world!");
+    writer.putFile(path, content);
     auto writePackageResult = writer.writePackage();
     ASSERT_THAT (writePackageResult, tempo_test::IsResult());
 
@@ -52,13 +52,13 @@ TEST_F(PackageReader, OpenPackageFile)
 
 TEST_F(PackageReader, ReadPackageBytes)
 {
-    zuri_packager::PackageSpecifier specifier(packageName, "foocorp", 1, 0, 0);
+    auto specifier = zuri_packager::PackageSpecifier::fromString("foo-1.0.0@foocorp");
     zuri_packager::PackageWriter writer(specifier);
     ASSERT_THAT (writer.configure(), tempo_test::IsOk());
 
     auto path = tempo_utils::UrlPath::fromString("/file.txt");
-    auto src = tempo_utils::MemoryBytes::copy("hello, world!");
-    writer.putFile(path, src);
+    auto content = tempo_utils::MemoryBytes::copy("hello, world!");
+    writer.putFile(path, content);
     auto writePackageResult = writer.writePackage();
     ASSERT_THAT (writePackageResult, tempo_test::IsResult());
 
@@ -67,8 +67,7 @@ TEST_F(PackageReader, ReadPackageBytes)
     tempo_utils::FileReader fileReader(packagePath);
     ASSERT_THAT (fileReader.getStatus(), tempo_test::IsOk());
 
-    auto content = fileReader.getBytes();
-    auto createReaderResult = zuri_packager::PackageReader::create(content);
+    auto createReaderResult = zuri_packager::PackageReader::create(fileReader.getBytes());
     ASSERT_THAT (createReaderResult, tempo_test::IsResult());
 
     auto reader = createReaderResult.getResult();

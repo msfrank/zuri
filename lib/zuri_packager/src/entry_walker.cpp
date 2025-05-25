@@ -46,7 +46,7 @@ zuri_packager::EntryWalker::getEntryType() const
     }
 }
 
-std::filesystem::path
+tempo_utils::UrlPath
 zuri_packager::EntryWalker::getPath() const
 {
     auto *entry = m_reader->getEntry(m_index);
@@ -54,7 +54,7 @@ zuri_packager::EntryWalker::getPath() const
         return {};
     if (entry->path() == nullptr)
         return {};
-    return std::filesystem::path(entry->path()->c_str(), std::filesystem::path::generic_format);
+    return tempo_utils::UrlPath::fromString(entry->path()->c_str());
 }
 
 tu_uint64
@@ -178,7 +178,7 @@ zuri_packager::EntryWalker::getChild(std::string_view name) const
     for (tu_uint32 i = 0; i < children->size(); i++) {
         EntryWalker child(m_reader, children->Get(i));
         auto path = child.getPath();
-        if (name == path.filename().string())
+        if (name == path.getLast().partView())
             return child;
     }
     return {};

@@ -44,6 +44,8 @@ private:
         absl::flat_hash_map<std::string, zuri_packager::PackageDependency> dependencies;
     };
     std::unique_ptr<Priv> m_priv;
+
+    tempo_utils::Status writePackageConfig();
 };
 
 #endif // LYRIC_BUILD_INTERNAL_PACKAGE_TASK_H

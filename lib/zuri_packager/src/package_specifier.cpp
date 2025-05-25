@@ -67,6 +67,17 @@ zuri_packager::PackageSpecifier::getPatchVersion() const
 }
 
 std::string
+zuri_packager::PackageSpecifier::getVersionString() const
+{
+    return absl::StrCat(
+        m_priv->majorVersion,
+        ".",
+        m_priv->minorVersion,
+        ".",
+        m_priv->patchVersion);
+}
+
+std::string
 zuri_packager::PackageSpecifier::toString() const
 {
     if (!isValid())

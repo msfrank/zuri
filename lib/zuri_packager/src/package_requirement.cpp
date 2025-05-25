@@ -1,4 +1,5 @@
 
+#include <tempo_config/config_result.h>
 #include <zuri_packager/package_requirement.h>
 
 zuri_packager::VersionRequirement::VersionRequirement(
@@ -55,6 +56,27 @@ zuri_packager::VersionRequirement::satisfiedBy(const PackageSpecifier &specifier
             return cmp <= 0;
         default:
             return false;
+    }
+}
+
+tempo_config::ConfigNode
+zuri_packager::VersionRequirement::toNode() const
+{
+    switch (m_comparison) {
+        case VersionComparison::Equal:
+            return tempo_config::buildValue(m_specifier.toString());
+        case VersionComparison::NotEqual:
+            return tempo_config::buildValue(absl::StrCat("!", m_specifier.toString()));
+        case VersionComparison::GreaterThan:
+            return tempo_config::buildValue(absl::StrCat(">", m_specifier.toString()));
+        case VersionComparison::GreaterOrEqual:
+            return tempo_config::buildValue(absl::StrCat(">=", m_specifier.toString()));
+        case VersionComparison::LesserThan:
+            return tempo_config::buildValue(absl::StrCat("<", m_specifier.toString()));
+        case VersionComparison::LesserOrEqual:
+            return tempo_config::buildValue(absl::StrCat("<=", m_specifier.toString()));
+        default:
+            return {};
     }
 }
 

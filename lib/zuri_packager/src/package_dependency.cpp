@@ -74,3 +74,23 @@ zuri_packager::PackageDependency::satisfiedBy(const PackageSpecifier &specifier)
     }
     return true;
 }
+
+tempo_config::ConfigNode
+zuri_packager::PackageDependency::toNode() const
+{
+    if (m_priv->requirements.size() == 1) {
+        auto node = m_priv->requirements.front()->toNode();
+        if (node.getNodeType() == tempo_config::ConfigNodeType::kValue)
+            return node;
+        return {};
+    }
+
+    auto requirementsBuilder = tempo_config::buildSeq();
+    for (const auto &req : m_priv->requirements) {
+        auto node = req->toNode();
+        if (node.getNodeType() != tempo_config::ConfigNodeType::kValue)
+            return {};
+        requirementsBuilder = requirementsBuilder.append(node);
+    }
+    return requirementsBuilder.build();
+}

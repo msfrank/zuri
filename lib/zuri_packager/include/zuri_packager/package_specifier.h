@@ -30,6 +30,7 @@ namespace zuri_packager {
         tu_uint32 getMajorVersion() const;
         tu_uint32 getMinorVersion() const;
         tu_uint32 getPatchVersion() const;
+        std::string getVersionString() const;
 
         std::string toString() const;
         std::filesystem::path toFilesystemPath(const std::filesystem::path &base = {}) const;

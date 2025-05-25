@@ -137,8 +137,8 @@ zuri_packager::PackageReader::create(std::shared_ptr<const tempo_utils::Immutabl
     // create a slice which spans only the package contents
     tempo_utils::Slice contents(packageBytes, dataOffset, mmapSize - dataOffset);
 
-    auto *reader = new PackageReader(version, flags, manifest, contents);
-    return std::shared_ptr<PackageReader>(reader);
+    return std::shared_ptr<PackageReader>(new PackageReader(
+        version, flags, manifest, contents));
 }
 
 /**

@@ -22,7 +22,7 @@ namespace zuri_packager {
         bool isValid() const;
 
         EntryType getEntryType() const;
-        std::filesystem::path getPath() const;
+        tempo_utils::UrlPath getPath() const;
         tu_uint64 getFileOffset() const;
         tu_uint64 getFileSize() const;
         EntryWalker getLink() const;

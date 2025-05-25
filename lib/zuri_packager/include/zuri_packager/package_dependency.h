@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <tempo_config/config_builder.h>
 
 #include "package_requirement.h"
 
@@ -27,6 +28,8 @@ namespace zuri_packager {
         int numRequirements() const;
 
         bool satisfiedBy(const PackageSpecifier &specifier) const;
+
+        tempo_config::ConfigNode toNode() const;
 
     private:
         struct Priv {

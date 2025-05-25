@@ -1,8 +1,11 @@
 
 #include <lyric_build/build_result.h>
+#include <tempo_config/config_builder.h>
+#include <tempo_config/config_serde.h>
 #include <tempo_utils/directory_maker.h>
 #include <tempo_utils/file_writer.h>
 #include <tempo_utils/log_message.h>
+#include <tempo_utils/memory_bytes.h>
 #include <zuri_build/target_writer.h>
 
 TargetWriter::TargetWriter(
@@ -126,6 +129,48 @@ TargetWriter::writeModule(
     return {};
 }
 
+tempo_utils::Status
+TargetWriter::writePackageConfig()
+{
+    auto rootBuilder = tempo_config::buildMap();
+
+    rootBuilder = rootBuilder.put("name", tempo_config::buildValue(m_specifier.getPackageName()));
+    rootBuilder = rootBuilder.put("version", tempo_config::buildValue(m_specifier.getVersionString()));
+    rootBuilder = rootBuilder.put("domain", tempo_config::buildValue(m_specifier.getPackageDomain()));
+
+    if (!m_priv->description.empty()) {
+        rootBuilder = rootBuilder.put("description", tempo_config::buildValue(m_priv->description));
+    }
+    if (!m_priv->owner.empty()) {
+        rootBuilder = rootBuilder.put("owner", tempo_config::buildValue(m_priv->owner));
+    }
+    if (!m_priv->homepage.empty()) {
+        rootBuilder = rootBuilder.put("homepage", tempo_config::buildValue(m_priv->homepage));
+    }
+    if (!m_priv->license.empty()) {
+        rootBuilder = rootBuilder.put("license", tempo_config::buildValue(m_priv->license));
+    }
+
+    if (!m_priv->dependencies.empty()) {
+        auto dependenciesBuilder = tempo_config::buildMap();
+        for (const auto &dep : m_priv->dependencies) {
+            dependenciesBuilder = dependenciesBuilder.put(dep.first, dep.second.toNode());
+        }
+        rootBuilder = rootBuilder.put("dependencies", dependenciesBuilder.build());
+    }
+
+    auto packageConfig = rootBuilder.build();
+
+    std::string s;
+    TU_RETURN_IF_NOT_OK (tempo_config::write_config_string(packageConfig, s));
+    auto config = tempo_utils::MemoryBytes::copy(s);
+
+    TU_RETURN_IF_STATUS (m_priv->packageWriter->putFile(
+        tempo_utils::UrlPath::fromString("/package.config"), config));
+
+    return {};
+}
+
 tempo_utils::Result<std::filesystem::path>
 TargetWriter::writeTarget()
 {
@@ -135,6 +180,8 @@ TargetWriter::writeTarget()
     if (m_priv->packageWriter == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is not configured");
+
+    TU_RETURN_IF_NOT_OK (writePackageConfig());
 
     std::filesystem::path packagePath;
     TU_ASSIGN_OR_RETURN (packagePath, m_priv->packageWriter->writePackage());
