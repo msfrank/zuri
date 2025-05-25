@@ -16,8 +16,8 @@ namespace zuri_packager {
     public:
         PackageSpecifier();
         PackageSpecifier(
-            std::string_view packageName,
-            std::string_view packageDomain,
+            const std::string &packageName,
+            const std::string &packageDomain,
             tu_uint32 majorVersion,
             tu_uint32 minorVersion,
             tu_uint32 patchVersion);
@@ -35,15 +35,19 @@ namespace zuri_packager {
         std::filesystem::path toFilesystemPath(const std::filesystem::path &base = {}) const;
         tempo_utils::Url toUrl() const;
 
+        static PackageSpecifier fromString(const std::string &s);
         static PackageSpecifier fromAuthority(const tempo_utils::UrlAuthority &authority);
-        static PackageSpecifier fromUrl(const tempo_utils::Url &uri);
+        static PackageSpecifier fromUrl(const tempo_utils::Url &url);
 
     private:
-        std::string m_packageName;
-        std::string m_packageDomain;
-        tu_uint32 m_majorVersion;
-        tu_uint32 m_minorVersion;
-        tu_uint32 m_patchVersion;
+        struct Priv {
+            std::string packageName;
+            std::string packageDomain;
+            tu_uint32 majorVersion = 0;
+            tu_uint32 minorVersion = 0;
+            tu_uint32 patchVersion = 0;
+        };
+        std::shared_ptr<Priv> m_priv;
     };
 }
 

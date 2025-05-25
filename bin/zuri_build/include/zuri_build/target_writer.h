@@ -6,6 +6,8 @@
 #include <zuri_packager/package_specifier.h>
 #include <zuri_packager/package_writer.h>
 
+#include "zuri_packager/package_dependency.h"
+
 class TargetWriter {
 
 public:
@@ -17,9 +19,10 @@ public:
 
     void setDescription(std::string_view description);
     void setOwner(std::string_view owner);
+    void setHomepage(std::string_view homepage);
     void setLicense(std::string_view license);
 
-    tempo_utils::Status addDependency(const zuri_packager::PackageSpecifier &specifier);
+    tempo_utils::Status addDependency(const zuri_packager::PackageDependency &dependency);
 
     tempo_utils::Status writeModule(
         const tempo_utils::UrlPath &modulePath,
@@ -32,10 +35,15 @@ private:
     std::filesystem::path m_installRoot;
     zuri_packager::PackageSpecifier m_specifier;
 
-    std::unique_ptr<zuri_packager::PackageWriter> m_packageWriter;
-    std::string m_description;
-    std::string m_owner;
-    std::string m_license;
+    struct Priv {
+        std::unique_ptr<zuri_packager::PackageWriter> packageWriter;
+        std::string description;
+        std::string owner;
+        std::string homepage;
+        std::string license;
+        absl::flat_hash_map<std::string, zuri_packager::PackageDependency> dependencies;
+    };
+    std::unique_ptr<Priv> m_priv;
 };
 
 #endif // LYRIC_BUILD_INTERNAL_PACKAGE_TASK_H

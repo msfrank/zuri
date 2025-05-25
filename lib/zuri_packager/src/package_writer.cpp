@@ -11,27 +11,32 @@ zuri_packager::PackageWriter::PackageWriter(
       m_options(options),
       m_packageEntry(nullptr)
 {
+    m_state = std::make_unique<ManifestState>();
     TU_ASSERT (m_specifier.isValid());
 }
 
 tempo_utils::Status
 zuri_packager::PackageWriter::configure()
 {
+    if (m_state == nullptr)
+        return PackageStatus::forCondition(
+            PackageCondition::kPackageInvariant, "writer is finished");
     if (m_packageEntry != nullptr)
         return PackageStatus::forCondition(
             PackageCondition::kPackageInvariant, "writer is already configured");
-    auto appendEntryResult = m_state.appendEntry(EntryType::Package, tempo_utils::UrlPath::fromString("/"));
-    if (appendEntryResult.isStatus())
-        return appendEntryResult.getStatus();
-    m_packageEntry = appendEntryResult.getResult();
+    TU_ASSIGN_OR_RETURN (m_packageEntry, m_state->appendEntry(
+        EntryType::Package, tempo_utils::UrlPath::fromString("/")));
     return {};
 }
 
 bool
 zuri_packager::PackageWriter::hasEntry(const tempo_utils::UrlPath &path) const
 {
-    TU_ASSERT (path.isValid());
-    return m_state.hasEntry(path);
+    if (!path.isValid())
+        return false;
+    if (m_state == nullptr)
+        return false;
+    return m_state->hasEntry(path);
 }
 
 bool
@@ -39,7 +44,9 @@ zuri_packager::PackageWriter::hasEntry(EntryAddress parentDirectory, std::string
 {
     if (!parentDirectory.isValid())
         return false;
-    auto *parent = m_state.getEntry(parentDirectory.getAddress());
+    if (m_state == nullptr)
+        return false;
+    auto *parent = m_state->getEntry(parentDirectory.getAddress());
     if (parent == nullptr)
         return false;
     return parent->hasChild(name);
@@ -48,8 +55,11 @@ zuri_packager::PackageWriter::hasEntry(EntryAddress parentDirectory, std::string
 zuri_packager::EntryAddress
 zuri_packager::PackageWriter::getEntry(const tempo_utils::UrlPath &path) const
 {
-    TU_ASSERT (path.isValid());
-    auto *entry = m_state.getEntry(path);
+    if (!path.isValid())
+        return {};
+    if (m_state == nullptr)
+        return {};
+    auto *entry = m_state->getEntry(path);
     if (entry == nullptr)
         return {};
     return entry->getAddress();
@@ -58,7 +68,15 @@ zuri_packager::PackageWriter::getEntry(const tempo_utils::UrlPath &path) const
 tempo_utils::Result<zuri_packager::EntryAddress>
 zuri_packager::PackageWriter::makeDirectory(const tempo_utils::UrlPath &path, bool createIntermediate)
 {
-    TU_ASSERT (path.isValid());
+    if (!path.isValid())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "invalid path");
+    if (m_state == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is finished");
+    if (m_packageEntry == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is not configured");
 
     // if path is empty then return the package entry
     if (path.isEmpty()) {
@@ -73,7 +91,7 @@ zuri_packager::PackageWriter::makeDirectory(const tempo_utils::UrlPath &path, bo
     }
 
     auto address = m_packageEntry->getAddress();
-    auto *entry = m_state.getEntry(address.getAddress());
+    auto *entry = m_state->getEntry(address.getAddress());
     int i = 0;
 
     // skip over existing path entries
@@ -82,7 +100,7 @@ zuri_packager::PackageWriter::makeDirectory(const tempo_utils::UrlPath &path, bo
         if (!entry->hasChild(part))
             break;
         address = entry->getChild(part);
-        entry = m_state.getEntry(address.getAddress());
+        entry = m_state->getEntry(address.getAddress());
         if (entry->getEntryType() != EntryType::Directory)
             return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
                 "existing path entry is not a directory");
@@ -105,7 +123,20 @@ zuri_packager::PackageWriter::makeDirectory(const tempo_utils::UrlPath &path, bo
 tempo_utils::Result<zuri_packager::EntryAddress>
 zuri_packager::PackageWriter::makeDirectory(EntryAddress parentDirectory, std::string_view name)
 {
-    auto *parentEntry = m_state.getEntry(parentDirectory.getAddress());
+    if (!parentDirectory.isValid())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "invalid parent directory");
+    if (name.empty())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "invalid directory name");
+    if (m_state == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is finished");
+    if (m_packageEntry == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is not configured");
+
+    auto *parentEntry = m_state->getEntry(parentDirectory.getAddress());
     if (parentEntry == nullptr)
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "missing parent entry");
@@ -121,7 +152,7 @@ zuri_packager::PackageWriter::makeDirectory(EntryAddress parentDirectory, std::s
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "directory already contains entry");
     auto path = parentEntry->getEntryPath().traverse(tempo_utils::UrlPathPart(name));
-    auto appendEntryResult = m_state.appendEntry(EntryType::Directory, path);
+    auto appendEntryResult = m_state->appendEntry(EntryType::Directory, path);
     if (appendEntryResult.isStatus())
         return appendEntryResult.getStatus();
     auto *entry = appendEntryResult.getResult();
@@ -137,7 +168,20 @@ zuri_packager::PackageWriter::putFile(
     std::string_view name,
     std::shared_ptr<const tempo_utils::ImmutableBytes> bytes)
 {
-    auto *parentEntry = m_state.getEntry(parentDirectory.getAddress());
+    if (!parentDirectory.isValid())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "invalid parent directory");
+    if (name.empty())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "invalid file name");
+    if (m_state == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is finished");
+    if (m_packageEntry == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is not configured");
+
+    auto *parentEntry = m_state->getEntry(parentDirectory.getAddress());
     if (parentEntry == nullptr)
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "missing parent directory");
@@ -154,7 +198,7 @@ zuri_packager::PackageWriter::putFile(
             "file already exists");
 
     auto path = parentEntry->getEntryPath().traverse(tempo_utils::UrlPathPart(name));
-    auto appendEntryResult = m_state.appendEntry(EntryType::File, path);
+    auto appendEntryResult = m_state->appendEntry(EntryType::File, path);
     if (appendEntryResult.isStatus())
         return appendEntryResult.getStatus();
     auto *fileEntry = appendEntryResult.getResult();
@@ -172,11 +216,19 @@ zuri_packager::PackageWriter::putFile(
     const tempo_utils::UrlPath &path,
     std::shared_ptr<const tempo_utils::ImmutableBytes> bytes)
 {
-    TU_ASSERT (path.isValid());
+    if (!path.isValid())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "invalid file path");
+    if (m_state == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is finished");
+    if (m_packageEntry == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is not configured");
 
     tempo_utils::UrlPath parentPath = path.getInit();
     auto name = path.getLast().getPart();
-    auto *parentEntry = m_state.getEntry(parentPath);
+    auto *parentEntry = m_state->getEntry(parentPath);
     if (parentEntry == nullptr)
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "missing parent directory");
@@ -192,7 +244,7 @@ zuri_packager::PackageWriter::putFile(
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "file already exists");
 
-    auto appendEntryResult = m_state.appendEntry(EntryType::File, path);
+    auto appendEntryResult = m_state->appendEntry(EntryType::File, path);
     if (appendEntryResult.isStatus())
         return appendEntryResult.getStatus();
     auto *entry = appendEntryResult.getResult();
@@ -208,14 +260,25 @@ zuri_packager::PackageWriter::putFile(
 tempo_utils::Result<zuri_packager::EntryAddress>
 zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, EntryAddress target)
 {
-    TU_ASSERT (path.isValid());
+    if (!path.isValid())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "invalid link path");
+    if (!target.isValid())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "invalid link target");
+    if (m_state == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is finished");
+    if (m_packageEntry == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is not configured");
 
     if (hasEntry(path))
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "link already exists");
 
     // verify target exists
-    auto *targetEntry = m_state.getEntry(target.getAddress());
+    auto *targetEntry = m_state->getEntry(target.getAddress());
     if (targetEntry == nullptr)
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "missing target entry");
@@ -227,7 +290,7 @@ zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, Ent
             if (currDepth > m_options.maxLinkDepth)
                 return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
                     "exeeded maximum link depth");
-            targetEntry = m_state.getEntry(targetEntry->getEntryLink().getAddress());
+            targetEntry = m_state->getEntry(targetEntry->getEntryLink().getAddress());
             if (targetEntry == nullptr)
                 return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
                     "missing target entry");
@@ -246,7 +309,7 @@ zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, Ent
 
     tempo_utils::UrlPath parentPath = path.getInit();
     auto name = path.getLast().getPart();
-    auto *parentEntry = m_state.getEntry(parentPath);
+    auto *parentEntry = m_state->getEntry(parentPath);
     if (parentEntry == nullptr)
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "missing parent directory");
@@ -257,7 +320,7 @@ zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, Ent
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "entry already exists");
 
-    auto appendEntryResult = m_state.appendEntry(EntryType::Link, path);
+    auto appendEntryResult = m_state->appendEntry(EntryType::Link, path);
     if (appendEntryResult.isStatus())
         return appendEntryResult.getStatus();
     auto *linkEntry = appendEntryResult.getResult();
@@ -270,16 +333,24 @@ zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, Ent
 }
 
 tempo_utils::Result<std::filesystem::path>
-zuri_packager::PackageWriter::writePackage() const
+zuri_packager::PackageWriter::writePackage()
 {
+    if (m_state == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is finished");
+    if (m_packageEntry == nullptr)
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "writer is not configured");
+
     auto packagePath = m_specifier.toFilesystemPath(m_options.installRoot);
     tempo_utils::FileAppender appender(packagePath, tempo_utils::FileAppenderMode::CREATE_ONLY);
+    TU_RETURN_IF_NOT_OK (appender.getStatus());
 
     uint32_t currOffset = 0;
 
     // update the offset and size fields for all file entries
-    for (int i = 0; i < m_state.numEntries(); i++) {
-        auto *entry = m_state.getEntry(i);
+    for (int i = 0; i < m_state->numEntries(); i++) {
+        auto *entry = m_state->getEntry(i);
         auto path = entry->getEntryPath();
         if (!m_contents.contains(path))
             continue;
@@ -297,28 +368,25 @@ zuri_packager::PackageWriter::writePackage() const
     }
 
     // serialize the manifest
-    auto toManifestResult = m_state.toManifest();
-    if (toManifestResult.isStatus())
-        return toManifestResult.getStatus();
-    auto manifest = toManifestResult.getResult();
-
-    //tempo_utils::BytesAppender appender;
+    ZuriManifest manifest;
+    TU_ASSIGN_OR_RETURN (manifest, m_state->toManifest());
 
     // write the manifest file identifier
-    appender.appendBytes(std::string_view(zpk1::ManifestIdentifier(), strlen(zpk1::ManifestIdentifier())));
+    TU_RETURN_IF_NOT_OK (appender.appendBytes(
+        std::string_view(zpk1::ManifestIdentifier(), strlen(zpk1::ManifestIdentifier()))));
 
     // write the prologue
-    appender.appendU8(1);                                                   // version: u8
-    appender.appendU8(0);                                                   // flags: u8
+    TU_RETURN_IF_NOT_OK (appender.appendU8(1));                         // version: u8
+    TU_RETURN_IF_NOT_OK (appender.appendU8(0));                         // flags: u8
 
     // write the manifest
     auto manifestBytes = manifest.bytesView();
-    appender.appendU32(manifestBytes.size());                               // manifestSize: u32
-    appender.appendBytes(manifestBytes);                                    // manifest: bytes
+    TU_RETURN_IF_NOT_OK (appender.appendU32(manifestBytes.size()));     // manifestSize: u32
+    TU_RETURN_IF_NOT_OK (appender.appendBytes(manifestBytes));          // manifest: bytes
 
     // write each entry contents
-    for (int i = 0; i < m_state.numEntries(); i++) {
-        const auto *entry = m_state.getEntry(i);
+    for (int i = 0; i < m_state->numEntries(); i++) {
+        const auto *entry = m_state->getEntry(i);
         if (entry->getEntryType() == EntryType::File) {
             auto path = entry->getEntryPath();
             if (!m_contents.contains(path))
@@ -326,12 +394,14 @@ zuri_packager::PackageWriter::writePackage() const
                     "file entry has no contents");
             auto content = m_contents.at(path);
             std::span<const tu_uint8> bytes(content->getData(), content->getSize());
-
-            appender.appendBytes(bytes);                                    // entry: bytes
+            TU_RETURN_IF_NOT_OK (appender.appendBytes(bytes));          // entry: bytes
         }
     }
 
     TU_RETURN_IF_NOT_OK (appender.finish());
+
+    m_packageEntry = nullptr;
+    m_state.reset();
 
     return packagePath;
 }

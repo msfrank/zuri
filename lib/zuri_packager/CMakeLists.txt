@@ -17,7 +17,9 @@ set(ZURI_PACKAGER_INCLUDES
     include/zuri_packager/manifest_state.h
     include/zuri_packager/manifest_walker.h
     include/zuri_packager/package_attrs.h
+    include/zuri_packager/package_dependency.h
     include/zuri_packager/package_reader.h
+    include/zuri_packager/package_requirement.h
     include/zuri_packager/package_result.h
     include/zuri_packager/package_specifier.h
     include/zuri_packager/package_types.h
@@ -66,7 +68,9 @@ target_sources(zuri_packager PRIVATE
     src/manifest_state.cpp
     src/manifest_walker.cpp
     src/package_attrs.cpp
+    src/package_dependency.cpp
     src/package_reader.cpp
+    src/package_requirement.cpp
     src/package_result.cpp
     src/package_specifier.cpp
     src/package_types.cpp

@@ -5,13 +5,30 @@
 #include <tempo_config/config_serde.h>
 #include <tempo_test/result_matchers.h>
 #include <tempo_test/status_matchers.h>
+#include <tempo_utils/tempdir_maker.h>
 
 #include <zuri_build/build_graph.h>
 #include <zuri_build/target_builder.h>
 
 #include "zuri_build/collect_modules_task.h"
 
-TEST(TargetBuilder, BuildLibrary) {
+class TargetBuilderTests : public ::testing::Test {
+protected:
+    std::unique_ptr<tempo_utils::TempdirMaker> installRoot;
+    void SetUp() override {
+        installRoot = std::make_unique<tempo_utils::TempdirMaker>("install.XXXXXXXX");
+        TU_RAISE_IF_NOT_OK (installRoot->getStatus());
+    }
+    void TearDown() override {
+        if (installRoot) {
+            std::filesystem::remove_all(installRoot->getTempdir());
+            installRoot.reset();
+        }
+    }
+};
+
+TEST_F(TargetBuilderTests, BuildLibrary)
+{
     lyric_test::TesterOptions testerOptions;
     testerOptions.taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
     testerOptions.taskSettings = lyric_build::TaskSettings(tempo_config::ConfigMap{
@@ -45,7 +62,7 @@ TEST(TargetBuilder, BuildLibrary) {
 
     auto *testRunner = tester.getRunner();
     auto *builder = testRunner->getBuilder();
-    TargetBuilder targetBuilder(buildGraph, builder, std::filesystem::current_path());
+    TargetBuilder targetBuilder(buildGraph, builder, installRoot->getTempdir());
 
     auto buildTargetResult = targetBuilder.buildTarget("lib1");
     ASSERT_THAT (buildTargetResult, tempo_test::IsResult());

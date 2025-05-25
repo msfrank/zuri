@@ -8,93 +8,88 @@
 #include <zuri_packager/package_types.h>
 
 zuri_packager::PackageSpecifier::PackageSpecifier()
-    : m_majorVersion(0),
-      m_minorVersion(0),
-      m_patchVersion(0)
+    : m_priv(std::make_shared<Priv>())
 {
 }
 
 zuri_packager::PackageSpecifier::PackageSpecifier(
-    std::string_view packageName,
-    std::string_view packageDomain,
+    const std::string &packageName,
+    const std::string &packageDomain,
     tu_uint32 majorVersion,
     tu_uint32 minorVersion,
     tu_uint32 patchVersion)
-    : m_packageName(packageName),
-      m_packageDomain(packageDomain),
-      m_majorVersion(majorVersion),
-      m_minorVersion(minorVersion),
-      m_patchVersion(patchVersion)
 {
-    TU_ASSERT (!m_packageName.empty());
-    TU_ASSERT (!m_packageDomain.empty());
+    m_priv = std::make_shared<Priv>(packageName, packageDomain, majorVersion, minorVersion, patchVersion);
+    TU_ASSERT (!m_priv->packageName.empty());
+    TU_ASSERT (!m_priv->packageDomain.empty());
+    TU_ASSERT (!(m_priv->majorVersion == 0 && m_priv->minorVersion == 0 && m_priv->patchVersion == 0));
 }
 
 zuri_packager::PackageSpecifier::PackageSpecifier(const PackageSpecifier &other)
-    : m_packageName(other.m_packageName),
-      m_packageDomain(other.m_packageDomain),
-      m_majorVersion(other.m_majorVersion),
-      m_minorVersion(other.m_minorVersion),
-      m_patchVersion(other.m_patchVersion)
+    : m_priv(other.m_priv)
 {
 }
 
 bool
 zuri_packager::PackageSpecifier::isValid() const
 {
-    return !m_packageName.empty() && !m_packageDomain.empty();
+    return !m_priv->packageName.empty() && !m_priv->packageDomain.empty();
 }
 
 std::string
 zuri_packager::PackageSpecifier::getPackageName() const
 {
-    return m_packageName;
+    return m_priv->packageName;
 }
 
 std::string
 zuri_packager::PackageSpecifier::getPackageDomain() const
 {
-    return m_packageDomain;
+    return m_priv->packageDomain;
 }
 
 tu_uint32
 zuri_packager::PackageSpecifier::getMajorVersion() const
 {
-    return m_majorVersion;
+    return m_priv->majorVersion;
 }
 
 tu_uint32
 zuri_packager::PackageSpecifier::getMinorVersion() const
 {
-    return m_minorVersion;
+    return m_priv->minorVersion;
 }
 
 tu_uint32
 zuri_packager::PackageSpecifier::getPatchVersion() const
 {
-    return m_patchVersion;
+    return m_priv->patchVersion;
 }
 
 std::string
 zuri_packager::PackageSpecifier::toString() const
 {
-    std::vector<std::string> hostParts = absl::StrSplit(m_packageDomain, ".");
+    if (!isValid())
+        return {};
+    std::vector<std::string> hostParts = absl::StrSplit(m_priv->packageDomain, ".");
     std::reverse(hostParts.begin(), hostParts.end());
     return absl::StrCat(
         absl::StrJoin(hostParts, "."),
         "_",
-        m_packageName,
+        m_priv->packageName,
         "-",
-        m_majorVersion,
+        m_priv->majorVersion,
         ".",
-        m_minorVersion,
+        m_priv->minorVersion,
         ".",
-        m_patchVersion);
+        m_priv->patchVersion);
 }
 
 std::filesystem::path
 zuri_packager::PackageSpecifier::toFilesystemPath(const std::filesystem::path &base) const
 {
+    if (!isValid())
+        return {};
     auto path = base / toString();
     path += lyric_common::kPackageFileDotSuffix;
     return path;
@@ -103,16 +98,25 @@ zuri_packager::PackageSpecifier::toFilesystemPath(const std::filesystem::path &b
 tempo_utils::Url
 zuri_packager::PackageSpecifier::toUrl() const
 {
+    if (!isValid())
+        return {};
     auto username = absl::StrCat(
-        m_packageName,
+        m_priv->packageName,
         "-",
-        m_majorVersion,
+        m_priv->majorVersion,
         ".",
-        m_minorVersion,
+        m_priv->minorVersion,
         ".",
-        m_patchVersion);
+        m_priv->patchVersion);
     return tempo_utils::Url::fromOrigin(
-        absl::StrCat("dev.zuri.pkg://", username, "@", m_packageDomain));
+        absl::StrCat("dev.zuri.pkg://", username, "@", m_priv->packageDomain));
+}
+
+zuri_packager::PackageSpecifier
+zuri_packager::PackageSpecifier::fromString(const std::string &s)
+{
+    auto authority = tempo_utils::UrlAuthority::fromString(s);
+    return fromAuthority(authority);
 }
 
 inline bool

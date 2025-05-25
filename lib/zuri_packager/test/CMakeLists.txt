@@ -6,8 +6,9 @@ include(GoogleTest)
 # define unit tests
 
 set(TEST_CASES
-    #package_loader_tests.cpp
+    package_dependency_tests.cpp
     package_reader_tests.cpp
+    package_requirement_tests.cpp
     package_specifier_tests.cpp
     package_writer_tests.cpp
     )
@@ -21,6 +22,7 @@ target_include_directories(zuri_packager_testsuite PRIVATE
     )
 target_link_libraries(zuri_packager_testsuite PUBLIC
     zuri::zuri_packager
+    tempo::tempo_test
     gtest::gtest
     )
 gtest_discover_tests(zuri_packager_testsuite DISCOVERY_TIMEOUT 30)
@@ -34,5 +36,6 @@ target_include_directories(ZuriPackagerTestSuite PRIVATE
     )
 target_link_libraries(ZuriPackagerTestSuite PUBLIC
     zuri::zuri_packager
+    tempo::tempo_test
     gtest::gtest
     )

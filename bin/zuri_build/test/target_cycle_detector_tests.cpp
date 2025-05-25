@@ -16,6 +16,7 @@ TEST(TargetCycleDetector, SingleTargetNoCycles) {
     {
         "tgt1": {
             "type": "Program",
+            "specifier": "prog-1.0.1@foo.corp",
             "programMain": "/prog"
         }
     }
@@ -42,14 +43,17 @@ TEST(TargetCycleDetector, MultipleIndependentTargetsNoCycles)
     {
         "A": {
             "type": "Program",
+            "specifier": "prog1-1.0.1@foo.corp",
             "programMain": "/prog1"
         },
         "B": {
             "type": "Program",
+            "specifier": "prog2-1.0.1@foo.corp",
             "programMain": "/prog2"
         },
         "C": {
             "type": "Program",
+            "specifier": "prog3-1.0.1@foo.corp",
             "programMain": "/prog3"
         }
     }
@@ -76,17 +80,20 @@ TEST(TargetCycleDetector, MultipleTargetsADependsBDependsCNoCycles)
     {
         "A": {
             "type": "Program",
+            "specifier": "prog1-1.0.1@foo.corp",
             "programMain": "/prog1",
             "depends": [ "B" ]
         },
         "B": {
             "type": "Library",
-            "libraryModules": ["/prog2"],
+            "specifier": "lib1-1.0.1@foo.corp",
+            "libraryModules": ["/lib1"],
             "depends": [ "C" ]
         },
         "C": {
             "type": "Library",
-            "libraryModules": ["/prog3"]
+            "specifier": "lib2-1.0.1@foo.corp",
+            "libraryModules": ["/lib2"]
         }
     }
     )"));
@@ -112,17 +119,20 @@ TEST(TargetCycleDetector, MultipleTargetsADependsBAndCNoCycles)
     {
         "A": {
             "type": "Program",
+            "specifier": "prog1-1.0.1@foo.corp",
             "programMain": "/prog1",
             "depends": [ "B", "C" ]
         },
         "B": {
             "type": "Library",
-            "libraryModules": ["/prog2"],
+            "specifier": "lib1-1.0.1@foo.corp",
+            "libraryModules": ["/lib1"],
             "depends": [ "C" ]
         },
         "C": {
             "type": "Library",
-            "libraryModules": ["/prog3"]
+            "specifier": "lib2-1.0.1@foo.corp",
+            "libraryModules": ["/lib2"]
         }
     }
     )"));
@@ -148,17 +158,20 @@ TEST(TargetCycleDetector, CircularDependency)
     {
         "A": {
             "type": "Program",
+            "specifier": "prog1-1.0.1@foo.corp",
             "programMain": "/prog1",
             "depends": [ "B" ]
         },
         "B": {
             "type": "Library",
-            "libraryModules": ["/prog2"],
+            "specifier": "lib1-1.0.1@foo.corp",
+            "libraryModules": ["/lib1"],
             "depends": [ "C" ]
         },
         "C": {
             "type": "Library",
-            "libraryModules": ["/prog3"],
+            "specifier": "lib2-1.0.1@foo.corp",
+            "libraryModules": ["/lib2"],
             "depends": [ "A" ]
         }
     }
@@ -188,17 +201,20 @@ TEST(TargetCycleDetector, MultipleCircularDependencies)
     {
         "A": {
             "type": "Program",
+            "specifier": "prog1-1.0.1@foo.corp",
             "programMain": "/prog1",
             "depends": [ "B", "C" ]
         },
         "B": {
             "type": "Library",
-            "libraryModules": ["/prog2"],
+            "specifier": "lib1-1.0.1@foo.corp",
+            "libraryModules": ["/lib1"],
             "depends": [ "C" ]
         },
         "C": {
             "type": "Library",
-            "libraryModules": ["/prog3"],
+            "specifier": "lib2-1.0.1@foo.corp",
+            "libraryModules": ["/lib2"],
             "depends": [ "A" ]
         }
     }
