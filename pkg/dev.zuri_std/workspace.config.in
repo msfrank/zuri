@@ -2,9 +2,7 @@
     "zuri-build": {
         "settings": {
             "global": {
-                "sourceBasePath": "src",
-            },
-            "domains": {
+                "sourceBasePath": "src"
             },
             "tasks": {
                 "provide_plugin:/collections": {
@@ -36,19 +34,15 @@
                 },
                 "fetch_external_file:/time": {
                     "filePath": "@ZURI_STD_TIME_PLUGIN_FILEPATH@"
-                },
+                }
             }
         },
         "targets": {
             "dev.zuri_std": {
-                "type": "library",
-                "version": "@FULL_VERSION@",
+                "type": "Library",
+                "specifier": "std-@FULL_VERSION@@zuri.dev",
                 "libraryModules": [
-                    "/collections",
-                    "/log",
-                    "/system",
-                    "/text",
-                    "/time"
+                    "/log"
                 ]
             }
         }

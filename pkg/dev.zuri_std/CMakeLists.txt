@@ -21,13 +21,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tester.config.in ${TESTER_CONFIG_PATH
 # build the std package
 add_custom_command (
     OUTPUT
-        ${CMAKE_CURRENT_BINARY_DIR}/install/examples_helloworld-${FULL_VERSION}.zpk
+        ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk
     COMMAND
         zuri-build -v
         -W ${CMAKE_CURRENT_SOURCE_DIR}
+        --workspace-config-file ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
         -B ${CMAKE_CURRENT_BINARY_DIR}
         -I ${PACKAGE_DIRECTORY}
-        package:
+        dev.zuri_std
     WORKING_DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS
@@ -39,3 +40,5 @@ add_custom_command (
         std-text-plugin
         std-time-plugin
     )
+
+add_custom_target(zuri-std-package DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk)

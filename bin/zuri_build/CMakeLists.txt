@@ -10,8 +10,8 @@ add_library(ZuriBuildRuntime STATIC
     include/zuri_build/collect_modules_task.h
     src/import_store.cpp
     include/zuri_build/import_store.h
-    src/load_config.cpp
-    include/zuri_build/load_config.h
+    src/workspace_config.cpp
+    include/zuri_build/workspace_config.h
     src/target_builder.cpp
     include/zuri_build/target_builder.h
     src/target_cycle_detector.cpp

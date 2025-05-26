@@ -33,6 +33,7 @@ TEST_F(PackageExtractor, ExtractFailsWhenMissingPackageConfig)
     auto specifier = zuri_packager::PackageSpecifier::fromString("foo-1.0.0@foocorp");
     zuri_packager::PackageWriterOptions writerOptions;
     writerOptions.installRoot = testerRoot;
+    writerOptions.skipPackageConfig = true;
     zuri_packager::PackageWriter writer(specifier, writerOptions);
     ASSERT_THAT (writer.configure(), tempo_test::IsOk());
 
@@ -57,17 +58,6 @@ TEST_F(PackageExtractor, ExtractEmptyPackage)
     writerOptions.installRoot = testerRoot;
     zuri_packager::PackageWriter writer(specifier, writerOptions);
     ASSERT_THAT (writer.configure(), tempo_test::IsOk());
-
-    auto path = tempo_utils::UrlPath::fromString("/package.config");
-    auto content = tempo_utils::MemoryBytes::copy(R"(
-    {
-        "name": "foo",
-        "version": "1.0.0",
-        "domain": "foocorp"
-    }
-    )");
-    auto putFileResult = writer.putFile(path, content);
-    ASSERT_THAT (putFileResult, tempo_test::IsResult());
 
     auto writePackageResult = writer.writePackage();
     ASSERT_THAT (writePackageResult, tempo_test::IsResult());

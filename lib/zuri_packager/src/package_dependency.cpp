@@ -85,12 +85,12 @@ zuri_packager::PackageDependency::toNode() const
         return {};
     }
 
-    auto requirementsBuilder = tempo_config::buildSeq();
+    auto requirementsBuilder = tempo_config::startSeq();
     for (const auto &req : m_priv->requirements) {
         auto node = req->toNode();
         if (node.getNodeType() != tempo_config::ConfigNodeType::kValue)
             return {};
         requirementsBuilder = requirementsBuilder.append(node);
     }
-    return requirementsBuilder.build();
+    return requirementsBuilder.buildNode();
 }

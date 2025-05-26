@@ -132,41 +132,34 @@ TargetWriter::writeModule(
 tempo_utils::Status
 TargetWriter::writePackageConfig()
 {
-    auto rootBuilder = tempo_config::buildMap();
-
-    rootBuilder = rootBuilder.put("name", tempo_config::buildValue(m_specifier.getPackageName()));
-    rootBuilder = rootBuilder.put("version", tempo_config::buildValue(m_specifier.getVersionString()));
-    rootBuilder = rootBuilder.put("domain", tempo_config::buildValue(m_specifier.getPackageDomain()));
+    auto rootBuilder = tempo_config::startMap()
+        .put("name", tempo_config::valueNode(m_specifier.getPackageName()))
+        .put("version", tempo_config::valueNode(m_specifier.getVersionString()))
+        .put("domain", tempo_config::valueNode(m_specifier.getPackageDomain()));
 
     if (!m_priv->description.empty()) {
-        rootBuilder = rootBuilder.put("description", tempo_config::buildValue(m_priv->description));
+        rootBuilder = rootBuilder.put("description", tempo_config::valueNode(m_priv->description));
     }
     if (!m_priv->owner.empty()) {
-        rootBuilder = rootBuilder.put("owner", tempo_config::buildValue(m_priv->owner));
+        rootBuilder = rootBuilder.put("owner", tempo_config::valueNode(m_priv->owner));
     }
     if (!m_priv->homepage.empty()) {
-        rootBuilder = rootBuilder.put("homepage", tempo_config::buildValue(m_priv->homepage));
+        rootBuilder = rootBuilder.put("homepage", tempo_config::valueNode(m_priv->homepage));
     }
     if (!m_priv->license.empty()) {
-        rootBuilder = rootBuilder.put("license", tempo_config::buildValue(m_priv->license));
+        rootBuilder = rootBuilder.put("license", tempo_config::valueNode(m_priv->license));
     }
 
     if (!m_priv->dependencies.empty()) {
-        auto dependenciesBuilder = tempo_config::buildMap();
+        auto dependenciesBuilder = tempo_config::startMap();
         for (const auto &dep : m_priv->dependencies) {
             dependenciesBuilder = dependenciesBuilder.put(dep.first, dep.second.toNode());
         }
-        rootBuilder = rootBuilder.put("dependencies", dependenciesBuilder.build());
+        rootBuilder = rootBuilder.put("dependencies", dependenciesBuilder.buildNode());
     }
 
-    auto packageConfig = rootBuilder.build();
-
-    std::string s;
-    TU_RETURN_IF_NOT_OK (tempo_config::write_config_string(packageConfig, s));
-    auto config = tempo_utils::MemoryBytes::copy(s);
-
-    TU_RETURN_IF_STATUS (m_priv->packageWriter->putFile(
-        tempo_utils::UrlPath::fromString("/package.config"), config));
+    auto packageConfig = rootBuilder.buildMap();
+    m_priv->packageWriter->setPackageConfig(packageConfig);
 
     return {};
 }

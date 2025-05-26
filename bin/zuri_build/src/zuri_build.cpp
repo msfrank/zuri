@@ -10,23 +10,26 @@
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
-#include <zuri_build/load_config.h>
+#include <zuri_build/build_graph.h>
+#include <zuri_build/import_store.h>
+#include <zuri_build/workspace_config.h>
+#include <zuri_build/target_builder.h>
+#include <zuri_build/target_store.h>
 #include <zuri_build/zuri_build.h>
 
-#include "zuri_build/build_graph.h"
-#include "zuri_build/import_store.h"
-#include "zuri_build/target_store.h"
+#include "zuri_build/collect_modules_task.h"
 
 tempo_utils::Status
 run_zuri_build(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::current_path());
+    tempo_config::PathParser workspaceConfigFileParser(std::filesystem::path{});
     tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
     tempo_config::PathParser buildRootParser(std::filesystem::path{});
     tempo_config::PathParser installRootParser(std::filesystem::path{});
     tempo_config::IntegerParser jobParallelismParser(0);
-    lyric_build::TaskIdParser targetIdParser;
-    tempo_config::SetTParser<lyric_build::TaskId> targetsParser(&targetIdParser);
+    tempo_config::StringParser targetNameParser;
+    tempo_config::SeqTParser targetsParser(&targetNameParser, {});
     tempo_config::BooleanParser colorizeOutputParser(false);
     tempo_config::IntegerParser verboseParser(0);
     tempo_config::IntegerParser quietParser(0);
@@ -35,6 +38,8 @@ run_zuri_build(int argc, const char *argv[])
     std::vector<tempo_command::Default> defaults = {
         {"workspaceRoot", workspaceRootParser.getDefault(),
             "Specify an alternative workspace root directory", "DIR"},
+        {"workspaceConfigFile", workspaceConfigFileParser.getDefault(),
+            "Specify an alternative workspace config file", "FILE"},
         {"buildRoot", buildRootParser.getDefault(),
             "Specify an alternative build root directory", "DIR"},
         {"installRoot", installRootParser.getDefault(),
@@ -55,6 +60,7 @@ run_zuri_build(int argc, const char *argv[])
 
     const std::vector<tempo_command::Grouping> groupings = {
         {"workspaceRoot", {"-W", "--workspace-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"workspaceConfigFile", {"--workspace-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"buildRoot", {"-B", "--build-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"installRoot", {"-I", "--install-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"distributionRoot", {"--distribution-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
@@ -69,6 +75,7 @@ run_zuri_build(int argc, const char *argv[])
 
     const std::vector<tempo_command::Mapping> optMappings = {
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceRoot"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceConfigFile"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "buildRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "installRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "distributionRoot"},
@@ -169,6 +176,11 @@ run_zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceRoot, workspaceRootParser,
         commandConfig, "workspaceRoot"));
 
+    // determine the workspace config file
+    std::filesystem::path workspaceConfigFile;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceConfigFile, workspaceConfigFileParser,
+        commandConfig, "workspaceConfigFile"));
+
     // determine the build root
     std::filesystem::path buildRoot;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(buildRoot, buildRootParser,
@@ -190,7 +202,7 @@ run_zuri_build(int argc, const char *argv[])
         commandConfig, "jobParallelism"));
 
     // determine the list of targets
-    absl::flat_hash_set<lyric_build::TaskId> targets;
+    std::vector<std::string> targets;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(targets, targetsParser,
         commandConfig, "targets"));
 
@@ -201,10 +213,14 @@ run_zuri_build(int argc, const char *argv[])
     }
     TU_LOG_V << "using distribution root " << distributionRoot;
 
-    // load the workspace config from the workspace root
+    // load the workspace config
     std::shared_ptr<tempo_config::WorkspaceConfig> config;
-    TU_ASSIGN_OR_RETURN (config, load_workspace_config(workspaceRoot, distributionRoot));
-    workspaceRoot = config->getWorkspaceRoot();
+    if (!workspaceConfigFile.empty()) {
+        TU_ASSIGN_OR_RETURN (config, load_workspace_config(workspaceConfigFile, distributionRoot));
+    } else {
+        TU_ASSIGN_OR_RETURN (config, find_workspace_config(workspaceRoot, distributionRoot));
+        workspaceRoot = config->getWorkspaceRoot();
+    }
 
     // if build root was not defined in commandConfig, then default to subdirectory of the workspace root
     if (buildRoot.empty()) {
@@ -233,27 +249,37 @@ run_zuri_build(int argc, const char *argv[])
 
     // set builder options
     lyric_build::BuilderOptions builderOptions;
-    builderOptions.workspaceRoot = workspaceRoot;
     builderOptions.buildRoot = buildRoot;
-    builderOptions.installRoot = installRoot;
     if (jobParallelism != 0) {
         builderOptions.numThreads = jobParallelism;
     }
 
+    // create task registry and add build task domains
+    auto taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
+    taskRegistry->registerTaskDomain("collect_modules", new_collect_modules_task);
+    builderOptions.taskRegistry = std::move(taskRegistry);
+
     // construct the builder based on workspace config and config overrides
-    lyric_build::LyricBuilder builder(taskSettings, builderOptions);
+    lyric_build::LyricBuilder builder(workspaceRoot, taskSettings, builderOptions);
     TU_RETURN_IF_NOT_OK (builder.configure());
 
-    // //
-    // lyric_build::TargetComputationSet targetComputationSet;
-    // TU_ASSIGN_OR_RETURN (targetComputationSet, builder.computeTargets(targets, {}, {}, {}));
-    //
-    // auto diagnostics = targetComputationSet.getDiagnostics();
-    // diagnostics->printDiagnostics();
-    //
-    // TU_CONSOLE_OUT << "build completed in " << targetComputationSet.getElapsedTime().count() << "ms";
-    // TU_CONSOLE_OUT << targetComputationSet.getTotalTasksCreated() << " tasks created, "
-    //                << targetComputationSet.getTotalTasksCached() << " tasks cached";
+    // verify there is at least one target and all targets are defined
+    if (targets.empty())
+        return tempo_command::CommandStatus::forCondition(
+            tempo_command::CommandCondition::kInvalidConfiguration,
+            "at least one target must be specified");
+    for (const auto &target : targets) {
+        if (!targetStore->hasTarget(target))
+            return tempo_command::CommandStatus::forCondition(
+                tempo_command::CommandCondition::kInvalidConfiguration,
+                "unknown target '{}'", target);
+    }
+
+    // build each target (and its dependencies) in the order specified on the command line
+    for (const auto &target : targets) {
+        TargetBuilder targetBuilder(buildGraph, &builder, installRoot);
+        TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target));
+    }
 
     return {};
 }

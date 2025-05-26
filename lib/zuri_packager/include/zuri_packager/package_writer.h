@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <span>
 #include <string>
+#include <tempo_config/config_types.h>
 
 #include <tempo_schema/attr_serde.h>
 #include <tempo_utils/immutable_bytes.h>
@@ -26,13 +27,19 @@ namespace zuri_packager {
 
     struct PackageWriterOptions {
         /**
-         *
+         * the directory where the package will be written to. by default the package is written
+         * to the current working directory.
          */
         std::filesystem::path installRoot = {};
         /**
          *
          */
         int maxLinkDepth = 5;
+        /**
+         * if true, then the package config will not be written to the package, and must be added
+         * to the package manually via putFile.
+         */
+        bool skipPackageConfig = false;
     };
 
     class PackageWriter {
@@ -63,6 +70,9 @@ namespace zuri_packager {
             const tempo_utils::UrlPath &path,
             EntryAddress target);
 
+        tempo_config::ConfigMap getPackageConfig() const;
+        void setPackageConfig(const tempo_config::ConfigMap &packageConfig);
+
         tempo_utils::Result<std::filesystem::path> writePackage();
 
     private:
@@ -74,6 +84,7 @@ namespace zuri_packager {
         absl::flat_hash_map<
             tempo_utils::UrlPath,
             std::shared_ptr<const tempo_utils::ImmutableBytes>> m_contents;
+        tempo_config::ConfigMap m_config;
 
     public:
         /**

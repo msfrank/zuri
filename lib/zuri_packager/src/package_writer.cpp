@@ -1,4 +1,6 @@
 
+#include <tempo_config/config_builder.h>
+#include <tempo_config/config_serde.h>
 #include <zuri_packager/generated/manifest.h>
 #include <zuri_packager/package_writer.h>
 #include <tempo_utils/bytes_appender.h>
@@ -24,8 +26,16 @@ zuri_packager::PackageWriter::configure()
     if (m_packageEntry != nullptr)
         return PackageStatus::forCondition(
             PackageCondition::kPackageInvariant, "writer is already configured");
+
     TU_ASSIGN_OR_RETURN (m_packageEntry, m_state->appendEntry(
         EntryType::Package, tempo_utils::UrlPath::fromString("/")));
+
+    m_config = tempo_config::startMap()
+        .put("name", tempo_config::valueNode(m_specifier.getPackageName()))
+        .put("version", tempo_config::valueNode(m_specifier.getVersionString()))
+        .put("domain", tempo_config::valueNode(m_specifier.getPackageDomain()))
+    .buildMap();
+
     return {};
 }
 
@@ -332,6 +342,18 @@ zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, Ent
     return linkEntry->getAddress();
 }
 
+tempo_config::ConfigMap
+zuri_packager::PackageWriter::getPackageConfig() const
+{
+    return m_config;
+}
+
+void
+zuri_packager::PackageWriter::setPackageConfig(const tempo_config::ConfigMap &packageConfig)
+{
+    m_config = packageConfig;
+}
+
 tempo_utils::Result<std::filesystem::path>
 zuri_packager::PackageWriter::writePackage()
 {
@@ -341,6 +363,18 @@ zuri_packager::PackageWriter::writePackage()
     if (m_packageEntry == nullptr)
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "writer is not configured");
+
+    //
+    if (!m_options.skipPackageConfig) {
+        std::string s;
+        TU_RETURN_IF_NOT_OK (tempo_config::write_config_string(m_config, s));
+        auto configContent = tempo_utils::MemoryBytes::copy(s);
+        auto path = tempo_utils::UrlPath::fromString("/package.config");
+        if (hasEntry(path))
+            return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+                "/package.config already exists");
+        TU_RETURN_IF_STATUS (putFile(path, configContent));
+    }
 
     auto packagePath = m_specifier.toFilesystemPath(m_options.installRoot);
     tempo_utils::FileAppender appender(packagePath, tempo_utils::FileAppenderMode::CREATE_ONLY);
