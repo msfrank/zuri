@@ -23,22 +23,18 @@ add_custom_command (
     OUTPUT
         ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk
     COMMAND
-        zuri-build -v
+        zuri-build -vv
         -W ${CMAKE_CURRENT_SOURCE_DIR}
         --workspace-config-file ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
         -B ${CMAKE_CURRENT_BINARY_DIR}
-        -I ${PACKAGE_DIRECTORY}
-        dev.zuri_std
+        -I ${CMAKE_CURRENT_BINARY_DIR}
+        "dev.zuri_std"
     WORKING_DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS
         zuri-build
         ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
-        std-collections-plugin
         std-log-plugin
-        std-system-plugin
-        std-text-plugin
-        std-time-plugin
     )
 
 add_custom_target(zuri-std-package DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk)

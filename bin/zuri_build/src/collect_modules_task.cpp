@@ -106,6 +106,7 @@ CollectModulesTask::collectModules(
 
         // find dep object
         lyric_build::MetadataWriter objectFilterWriter;
+        TU_RETURN_IF_NOT_OK (objectFilterWriter.configure());
         objectFilterWriter.putAttr(lyric_build::kLyricBuildContentType, std::string(lyric_common::kObjectContentType));
         lyric_build::LyricMetadata objectFilter;
         TU_ASSIGN_OR_RETURN (objectFilter, objectFilterWriter.toMetadata());
@@ -158,7 +159,8 @@ CollectModulesTask::collectModules(
         auto objectPluginLocation = object.getObject().getPlugin().getPluginLocation();
 
         lyric_build::MetadataWriter pluginFilterWriter;
-        pluginFilterWriter.putAttr(lyric_build::kLyricBuildContentType, std::string("application/octet-stream"));
+        TU_RETURN_IF_NOT_OK (pluginFilterWriter.configure());
+        pluginFilterWriter.putAttr(lyric_build::kLyricBuildContentType, std::string(lyric_common::kPluginContentType));
         pluginFilterWriter.putAttr(lyric_build::kLyricBuildModuleLocation, objectPluginLocation);
         lyric_build::LyricMetadata pluginFilter;
         TU_ASSIGN_OR_RETURN (pluginFilter, objectFilterWriter.toMetadata());
@@ -172,10 +174,13 @@ CollectModulesTask::collectModules(
 
         // check whether an plugin already exists for the specified path
         auto pluginDepPath = pluginDepId.getLocation().toPath();
-        if (m_artifactsToLink.contains(pluginDepPath))
-            return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
-                "encountered duplicate plugin {} in dependent task {}",
-                pluginDepPath.toString(), taskKey.toString());
+        if (m_artifactsToLink.contains(pluginDepPath)) {
+            auto &existingPluginArtifact = m_artifactsToLink.at(pluginDepPath);
+            if (existingPluginArtifact != pluginDepId)
+                return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                    "encountered duplicate plugin {} in dependent task {}",
+                    pluginDepPath.toString(), taskKey.toString());
+        }
 
         m_artifactsToLink[pluginDepPath] = pluginDepId;
     }

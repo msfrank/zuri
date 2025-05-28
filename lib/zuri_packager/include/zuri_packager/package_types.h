@@ -1,17 +1,25 @@
 #ifndef ZURI_PACKAGER_PACKAGE_TYPES_H
 #define ZURI_PACKAGER_PACKAGE_TYPES_H
 
-#include <absl/hash/hash.h>
+#include <memory>
 
 #include <tempo_utils/integer_types.h>
 
+#define ZURI_PACKAGER_PACKAGE_FILE_SUFFIX                "zpk"
+#define ZURI_PACKAGER_PACKAGE_FILE_DOT_SUFFIX            ".zpk"
+#define ZURI_PACKAGER_PACKAGE_CONTENT_TYPE               "application/vnd.zuri.package"
+
 namespace zuri_packager {
 
-    constexpr tu_uint32 kInvalidOffsetU32   = 0xffffffff;
-    constexpr tu_uint16 kInvalidOffsetU16   = 0xffff;
-    constexpr tu_uint8 kInvalidOffsetU8     = 0xff;
+    constexpr tu_uint32 kInvalidOffsetU32       = 0xffffffff;
+    constexpr tu_uint16 kInvalidOffsetU16       = 0xffff;
+    constexpr tu_uint8 kInvalidOffsetU8         = 0xff;
 
-    constexpr int kMaximumLinkRecursion     = 5;
+    constexpr int kMaximumLinkRecursion         = 5;
+
+    constexpr const char *kPackageFileSuffix    = ZURI_PACKAGER_PACKAGE_FILE_SUFFIX;
+    constexpr const char *kPackageFileDotSuffix = ZURI_PACKAGER_PACKAGE_FILE_DOT_SUFFIX;
+    constexpr const char *PackagetContentType   = ZURI_PACKAGER_PACKAGE_CONTENT_TYPE;
 
     enum class ManifestVersion {
         Unknown,

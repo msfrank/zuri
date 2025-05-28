@@ -1,13 +1,12 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
-#include <vector>
-
 #include <lyric_runtime/native_interface.h>
 #include <tempo_utils/log_stream.h>
 
 #include "log_traps.h"
+#include "native_log.h"
 
-std::array<lyric_runtime::NativeTrap,46> kStdLogTraps = {{
+std::array<lyric_runtime::NativeTrap,1> kStdLogTraps = {{
     {std_log_log, "STD_LOG_LOG", 0},
 }};
 
@@ -48,7 +47,7 @@ NativeStdLog::numTraps() const
 
 static const NativeStdLog iface;
 
-void *std_log_init()
+const lyric_runtime::NativeInterface *native_init()
 {
-    return (void *) &iface;
+    return &iface;
 }

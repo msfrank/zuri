@@ -1,10 +1,11 @@
 
 set(PLUGIN_NAME       "time")
-set(PLUGIN_FILENAME   "${PLUGIN_NAME}.${ZURI_PLATFORM_ID}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(PLUGIN_BASENAME   "${PLUGIN_NAME}.${ZURI_PLATFORM_ID}")
+set(PLUGIN_FILENAME   "${PLUGIN_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(PLUGIN_FILEPATH   "${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_FILENAME}")
 
 # build the std-time plugin
-add_library(std-time-plugin MODULE
+add_library(std-time-plugin SHARED
     datetime_ref.cpp
     datetime_ref.h
     instant_ref.cpp
@@ -20,7 +21,7 @@ add_library(std-time-plugin MODULE
 #
 set_target_properties(std-time-plugin PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
-    LIBRARY_OUTPUT_NAME ${PLUGIN_FILENAME}
+    LIBRARY_OUTPUT_NAME ${PLUGIN_BASENAME}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PREFIX ""
 )

@@ -1,10 +1,11 @@
 
 set(PLUGIN_NAME       "collections")
-set(PLUGIN_FILENAME   "${PLUGIN_NAME}.${ZURI_PLATFORM_ID}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(PLUGIN_BASENAME   "${PLUGIN_NAME}.${ZURI_PLATFORM_ID}")
+set(PLUGIN_FILENAME   "${PLUGIN_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(PLUGIN_FILEPATH   "${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_FILENAME}")
 
 # build the std-collections plugin
-add_library(std-collections-plugin MODULE
+add_library(std-collections-plugin SHARED
     hashmap_key.h
     hashmap_ref.cpp
     hashmap_ref.h
@@ -29,7 +30,7 @@ add_library(std-collections-plugin MODULE
 #
 set_target_properties(std-collections-plugin PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
-    LIBRARY_OUTPUT_NAME ${PLUGIN_FILENAME}
+    LIBRARY_OUTPUT_NAME ${PLUGIN_BASENAME}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PREFIX ""
     )

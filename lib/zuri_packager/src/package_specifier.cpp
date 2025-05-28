@@ -3,7 +3,6 @@
 #include <absl/strings/str_join.h>
 #include <absl/strings/str_split.h>
 
-#include <lyric_common/common_types.h>
 #include <zuri_packager/package_specifier.h>
 #include <zuri_packager/package_types.h>
 
@@ -102,7 +101,7 @@ zuri_packager::PackageSpecifier::toFilesystemPath(const std::filesystem::path &b
     if (!isValid())
         return {};
     auto path = base / toString();
-    path += lyric_common::kPackageFileDotSuffix;
+    path += kPackageFileDotSuffix;
     return path;
 }
 

@@ -40,6 +40,10 @@ namespace zuri_packager {
          * to the package manually via putFile.
          */
         bool skipPackageConfig = false;
+        /**
+         * if true, then if the package file already exists in the install root it will be overwritten.
+         */
+        bool overwriteFile = false;
     };
 
     class PackageWriter {

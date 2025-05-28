@@ -31,6 +31,7 @@ TargetWriter::configure()
 
     zuri_packager::PackageWriterOptions options;
     options.installRoot = m_installRoot;
+    options.overwriteFile = true;
     auto packageWriter = std::make_unique<zuri_packager::PackageWriter>(m_specifier, options);
     TU_RETURN_IF_NOT_OK (packageWriter->configure());
     m_priv->packageWriter = std::move(packageWriter);

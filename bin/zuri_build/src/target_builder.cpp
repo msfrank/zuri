@@ -1,7 +1,6 @@
 
 #include <zuri_build/target_builder.h>
-
-#include "zuri_build/target_writer.h"
+#include <zuri_build/target_writer.h>
 
 TargetBuilder::TargetBuilder(
     std::shared_ptr<BuildGraph> buildGraph,

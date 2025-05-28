@@ -37,7 +37,7 @@ std_log_log(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 
     lyric_serde::PatchsetState patchsetState;
 
-    auto appendValueResult = patchsetState.appendValue(tempo_utils::AttrValue(utf8));
+    auto appendValueResult = patchsetState.appendValue(tempo_schema::AttrValue(utf8));
     if (appendValueResult.isStatus())
         return lyric_runtime::InterpreterStatus::forCondition(lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "failed to append value");

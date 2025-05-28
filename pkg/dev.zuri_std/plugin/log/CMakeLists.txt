@@ -1,10 +1,11 @@
 
 set(PLUGIN_NAME       "log")
-set(PLUGIN_FILENAME   "${PLUGIN_NAME}.${ZURI_PLATFORM_ID}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(PLUGIN_BASENAME   "${PLUGIN_NAME}.${ZURI_PLATFORM_ID}")
+set(PLUGIN_FILENAME   "${PLUGIN_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(PLUGIN_FILEPATH   "${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_FILENAME}")
 
 # build the std-log plugin
-add_library(std-log-plugin MODULE
+add_library(std-log-plugin SHARED
     log_traps.cpp
     log_traps.h
     native_log.cpp
@@ -14,7 +15,7 @@ add_library(std-log-plugin MODULE
 #
 set_target_properties(std-log-plugin PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
-    LIBRARY_OUTPUT_NAME ${PLUGIN_FILENAME}
+    LIBRARY_OUTPUT_NAME ${PLUGIN_BASENAME}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PREFIX ""
     )
@@ -26,6 +27,7 @@ endif()
 
 target_link_libraries(std-log-plugin PUBLIC
     lyric::lyric_runtime
+    Boost::headers
     )
 
 set_directory_properties(PROPERTIES
