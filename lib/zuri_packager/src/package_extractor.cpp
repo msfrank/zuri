@@ -11,22 +11,57 @@
 #include "zuri_packager/package_specifier.h"
 
 zuri_packager::PackageExtractor::PackageExtractor(
-    const std::filesystem::path &packagePath,
+    std::shared_ptr<PackageReader> reader,
     const PackageExtractorOptions &options)
-    : m_packagePath(packagePath),
+    : m_reader(std::move(reader)),
       m_options(options)
 {
-    TU_ASSERT (!m_packagePath.empty());
+    TU_ASSERT (m_reader != nullptr);
 }
 
 tempo_utils::Status
 zuri_packager::PackageExtractor::configure()
 {
+    if (m_specifier.isValid())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "extractor is already configured");
+
+    auto packageConfigSlice = m_reader->getFileContents(tempo_utils::UrlPath::fromString("/package.config"));
+    if (packageConfigSlice.isEmpty())
+        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            "missing package.config");
+
+    //
+    std::string_view packageConfigString((const char *) packageConfigSlice.getData(), packageConfigSlice.getSize());
+    tempo_config::ConfigNode packageConfig;
+    TU_ASSIGN_OR_RETURN (packageConfig, tempo_config::read_config_string(
+        packageConfigString, std::make_shared<tempo_config::ConfigSource>(
+            tempo_config::ConfigSourceType::File, "<zuri-package>/package.config")));
+    auto packageConfigRoot = packageConfig.toMap();
+
+    //
+    tempo_config::StringParser nameParser;
+    std::string packageName;
+    tempo_config::parse_config(packageName, nameParser, packageConfigRoot, "name");
+
+    //
+    tempo_config::StringParser versionParser;
+    std::string packageVersion;
+    tempo_config::parse_config(packageVersion, versionParser, packageConfigRoot, "version");
+
+    //
+    tempo_config::StringParser domainParser;
+    std::string packageDomain;
+    tempo_config::parse_config(packageDomain, domainParser, packageConfigRoot, "domain");
+
+    m_specifier = PackageSpecifier::fromString(absl::StrCat(
+        packageName, "-", packageVersion, "@", packageDomain));
+
     return {};
 }
 
 tempo_utils::Status
-zuri_packager::PackageExtractor::extractRoot(const EntryWalker &root, std::shared_ptr<PackageReader> reader)
+zuri_packager::PackageExtractor::extractRoot(const EntryWalker &root)
 {
     if (root.getEntryType() != EntryType::Package)
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
@@ -37,7 +72,7 @@ zuri_packager::PackageExtractor::extractRoot(const EntryWalker &root, std::share
     while (!m_pendingDirectories.empty()) {
         auto curr = m_pendingDirectories.front();
         m_pendingDirectories.pop();
-        TU_RETURN_IF_NOT_OK (extractChildren(curr, reader));
+        TU_RETURN_IF_NOT_OK (extractChildren(curr));
     }
 
     // resolve links
@@ -50,15 +85,13 @@ zuri_packager::PackageExtractor::extractRoot(const EntryWalker &root, std::share
 }
 
 tempo_utils::Status
-zuri_packager::PackageExtractor::extractChildren(
-    const EntryWalker &parent,
-    std::shared_ptr<PackageReader> reader)
+zuri_packager::PackageExtractor::extractChildren(const EntryWalker &parent)
 {
     for (int i = 0; i < parent.numChildren(); i++) {
         auto child = parent.getChild(i);
         switch (child.getEntryType()) {
             case EntryType::File: {
-                TU_RETURN_IF_NOT_OK (extractFile(child, reader));
+                TU_RETURN_IF_NOT_OK (extractFile(child));
                 break;
             }
             case EntryType::Directory: {
@@ -78,13 +111,11 @@ zuri_packager::PackageExtractor::extractChildren(
 }
 
 tempo_utils::Status
-zuri_packager::PackageExtractor::extractFile(
-    const EntryWalker &file,
-    std::shared_ptr<PackageReader> reader)
+zuri_packager::PackageExtractor::extractFile(const EntryWalker &file)
 {
     auto relativePath = file.getPath().toRelative();
     auto filePath = relativePath.toFilesystemPath(m_workdirPath);
-    auto slice = reader->getFileContents(file.getPath());
+    auto slice = m_reader->getFileContents(file.getPath());
     tempo_utils::FileWriter fileWriter(filePath, slice.toImmutableBytes(), tempo_utils::FileWriterMode::CREATE_ONLY);
     return fileWriter.getStatus();
 }
@@ -98,42 +129,12 @@ zuri_packager::PackageExtractor::linkEntry(const EntryWalker &link)
 tempo_utils::Result<std::filesystem::path>
 zuri_packager::PackageExtractor::extractPackage()
 {
-    std::shared_ptr<PackageReader> packageReader;
-    TU_ASSIGN_OR_RETURN (packageReader, PackageReader::open(m_packagePath));
-
-    auto packageConfigSlice = packageReader->getFileContents(tempo_utils::UrlPath::fromString("/package.config"));
-    if (packageConfigSlice.isEmpty())
+    if (!m_specifier.isValid())
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
-            "missing package.config");
+            "extractor is not configured");
 
     //
-    std::string_view packageConfigString((const char *) packageConfigSlice.getData(), packageConfigSlice.getSize());
-    tempo_config::ConfigNode packageConfig;
-    TU_ASSIGN_OR_RETURN (packageConfig, tempo_config::read_config_string(
-        packageConfigString, std::make_shared<tempo_config::ConfigSource>(
-            tempo_config::ConfigSourceType::File, m_packagePath.append("package.config").string())));
-    auto packageConfigRoot = packageConfig.toMap();
-
-    //
-    tempo_config::StringParser nameParser;
-    std::string packageName;
-    tempo_config::parse_config(packageName, nameParser, packageConfigRoot, "name");
-
-    //
-    tempo_config::StringParser versionParser;
-    std::string packageVersion;
-    tempo_config::parse_config(packageVersion, versionParser, packageConfigRoot, "version");
-
-    //
-    tempo_config::StringParser domainParser;
-    std::string packageDomain;
-    tempo_config::parse_config(packageDomain, domainParser, packageConfigRoot, "domain");
-
-    auto specifier = PackageSpecifier::fromString(absl::StrCat(
-        packageName, "-", packageVersion, "@", packageDomain));
-
-    //
-    auto templateName = specifier.toFilesystemPath();
+    auto templateName = m_specifier.toFilesystemPath();
     templateName.replace_extension(".XXXXXXXX");
     auto workingRoot = !m_options.workingRoot.empty()? m_options.workingRoot : std::filesystem::current_path();
 
@@ -142,13 +143,13 @@ zuri_packager::PackageExtractor::extractPackage()
     TU_RETURN_IF_NOT_OK (workdirMaker.getStatus());
     m_workdirPath = workdirMaker.getTempdir();
 
-    auto manifest = packageReader->getManifest().getManifest();
+    auto manifest = m_reader->getManifest().getManifest();
     auto root = manifest.getEntry(tempo_utils::UrlPath::fromString("/"));
-    TU_RETURN_IF_NOT_OK (extractRoot(root, packageReader));
+    TU_RETURN_IF_NOT_OK (extractRoot(root));
 
-    auto distributionRoot = !m_options.distributionRoot.empty()? m_options.distributionRoot : std::filesystem::current_path();
-    auto distributionPath = distributionRoot / specifier.toString();
-    std::filesystem::rename(m_workdirPath, distributionPath);
+    auto destinationRoot = !m_options.destinationRoot.empty()? m_options.destinationRoot : std::filesystem::current_path();
+    auto destinationPath = destinationRoot / m_specifier.toString();
+    std::filesystem::rename(m_workdirPath, destinationPath);
 
-    return distributionPath;
+    return destinationPath;
 }

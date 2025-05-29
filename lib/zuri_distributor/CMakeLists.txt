@@ -7,16 +7,20 @@ add_library(zuri_distributor SHARED)
 add_library(zuri::zuri_distributor ALIAS zuri_distributor)
 
 set(ZURI_DISTRIBUTOR_INCLUDES
-    include/zuri_distributor/distribution_loader.h
     include/zuri_distributor/distributor_result.h
+    include/zuri_distributor/package_cache.h
+    include/zuri_distributor/package_cache_loader.h
     include/zuri_distributor/package_config.h
+    include/zuri_distributor/package_requirements_loader.h
     )
 set_target_properties(zuri_distributor PROPERTIES PUBLIC_HEADER "${ZURI_DISTRIBUTOR_INCLUDES}")
 
 target_sources(zuri_distributor PRIVATE
-    src/distribution_loader.cpp
     src/distributor_result.cpp
+    src/package_cache.cpp
+    src/package_cache_loader.cpp
     src/package_config.cpp
+    src/package_requirements_loader.cpp
     )
 
 # set the library version
@@ -58,4 +62,4 @@ install(TARGETS zuri_distributor EXPORT zuri-targets
     )
 
 # add testing subdirectory
-#add_subdirectory(test)
+add_subdirectory(test)

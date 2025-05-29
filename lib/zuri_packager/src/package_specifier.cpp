@@ -76,6 +76,46 @@ zuri_packager::PackageSpecifier::getVersionString() const
         m_priv->patchVersion);
 }
 
+int
+zuri_packager::PackageSpecifier::compare(const PackageSpecifier &other) const
+{
+    if (!m_priv && other.m_priv)
+        return -1;
+    if (m_priv && !other.m_priv)
+        return 1;
+    int domaincmp = m_priv->packageDomain.compare(other.m_priv->packageDomain);
+    if (domaincmp != 0)
+        return domaincmp;
+    int namecmp = m_priv->packageName.compare(other.m_priv->packageName);
+    if (namecmp != 0)
+        return namecmp;
+    if (m_priv->majorVersion != other.m_priv->majorVersion)
+        return m_priv->majorVersion < other.m_priv->majorVersion? -1 : 1;
+    if (m_priv->minorVersion != other.m_priv->minorVersion)
+        return m_priv->minorVersion < other.m_priv->minorVersion? -1 : 1;
+    if (m_priv->patchVersion != other.m_priv->patchVersion)
+        return m_priv->patchVersion < other.m_priv->patchVersion? -1 : 1;
+    return 0;
+}
+
+bool
+zuri_packager::PackageSpecifier::operator==(const PackageSpecifier &other) const
+{
+    return compare(other) == 0;
+}
+
+bool
+zuri_packager::PackageSpecifier::operator!=(const PackageSpecifier &other) const
+{
+    return compare(other) != 0;
+}
+
+bool
+zuri_packager::PackageSpecifier::operator<(const PackageSpecifier &other) const
+{
+    return compare(other) < 0;
+}
+
 std::string
 zuri_packager::PackageSpecifier::toString() const
 {
@@ -192,4 +232,55 @@ zuri_packager::PackageSpecifier::fromUrl(const tempo_utils::Url &uri)
     if (uri.schemeView() != "dev.zuri.pkg")
         return {};
     return fromAuthority(uri.toAuthority());
+}
+
+zuri_packager::PackageSpecifier
+zuri_packager::PackageSpecifier::fromFilesystemName(const std::filesystem::path &name)
+{
+    if (name.empty())
+        return {};
+    auto nameString = name.string();
+
+    // construct the domain view
+    auto underscore_index = nameString.find('_');
+    if (underscore_index == std::string_view::npos)
+        return {};
+    auto domain_len = underscore_index;
+    std::string_view domainView(nameString.data(), domain_len);
+
+    // construct the name view
+    const char *name_ptr = nameString.data() + underscore_index + 1;
+    auto dash_index = nameString.find('-', underscore_index);
+    if (dash_index == std::string_view::npos)
+        return {};
+    auto name_len = dash_index - underscore_index - 1;
+    std::string_view nameView(name_ptr, name_len);
+
+    // construct the version view
+    const char *version_ptr = name_ptr + name_len + 1;
+    std::string_view versionView(version_ptr);
+
+    // extract the version numbers
+    std::vector<std::string> versionNumbers = absl::StrSplit(versionView, ".");
+    if (versionNumbers.size() != 3)
+        return {};
+    tu_uint32 majorVersion, minorVersion, patchVersion;
+    if (!absl::SimpleAtoi(versionNumbers[0], &majorVersion))
+        return {};
+    if (!absl::SimpleAtoi(versionNumbers[1], &minorVersion))
+        return {};
+    if (!absl::SimpleAtoi(versionNumbers[2], &patchVersion))
+        return {};
+
+    // reverse the domain
+    std::vector<std::string> domainLabels = absl::StrSplit(domainView, ".");
+    std::reverse(domainLabels.begin(), domainLabels.end());
+    auto packageDomain = absl::StrJoin(domainLabels, ".");
+
+    return PackageSpecifier(
+        std::string(nameView),
+        packageDomain,
+        majorVersion,
+        minorVersion,
+        patchVersion);
 }

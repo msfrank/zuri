@@ -28,7 +28,7 @@ protected:
     }
 };
 
-TEST_F(PackageExtractor, ExtractFailsWhenMissingPackageConfig)
+TEST_F(PackageExtractor, ConfigureFailsWhenMissingPackageConfig)
 {
     auto specifier = zuri_packager::PackageSpecifier::fromString("foo-1.0.0@foocorp");
     zuri_packager::PackageWriterOptions writerOptions;
@@ -41,14 +41,15 @@ TEST_F(PackageExtractor, ExtractFailsWhenMissingPackageConfig)
     ASSERT_THAT (writePackageResult, tempo_test::IsResult());
     auto packagePath = writePackageResult.getResult();
 
+    auto openPackageResult = zuri_packager::PackageReader::open(packagePath);
+    ASSERT_THAT (openPackageResult, tempo_test::IsResult());
+    auto reader = openPackageResult.getResult();
+
     zuri_packager::PackageExtractorOptions extractorOptions;
     extractorOptions.workingRoot = testerRoot;
-    extractorOptions.distributionRoot = testerRoot;
-    zuri_packager::PackageExtractor extractor(packagePath, extractorOptions);
-    ASSERT_THAT (extractor.configure(), tempo_test::IsOk());
-
-    auto extractPackageResult = extractor.extractPackage();
-    ASSERT_THAT (extractPackageResult, tempo_test::IsStatus());
+    extractorOptions.destinationRoot = testerRoot;
+    zuri_packager::PackageExtractor extractor(reader, extractorOptions);
+    ASSERT_THAT (extractor.configure(), tempo_test::IsStatus());
 }
 
 TEST_F(PackageExtractor, ExtractEmptyPackage)
@@ -63,10 +64,14 @@ TEST_F(PackageExtractor, ExtractEmptyPackage)
     ASSERT_THAT (writePackageResult, tempo_test::IsResult());
     auto packagePath = writePackageResult.getResult();
 
+    auto openPackageResult = zuri_packager::PackageReader::open(packagePath);
+    ASSERT_THAT (openPackageResult, tempo_test::IsResult());
+    auto reader = openPackageResult.getResult();
+
     zuri_packager::PackageExtractorOptions extractorOptions;
     extractorOptions.workingRoot = testerRoot;
-    extractorOptions.distributionRoot = testerRoot;
-    zuri_packager::PackageExtractor extractor(packagePath, extractorOptions);
+    extractorOptions.destinationRoot = testerRoot;
+    zuri_packager::PackageExtractor extractor(reader, extractorOptions);
     ASSERT_THAT (extractor.configure(), tempo_test::IsOk());
 
     auto extractPackageResult = extractor.extractPackage();

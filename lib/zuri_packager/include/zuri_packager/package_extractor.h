@@ -8,6 +8,7 @@
 #include "entry_walker.h"
 #include "package_reader.h"
 #include "package_result.h"
+#include "package_specifier.h"
 
 namespace zuri_packager {
 
@@ -15,7 +16,7 @@ namespace zuri_packager {
         /**
          *
          */
-        std::filesystem::path distributionRoot = {};
+        std::filesystem::path destinationRoot = {};
         /**
          *
          */
@@ -24,25 +25,24 @@ namespace zuri_packager {
 
     class PackageExtractor {
     public:
-        explicit PackageExtractor(const std::filesystem::path &packagePath, const PackageExtractorOptions &options = {});
+        explicit PackageExtractor(std::shared_ptr<PackageReader> reader, const PackageExtractorOptions &options = {});
 
         tempo_utils::Status configure();
 
         tempo_utils::Result<std::filesystem::path> extractPackage();
 
     private:
-        std::filesystem::path m_packagePath;
+        std::shared_ptr<PackageReader> m_reader;
         PackageExtractorOptions m_options;
 
+        PackageSpecifier m_specifier;
         std::filesystem::path m_workdirPath;
         std::queue<EntryWalker> m_pendingDirectories;
         std::queue<EntryWalker> m_unresolvedLinks;
 
-        tempo_utils::Status extractRoot(const EntryWalker &root, std::shared_ptr<PackageReader> reader);
-        tempo_utils::Status extractChildren(
-            const EntryWalker &parent,
-            std::shared_ptr<PackageReader> reader);
-        tempo_utils::Status extractFile(const EntryWalker &file, std::shared_ptr<PackageReader> reader);
+        tempo_utils::Status extractRoot(const EntryWalker &root);
+        tempo_utils::Status extractChildren(const EntryWalker &parent);
+        tempo_utils::Status extractFile(const EntryWalker &file);
         tempo_utils::Status linkEntry(const EntryWalker &link);
     };
 }

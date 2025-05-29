@@ -32,6 +32,12 @@ namespace zuri_packager {
         tu_uint32 getPatchVersion() const;
         std::string getVersionString() const;
 
+        int compare(const PackageSpecifier &other) const;
+
+        bool operator==(const PackageSpecifier &other) const;
+        bool operator!=(const PackageSpecifier &other) const;
+        bool operator<(const PackageSpecifier &other) const;
+
         std::string toString() const;
         std::filesystem::path toFilesystemPath(const std::filesystem::path &base = {}) const;
         tempo_utils::Url toUrl() const;
@@ -39,6 +45,7 @@ namespace zuri_packager {
         static PackageSpecifier fromString(const std::string &s);
         static PackageSpecifier fromAuthority(const tempo_utils::UrlAuthority &authority);
         static PackageSpecifier fromUrl(const tempo_utils::Url &url);
+        static PackageSpecifier fromFilesystemName(const std::filesystem::path &name);
 
     private:
         struct Priv {

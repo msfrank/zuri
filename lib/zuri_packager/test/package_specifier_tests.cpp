@@ -38,3 +38,15 @@ TEST(PackageSpecifier, ParseFromUrl)
     ASSERT_EQ (2, specifier.getMinorVersion());
     ASSERT_EQ (3, specifier.getPatchVersion());
 }
+
+TEST(PackageSpecifier, ParseFromFilesystemName)
+{
+    std::filesystem::path name("dev.zuri_test-1.2.3");
+    auto specifier = zuri_packager::PackageSpecifier::fromFilesystemName(name);
+    ASSERT_TRUE (specifier.isValid());
+    ASSERT_EQ ("test", specifier.getPackageName());
+    ASSERT_EQ ("zuri.dev", specifier.getPackageDomain());
+    ASSERT_EQ (1, specifier.getMajorVersion());
+    ASSERT_EQ (2, specifier.getMinorVersion());
+    ASSERT_EQ (3, specifier.getPatchVersion());
+}

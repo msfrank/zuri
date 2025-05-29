@@ -6,6 +6,7 @@ include(GoogleTest)
 # define unit tests
 
 set(TEST_CASES
+    package_cache_tests.cpp
     )
 
 # define test suite driver
@@ -17,6 +18,7 @@ target_include_directories(zuri_distributor_testsuite PRIVATE
     )
 target_link_libraries(zuri_distributor_testsuite PUBLIC
     zuri::zuri_distributor
+    zuri::zuri_test
     gtest::gtest
     )
 gtest_discover_tests(zuri_distributor_testsuite DISCOVERY_TIMEOUT 30)
@@ -30,5 +32,6 @@ target_include_directories(ZuriDistributorTestSuite PRIVATE
     )
 target_link_libraries(ZuriDistributorTestSuite PUBLIC
     zuri::zuri_distributor
+    zuri::zuri_test
     gtest::gtest
     )
