@@ -123,7 +123,7 @@ TextRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-text_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_text_text_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -138,7 +138,7 @@ text_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interprete
 }
 
 tempo_utils::Status
-text_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_text_text_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -169,7 +169,7 @@ text_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
 }
 
 tempo_utils::Status
-text_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_text_text_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -186,7 +186,7 @@ text_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterSt
 }
 
 tempo_utils::Status
-text_length(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_text_text_length(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 

@@ -3,11 +3,10 @@
 #ifndef ZURI_STD_SYSTEM_ELEMENT_REF_H
 #define ZURI_STD_SYSTEM_ELEMENT_REF_H
 
-#include <lyric_runtime/base_ref.h>
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <lyric_runtime/gc_heap.h>
-#include <lyric_runtime/interpreter_state.h>
-#include <zuri_std_system/base_value_ref.h>
+
+#include "base_value_ref.h"
 
 class ElementRef : public BaseValueRef {
 

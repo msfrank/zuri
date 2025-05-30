@@ -31,15 +31,15 @@ private:
     absl::Time m_instant;
 };
 
-tempo_utils::Status instant_alloc(
+tempo_utils::Status std_time_instant_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status instant_ctor(
+tempo_utils::Status std_time_instant_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status instant_to_epoch_millis(
+tempo_utils::Status std_time_instant_to_epoch_millis(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 

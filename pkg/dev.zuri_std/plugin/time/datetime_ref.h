@@ -32,11 +32,11 @@ private:
     absl::Duration m_ss;
 };
 
-tempo_utils::Status datetime_alloc(
+tempo_utils::Status std_time_datetime_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status datetime_ctor(
+tempo_utils::Status std_time_datetime_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 

@@ -72,7 +72,7 @@ DatetimeRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-datetime_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_datetime_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -87,7 +87,7 @@ datetime_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
 }
 
 tempo_utils::Status
-datetime_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_datetime_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 

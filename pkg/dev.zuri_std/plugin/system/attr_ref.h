@@ -7,7 +7,8 @@
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <lyric_runtime/gc_heap.h>
 #include <lyric_runtime/interpreter_state.h>
-#include <zuri_std_system/base_value_ref.h>
+
+#include "base_value_ref.h"
 
 class AttrRef : public BaseValueRef {
 

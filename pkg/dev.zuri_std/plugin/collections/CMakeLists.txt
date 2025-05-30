@@ -45,6 +45,7 @@ target_link_libraries(std-collections-plugin PUBLIC
     absl::btree
     absl::flat_hash_map
     absl::inlined_vector
+    Boost::headers
     )
 
 set_directory_properties(PROPERTIES

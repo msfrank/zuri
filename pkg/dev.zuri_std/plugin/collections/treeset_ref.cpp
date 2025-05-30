@@ -145,11 +145,12 @@ TreeSetComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
 {
     auto *currentCoro = m_state->currentCoro();
 
-    TU_ASSERT (m_cmp.data.descriptor.object == currentCoro->peekSP()->getSegmentIndex());
+    TU_ASSERT (m_cmp.data.descriptor->getSegmentIndex() == currentCoro->peekSP()->getSegmentIndex());
 
     std::vector<lyric_runtime::DataCell> args {lhs, rhs, m_ord};
     lyric_runtime::InterpreterStatus status;
-    if (!m_state->subroutineManager()->callStatic(m_cmp.data.descriptor.value, args, currentCoro, status))
+    if (!m_state->subroutineManager()->callStatic(
+        m_cmp.data.descriptor->getDescriptorIndex(), args, currentCoro, status))
         return false;
 
     auto compareResult = m_interp->runSubinterpreter();

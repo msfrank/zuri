@@ -58,7 +58,7 @@ TimezoneRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-timezone_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_timezone_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -73,7 +73,7 @@ timezone_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
 }
 
 tempo_utils::Status
-timezone_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_timezone_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 

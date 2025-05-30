@@ -29,11 +29,11 @@ private:
     absl::TimeZone m_tz;
 };
 
-tempo_utils::Status timezone_alloc(
+tempo_utils::Status std_time_timezone_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status timezone_ctor(
+tempo_utils::Status std_time_timezone_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 

@@ -36,7 +36,11 @@ add_custom_command (
     DEPENDS
         zuri-build
         ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
+        std-collections-plugin
         std-log-plugin
+        std-system-plugin
+        std-text-plugin
+        std-time-plugin
     )
 
 add_custom_target(zuri-std-package DEPENDS ${ZURI_STD_PACKAGE_PATH})

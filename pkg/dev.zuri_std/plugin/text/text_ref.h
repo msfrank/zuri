@@ -35,19 +35,19 @@ private:
     tu_int32 m_size;
 };
 
-tempo_utils::Status text_alloc(
+tempo_utils::Status std_text_text_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status text_ctor(
+tempo_utils::Status std_text_text_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status text_length(
+tempo_utils::Status std_text_text_length(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status text_at(
+tempo_utils::Status std_text_text_at(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 

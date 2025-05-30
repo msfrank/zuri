@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
 #include <tempo_utils/log_stream.h>
-#include <zuri_std_time/lib_types.h>
 
 #include "datetime_ref.h"
 #include "instant_ref.h"
@@ -9,36 +8,34 @@
 #include "timezone_ref.h"
 #include "time_traps.h"
 
-lyric_runtime::NativeFunc
+std::array<lyric_runtime::NativeTrap,9> kStdTimeTraps = {{
+    {std_time_datetime_alloc, "STD_TIME_DATETIME_ALLOC", 0},
+    {std_time_datetime_ctor, "STD_TIME_DATETIME_CTOR", 0},
+    {std_time_instant_alloc, "STD_TIME_INSTANT_ALLOC", 0},
+    {std_time_instant_ctor, "STD_TIME_INSTANT_CTOR", 0},
+    {std_time_instant_to_epoch_millis, "STD_TIME_INSTANT_TO_EPOCH_MILLIS", 0},
+    {std_time_timezone_alloc, "STD_TIME_TIMEZONE_ALLOC", 0},
+    {std_time_timezone_ctor, "STD_TIME_TIMEZONE_CTOR", 0},
+    {std_time_now, "STD_TIME_NOW", 0},
+    {std_time_parse_timezone, "STD_TIME_PARSE_TIMEZONE", 0},
+}};
+
+class NativeStdTime : public lyric_runtime::NativeInterface {
+
+public:
+    NativeStdTime() = default;
+    bool load(lyric_runtime::BytecodeSegment *segment) const override;
+    void unload(lyric_runtime::BytecodeSegment *segment) const override;
+    const lyric_runtime::NativeTrap *getTrap(uint32_t index) const override;
+    uint32_t numTraps() const override;
+};
+
+const lyric_runtime::NativeTrap *
 NativeStdTime::getTrap(uint32_t index) const
 {
-    if (index >= static_cast<uint32_t>(StdTimeTrap::LAST_))
+    if (kStdTimeTraps.size() <= index)
         return nullptr;
-    auto trapFunction = static_cast<StdTimeTrap>(index);
-    switch (trapFunction) {
-        case StdTimeTrap::DATETIME_ALLOC:
-            return datetime_alloc;
-        case StdTimeTrap::DATETIME_CTOR:
-            return datetime_ctor;
-        case StdTimeTrap::INSTANT_ALLOC:
-            return instant_alloc;
-        case StdTimeTrap::INSTANT_CTOR:
-            return instant_ctor;
-        case StdTimeTrap::INSTANT_TO_EPOCH_MILLIS:
-            return instant_to_epoch_millis;
-        case StdTimeTrap::TIMEZONE_ALLOC:
-            return timezone_alloc;
-        case StdTimeTrap::TIMEZONE_CTOR:
-            return timezone_ctor;
-        case StdTimeTrap::NOW:
-            return std_time_now;
-        case StdTimeTrap::PARSE_TIMEZONE:
-            return std_time_parse_timezone;
-
-        case StdTimeTrap::LAST_:
-            break;
-    }
-    TU_UNREACHABLE();
+    return &kStdTimeTraps.at(index);
 }
 
 bool
@@ -55,7 +52,7 @@ NativeStdTime::unload(lyric_runtime::BytecodeSegment *segment) const
 uint32_t
 NativeStdTime::numTraps() const
 {
-    return static_cast<uint32_t>(StdTimeTrap::LAST_);
+    return kStdTimeTraps.size();
 }
 
 static const NativeStdTime iface;

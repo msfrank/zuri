@@ -4,12 +4,12 @@
 /**
  *
  */
-@AllocatorTrap()
-class Timezone {
+@AllocatorTrap("STD_TIME_TIMEZONE_ALLOC")
+defclass Timezone {
 
     init(offset: Int) {
         @{
-            Trap()
+            Trap("STD_TIME_TIMEZONE_CTOR")
         }
     }
 }
@@ -17,18 +17,18 @@ class Timezone {
 /**
  *
  */
-@AllocatorTrap()
-class Instant {
+@AllocatorTrap("STD_TIME_INSTANT_ALLOC")
+defclass Instant {
 
     init() {
         @{
-            Trap()
+            Trap("STD_TIME_INSTANT_CTOR")
         }
     }
 
     def ToEpochMillis(): Int {
         @{
-            Trap()
+            Trap(STD_TIME_INSTANT_TO_EPOCH_MILLIS")
             PushResult(typeof Int)
         }
     }
@@ -37,12 +37,12 @@ class Instant {
 /**
  *
  */
-@AllocatorTrap()
+@AllocatorTrap("STD_TIME_DATETIME_ALLOC")
 defclass Datetime {
 
     init(instant: Instant, timezone: Timezone) {
         @{
-            Trap()
+            Trap("STD_TIME_DATETIME_CTOR")
         }
     }
 }
@@ -52,7 +52,7 @@ defclass Datetime {
  */
 def Now(): Instant {
     @{
-        Trap()
+        Trap("STD_TIME_NOW")
         PushResult(typeof Instant)
     }
 }
@@ -62,7 +62,7 @@ def Now(): Instant {
  */
 def ParseTimezone(name: String): Timezone {
     @{
-        Trap()
+        Trap("STD_TIME_PARSE_TIMEZONE")
         PushResult(typeof Timezone)
     }
 }

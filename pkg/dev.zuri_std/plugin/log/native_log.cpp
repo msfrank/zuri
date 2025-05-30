@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
-#include <lyric_runtime/native_interface.h>
 #include <tempo_utils/log_stream.h>
 
 #include "log_traps.h"

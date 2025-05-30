@@ -1,33 +1,33 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
 #include <tempo_utils/log_stream.h>
-#include <zuri_std_text/lib_types.h>
 
 #include "native_text.h"
 #include "text_ref.h"
 
-lyric_runtime::NativeFunc
+std::array<lyric_runtime::NativeTrap,4> kStdTextTraps = {{
+    {std_text_text_alloc, "STD_TEXT_TEXT_ALLOC", 0},
+    {std_text_text_ctor, "STD_TEXT_TEXT_CTOR", 0},
+    {std_text_text_length, "STD_TEXT_TEXT_LENGTH", 0},
+    {std_text_text_at, "STD_TEXT_TEXT_AT", 0},
+}};
+
+class NativeStdText : public lyric_runtime::NativeInterface {
+
+public:
+    NativeStdText() = default;
+    bool load(lyric_runtime::BytecodeSegment *segment) const override;
+    void unload(lyric_runtime::BytecodeSegment *segment) const override;
+    const lyric_runtime::NativeTrap *getTrap(uint32_t index) const override;
+    uint32_t numTraps() const override;
+};
+
+const lyric_runtime::NativeTrap *
 NativeStdText::getTrap(uint32_t index) const
 {
-    if (index >= static_cast<uint32_t>(StdTextTrap::LAST_))
+    if (kStdTextTraps.size() <= index)
         return nullptr;
-    auto trapFunction = static_cast<StdTextTrap>(index);
-    switch (trapFunction) {
-        case StdTextTrap::TEXT_ALLOC:
-            return text_alloc;
-        case StdTextTrap::TEXT_CTOR:
-            return text_ctor;
-        case StdTextTrap::TEXT_LENGTH:
-            return text_length;
-        case StdTextTrap::TEXT_AT:
-            return text_at;
-        case StdTextTrap::TEXT_ITER:
-            return nullptr;
-
-        case StdTextTrap::LAST_:
-            break;
-    }
-    TU_UNREACHABLE();
+    return &kStdTextTraps.at(index);
 }
 
 bool
@@ -44,7 +44,7 @@ NativeStdText::unload(lyric_runtime::BytecodeSegment *segment) const
 uint32_t
 NativeStdText::numTraps() const
 {
-    return static_cast<uint32_t>(StdTextTrap::LAST_);
+    return kStdTextTraps.size();
 }
 
 static const NativeStdText iface;

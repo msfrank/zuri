@@ -8,6 +8,7 @@ set(PLUGIN_FILEPATH   "${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_FILENAME}")
 add_library(std-system-plugin SHARED
     attr_ref.cpp
     attr_ref.h
+    base_value_ref.h
     element_ref.cpp
     element_ref.h
     future_ref.cpp
@@ -39,6 +40,7 @@ endif()
 
 target_link_libraries(std-system-plugin PUBLIC
     lyric::lyric_runtime
+    Boost::headers
     )
 
 set_directory_properties(PROPERTIES
