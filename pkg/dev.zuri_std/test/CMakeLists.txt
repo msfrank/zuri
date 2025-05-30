@@ -5,8 +5,12 @@ include(GoogleTest)
 # define unit tests
 
 set(TEST_CASES
+    datetime_tests.cpp
+    instant_tests.cpp
     log_tests.cpp
     text_tests.cpp
+    time_tests.cpp
+    timezone_tests.cpp
     )
 
 # define test suite driver

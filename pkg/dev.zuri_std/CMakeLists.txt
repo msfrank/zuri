@@ -15,9 +15,6 @@ get_directory_property(ZURI_STD_TIME_PLUGIN_FILEPATH DIRECTORY plugin/time PLUGI
 # create the workspace config file used to build package
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/workspace.config.in ${CMAKE_CURRENT_BINARY_DIR}/workspace.config @ONLY)
 
-# create the workspace config file used for unit testing
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tester.config.in ${TESTER_CONFIG_PATH} @ONLY)
-
 set(ZURI_STD_PACKAGE_PATH ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk)
 
 # build the std package

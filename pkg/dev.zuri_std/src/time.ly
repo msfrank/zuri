@@ -28,7 +28,7 @@ defclass Instant {
 
     def ToEpochMillis(): Int {
         @{
-            Trap(STD_TIME_INSTANT_TO_EPOCH_MILLIS")
+            Trap("STD_TIME_INSTANT_TO_EPOCH_MILLIS")
             PushResult(typeof Int)
         }
     }
