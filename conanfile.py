@@ -37,6 +37,7 @@ class Zuri(ConanFile):
         'icu/77.1@timbre',
         'libedit/20180525.1@timbre',
         'rocksdb/8.5.3@timbre',
+        'sqlite/3.49.2@timbre',
         'uv/1.44.1@timbre',
         )
 

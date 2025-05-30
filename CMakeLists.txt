@@ -144,6 +144,9 @@ find_package(icu REQUIRED)
 # find required Rocksdb dependency
 find_package(rocksdb REQUIRED)
 
+# find required Rocksdb dependency
+find_package(sqlite REQUIRED)
+
 # find required google test dependency
 find_package(gtest REQUIRED)
 

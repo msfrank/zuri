@@ -9,8 +9,9 @@
 #include <lyric_compiler/compiler_result.h>
 #include <lyric_test/base_protocol_mock.h>
 #include <lyric_test/test_runner.h>
-
-#include "zuri_packager/package_dependency.h"
+#include <zuri_distributor/package_cache.h>
+#include <zuri_distributor/package_cache_loader.h>
+#include <zuri_packager/package_dependency.h>
 
 namespace zuri_test {
 
@@ -52,6 +53,7 @@ namespace zuri_test {
     private:
         TesterOptions m_options;
         std::shared_ptr<zuri_distributor::PackageCache> m_packageCache;
+        std::shared_ptr<zuri_distributor::PackageCacheLoader> m_packageCacheLoader;
         std::shared_ptr<lyric_test::TestRunner> m_runner;
     };
 }

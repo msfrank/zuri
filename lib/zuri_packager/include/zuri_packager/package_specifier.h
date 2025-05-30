@@ -4,8 +4,6 @@
 #include <filesystem>
 #include <string>
 
-#include <absl/strings/string_view.h>
-
 #include <tempo_utils/integer_types.h>
 #include <tempo_utils/url.h>
 

@@ -9,10 +9,9 @@
 #include <tempo_utils/directory_maker.h>
 #include <tempo_utils/tempdir_maker.h>
 #include <zuri_distributor/package_cache.h>
+#include <zuri_distributor/package_cache_loader.h>
+#include <zuri_test/placeholder_loader.h>
 #include <zuri_test/zuri_tester.h>
-
-#include "zuri_distributor/package_requirements_loader.h"
-#include "zuri_test/placeholder_loader.h"
 
 zuri_test::ZuriTester::ZuriTester(const TesterOptions &options)
     : m_options(options)
@@ -54,24 +53,25 @@ zuri_test::ZuriTester::configure()
 
     // install local packages
     for (const auto &packagePath : m_options.localPackages) {
-        packageCache->installPackage(packagePath);
+        TU_RETURN_IF_STATUS (packageCache->installPackage(packagePath));
     }
 
-    // resolve package dependencies
-    absl::flat_hash_map<std::string,std::filesystem::path> importPackages;
-    for (const auto &entry : m_options.dependencyImports) {
-        Option<std::filesystem::path> pathOption;
-        TU_ASSIGN_OR_RETURN (pathOption, packageCache->resolvePackage(entry.second));
-        if (pathOption.isEmpty())
-            return lyric_test::TestStatus::forCondition(lyric_test::TestCondition::kTestInvariant,
-                "missing import {}", entry.first);
-        importPackages[entry.first] = pathOption.getValue();
-    }
+    // // resolve package dependencies
+    // absl::flat_hash_map<std::string,std::filesystem::path> importPackages;
+    // for (const auto &entry : m_options.dependencyImports) {
+    //     Option<std::filesystem::path> pathOption;
+    //     TU_ASSIGN_OR_RETURN (pathOption, packageCache->resolvePackage(entry.second));
+    //     if (pathOption.isEmpty())
+    //         return lyric_test::TestStatus::forCondition(lyric_test::TestCondition::kTestInvariant,
+    //             "missing import {}", entry.first);
+    //     importPackages[entry.first] = pathOption.getValue();
+    // }
 
     // configure requirements loader
-    auto requirementsLoader = std::make_shared<zuri_distributor::PackageRequirementsLoader>(importPackages);
-    TU_RETURN_IF_NOT_OK (placeholderLoader->resolve(requirementsLoader));
+    auto packageCacheLoader = std::make_shared<zuri_distributor::PackageCacheLoader>(packageCache);
+    TU_RETURN_IF_NOT_OK (placeholderLoader->resolve(packageCacheLoader));
 
+    m_packageCacheLoader = packageCacheLoader;
     m_packageCache = std::move(packageCache);
     m_runner = std::move(runner);
     return {};
@@ -127,6 +127,7 @@ zuri_test::ZuriTester::runModule(
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
     loaderChain.push_back(builder->getBootstrapLoader());
     loaderChain.push_back(dependencyLoader);
+    loaderChain.push_back(m_packageCacheLoader);
     options.loader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
 
     // construct the interpreter state

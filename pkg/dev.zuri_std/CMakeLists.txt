@@ -18,10 +18,12 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/workspace.config.in ${CMAKE_CURRENT_B
 # create the workspace config file used for unit testing
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tester.config.in ${TESTER_CONFIG_PATH} @ONLY)
 
+set(ZURI_STD_PACKAGE_PATH ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk)
+
 # build the std package
 add_custom_command (
     OUTPUT
-        ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk
+        ${ZURI_STD_PACKAGE_PATH}
     COMMAND
         zuri-build -vv
         -W ${CMAKE_CURRENT_SOURCE_DIR}
@@ -37,4 +39,6 @@ add_custom_command (
         std-log-plugin
     )
 
-add_custom_target(zuri-std-package DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk)
+add_custom_target(zuri-std-package DEPENDS ${ZURI_STD_PACKAGE_PATH})
+
+add_subdirectory(test)

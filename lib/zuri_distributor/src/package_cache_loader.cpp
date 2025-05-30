@@ -87,9 +87,6 @@ zuri_distributor::PackageCacheLoader::loadPlugin(
     if (absolutePath.empty())
         return Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>();
 
-    auto pluginName = lyric_common::pluginFilename(absolutePath.stem().string());
-    absolutePath.replace_filename(pluginName);
-
     // attempt to load the plugin
     auto loader = std::make_shared<tempo_utils::LibraryLoader>(absolutePath, "native_init");
     if (!loader->isValid()) {

@@ -54,7 +54,7 @@ zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageSpeci
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "invalid package specifier");
 
-    auto packagePath = specifier.toFilesystemPath(m_cacheDirectory);
+    auto packagePath = m_cacheDirectory / specifier.toString();
     if (!std::filesystem::is_directory(packagePath))
         return Option<std::filesystem::path>();
 
@@ -92,7 +92,7 @@ zuri_distributor::PackageCache::create(
     const std::filesystem::path &distributionRoot,
     std::string_view cacheName)
 {
-    if (std::filesystem::exists(distributionRoot))
+    if (!std::filesystem::is_directory(distributionRoot))
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "distribution root {} does not exist", distributionRoot.string());
 

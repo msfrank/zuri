@@ -5,7 +5,7 @@
 tempo_utils::Status
 zuri_test::PlaceholderLoader::resolve(std::shared_ptr<lyric_runtime::AbstractLoader> loader)
 {
-    if (m_loader == nullptr)
+    if (m_loader != nullptr)
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "placeholder loader is already resolved");

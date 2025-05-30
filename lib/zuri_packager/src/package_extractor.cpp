@@ -3,6 +3,7 @@
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/config_serde.h>
 #include <tempo_config/parse_config.h>
+#include <tempo_utils/directory_maker.h>
 #include <tempo_utils/file_writer.h>
 #include <tempo_utils/tempdir_maker.h>
 #include <zuri_packager/package_extractor.h>
@@ -87,6 +88,13 @@ zuri_packager::PackageExtractor::extractRoot(const EntryWalker &root)
 tempo_utils::Status
 zuri_packager::PackageExtractor::extractChildren(const EntryWalker &parent)
 {
+    // make directory
+    auto relativePath = parent.getPath().toRelative();
+    auto directoryPath = relativePath.toFilesystemPath(m_workdirPath);
+    tempo_utils::DirectoryMaker directoryMaker(directoryPath);
+    TU_RETURN_IF_NOT_OK (directoryMaker.getStatus());
+
+    // process each child
     for (int i = 0; i < parent.numChildren(); i++) {
         auto child = parent.getChild(i);
         switch (child.getEntryType()) {
@@ -143,9 +151,10 @@ zuri_packager::PackageExtractor::extractPackage()
     TU_RETURN_IF_NOT_OK (workdirMaker.getStatus());
     m_workdirPath = workdirMaker.getTempdir();
 
-    auto manifest = m_reader->getManifest().getManifest();
-    auto root = manifest.getEntry(tempo_utils::UrlPath::fromString("/"));
-    TU_RETURN_IF_NOT_OK (extractRoot(root));
+    auto manifest = m_reader->getManifest();
+    auto manifestRoot = manifest.getManifest();
+    auto rootEntry = manifestRoot.getEntry(tempo_utils::UrlPath::fromString("/"));
+    TU_RETURN_IF_NOT_OK (extractRoot(rootEntry));
 
     auto destinationRoot = !m_options.destinationRoot.empty()? m_options.destinationRoot : std::filesystem::current_path();
     auto destinationPath = destinationRoot / m_specifier.toString();

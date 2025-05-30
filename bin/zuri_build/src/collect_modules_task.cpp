@@ -102,7 +102,7 @@ CollectModulesTask::collectModules(
         lyric_build::TraceId artifactTrace(hash, taskKey.getDomain(), taskKey.getId());
         auto generation = cache->loadTrace(artifactTrace);
 
-        std::vector<lyric_build::ArtifactId> targetArtifacts;
+        std::vector<lyric_build::ArtifactId> objectArtifacts;
 
         // find dep object
         lyric_build::MetadataWriter objectFilterWriter;
@@ -110,13 +110,13 @@ CollectModulesTask::collectModules(
         objectFilterWriter.putAttr(lyric_build::kLyricBuildContentType, std::string(lyric_common::kObjectContentType));
         lyric_build::LyricMetadata objectFilter;
         TU_ASSIGN_OR_RETURN (objectFilter, objectFilterWriter.toMetadata());
-        TU_ASSIGN_OR_RETURN (targetArtifacts, cache->findArtifacts(generation, hash, {}, objectFilter));
+        TU_ASSIGN_OR_RETURN (objectArtifacts, cache->findArtifacts(generation, hash, {}, objectFilter));
 
-        if (targetArtifacts.size() != 1)
+        if (objectArtifacts.size() != 1)
             return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
                 "expected 1 object artifact in dependent task {} but found {}",
-                taskKey.toString(), targetArtifacts.size());
-        auto objectDepId = targetArtifacts.front();
+                taskKey.toString(), objectArtifacts.size());
+        auto objectDepId = objectArtifacts.front();
 
         lyric_build::LyricMetadata objectMetadata;
         TU_ASSIGN_OR_RETURN (objectMetadata, cache->loadMetadataFollowingLinks(objectDepId));
@@ -155,22 +155,23 @@ CollectModulesTask::collectModules(
         if (!object.getObject().hasPlugin())
             continue;
 
+        std::vector<lyric_build::ArtifactId> pluginArtifacts;
+
         // find dep plugin
         auto objectPluginLocation = object.getObject().getPlugin().getPluginLocation();
 
         lyric_build::MetadataWriter pluginFilterWriter;
         TU_RETURN_IF_NOT_OK (pluginFilterWriter.configure());
         pluginFilterWriter.putAttr(lyric_build::kLyricBuildContentType, std::string(lyric_common::kPluginContentType));
-        pluginFilterWriter.putAttr(lyric_build::kLyricBuildModuleLocation, objectPluginLocation);
         lyric_build::LyricMetadata pluginFilter;
-        TU_ASSIGN_OR_RETURN (pluginFilter, objectFilterWriter.toMetadata());
-        TU_ASSIGN_OR_RETURN (targetArtifacts, cache->findArtifacts(generation, hash, {}, pluginFilter));
+        TU_ASSIGN_OR_RETURN (pluginFilter, pluginFilterWriter.toMetadata());
+        TU_ASSIGN_OR_RETURN (pluginArtifacts, cache->findArtifacts(generation, hash, {}, pluginFilter));
 
-        if (targetArtifacts.size() != 1)
+        if (pluginArtifacts.size() != 1)
             return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
                 "expected 1 plugin artifact in dependent task {} but found {}",
-                taskKey.toString(), targetArtifacts.size());
-        auto pluginDepId = targetArtifacts.front();
+                taskKey.toString(), pluginArtifacts.size());
+        auto pluginDepId = pluginArtifacts.front();
 
         // check whether an plugin already exists for the specified path
         auto pluginDepPath = pluginDepId.getLocation().toPath();
