@@ -12,7 +12,7 @@ zuri_packager::PackageSpecifierParser::PackageSpecifierParser(const PackageSpeci
 }
 
 tempo_utils::Status
-zuri_packager::PackageSpecifierParser::parseValue(
+zuri_packager::PackageSpecifierParser::convertValue(
     const tempo_config::ConfigNode &node,
     PackageSpecifier &specifier) const
 {

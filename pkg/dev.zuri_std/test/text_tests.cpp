@@ -53,5 +53,5 @@ TEST_F(StdText, EvaluateTextAt)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellChar(static_cast<UChar32>('H')))));
+        RunModule(DataCellChar(static_cast<char32_t>('H')))));
 }

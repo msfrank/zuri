@@ -1,7 +1,6 @@
 
 #include <lyric_build/build_types.h>
 #include <tempo_config/base_conversions.h>
-#include <tempo_config/config_serde.h>
 #include <tempo_config/parse_config.h>
 #include <tempo_utils/directory_maker.h>
 #include <tempo_utils/file_writer.h>

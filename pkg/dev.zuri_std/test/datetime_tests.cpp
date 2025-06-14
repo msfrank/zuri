@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include <lyric_test/lyric_tester.h>
 #include <lyric_test/matchers.h>

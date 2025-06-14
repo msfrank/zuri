@@ -46,8 +46,10 @@ std::string
 TextRef::toString() const
 {
     std::string s;
-    if (m_data)
-        s = tempo_utils::convert_to_utf8(m_data, m_size);
+    if (m_data) {
+        std::u16string_view utf16((const char16_t *) m_data, m_size);
+        s = tempo_utils::convert_to_utf8(utf16);
+    }
 
     return absl::Substitute("<$0: TextRef \"$1\">", this, s);
 }
@@ -59,7 +61,7 @@ TextRef::textAt(int index) const
         return lyric_runtime::DataCell::nil();
     UChar32 char32;
     U16_GET(m_data, 0, index, m_size, char32);
-    return lyric_runtime::DataCell(char32);
+    return lyric_runtime::DataCell((char32_t) char32);
 }
 
 lyric_runtime::DataCell

@@ -11,7 +11,7 @@ ImportStore::ImportStore(const tempo_config::ConfigMap &importsConfig)
 {
 }
 
-class ImportEntryParser : public tempo_config::AbstractConfigParser<ImportEntry> {
+class ImportEntryParser : public tempo_config::AbstractConverter<ImportEntry> {
 public:
     tempo_utils::Status parseTarget(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const {
         tempo_config::StringParser targetNameParser;
@@ -34,7 +34,7 @@ public:
         return {};
     }
 
-    tempo_utils::Status parseValue(const tempo_config::ConfigNode &node, ImportEntry &importEntry) const override {
+    tempo_utils::Status convertValue(const tempo_config::ConfigNode &node, ImportEntry &importEntry) const override {
         if (node.getNodeType() != tempo_config::ConfigNodeType::kMap)
             return tempo_config::ConfigStatus::forCondition(
                 tempo_config::ConfigCondition::kWrongType, "import entry config must be a map");

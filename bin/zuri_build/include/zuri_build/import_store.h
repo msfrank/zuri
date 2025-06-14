@@ -2,7 +2,6 @@
 #define ZURI_BUILD_IMPORT_STORE_H
 
 #include <lyric_build/build_types.h>
-#include <tempo_config/abstract_config_parser.h>
 
 enum class ImportEntryType {
     Invalid,

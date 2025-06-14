@@ -1,10 +1,10 @@
 
 #include <tempo_config/config_builder.h>
-#include <tempo_config/config_serde.h>
-#include <zuri_packager/generated/manifest.h>
-#include <zuri_packager/package_writer.h>
+#include <tempo_config/config_utils.h>
 #include <tempo_utils/bytes_appender.h>
 #include <tempo_utils/file_appender.h>
+#include <zuri_packager/generated/manifest.h>
+#include <zuri_packager/package_writer.h>
 
 zuri_packager::PackageWriter::PackageWriter(
     const PackageSpecifier &specifier,

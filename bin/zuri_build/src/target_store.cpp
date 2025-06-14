@@ -1,6 +1,6 @@
 
 #include <lyric_common/common_conversions.h>
-#include <tempo_config/abstract_config_parser.h>
+#include <tempo_config/abstract_converter.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/config_result.h>
 #include <tempo_config/container_conversions.h>
@@ -16,7 +16,7 @@ TargetStore::TargetStore(const tempo_config::ConfigMap &targetsConfig)
 {
 }
 
-class TargetEntryParser : public tempo_config::AbstractConfigParser<TargetEntry> {
+class TargetEntryParser : public tempo_config::AbstractConverter<TargetEntry> {
 public:
     tempo_utils::Status parseProgram(const tempo_config::ConfigMap &map, TargetEntry &targetEntry) const {
         lyric_common::ModuleLocationParser moduleLocationParser;
@@ -44,7 +44,7 @@ public:
         return {};
     }
 
-    tempo_utils::Status parseValue(const tempo_config::ConfigNode &node, TargetEntry &targetEntry) const override {
+    tempo_utils::Status convertValue(const tempo_config::ConfigNode &node, TargetEntry &targetEntry) const override {
         if (node.getNodeType() != tempo_config::ConfigNodeType::kMap)
             return tempo_config::ConfigStatus::forCondition(
                 tempo_config::ConfigCondition::kWrongType, "target entry config must be a map");

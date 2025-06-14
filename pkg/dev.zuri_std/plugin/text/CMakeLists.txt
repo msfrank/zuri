@@ -28,6 +28,7 @@ endif()
 target_link_libraries(std-text-plugin PUBLIC
     lyric::lyric_runtime
     Boost::headers
+    icu::icu
     )
 
 set_directory_properties(PROPERTIES

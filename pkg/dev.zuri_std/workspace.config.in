@@ -53,6 +53,7 @@
                 "specifier": "std-@FULL_VERSION@@zuri.dev",
                 "libraryModules": [
                     "/log",
+                    "/system",
                     "/text",
                     "/time"
                 ]
