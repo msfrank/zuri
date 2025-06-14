@@ -75,7 +75,7 @@ std_time_instant_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
     auto ref = state->heapManager()->allocateRef<InstantRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -89,7 +89,7 @@ std_time_instant_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
     auto *instance = static_cast<InstantRef *>(receiver.data.ref);
     instance->setInstant(absl::UnixEpoch());
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -104,5 +104,5 @@ std_time_instant_to_epoch_millis(lyric_runtime::BytecodeInterpreter *interp, lyr
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<InstantRef *>(receiver.data.ref);
     currentCoro->pushData(instance->toEpochMillis());
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

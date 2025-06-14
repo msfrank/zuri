@@ -19,7 +19,7 @@ vector_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto ref = state->heapManager()->allocateRef<VectorRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -37,7 +37,7 @@ vector_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
         instance->append(item);
     }
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -53,7 +53,7 @@ vector_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->size())));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -71,7 +71,7 @@ vector_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     currentCoro->pushData(instance->at(idx.data.i64));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -89,7 +89,7 @@ vector_append(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     instance->append(val);
     currentCoro->pushData(lyric_runtime::DataCell::nil());
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -109,7 +109,7 @@ vector_insert(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     instance->insert(idx.data.i64, val);
     currentCoro->pushData(lyric_runtime::DataCell::nil());
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -128,7 +128,7 @@ vector_update(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     currentCoro->pushData(instance->update(idx.data.i64, val));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -146,7 +146,7 @@ vector_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     currentCoro->pushData(instance->remove(idx.data.i64));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -163,7 +163,7 @@ vector_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     instance->clear();
     currentCoro->pushData(lyric_runtime::DataCell::nil());
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -187,7 +187,7 @@ vector_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     auto ref = state->heapManager()->allocateRef<VectorIterator>(vtable, instance->begin(), instance);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -202,7 +202,7 @@ vector_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
     auto ref = state->heapManager()->allocateRef<VectorIterator>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -219,7 +219,7 @@ vector_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
     auto *instance = static_cast<lyric_runtime::AbstractRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(instance->iteratorValid()));
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -241,5 +241,5 @@ vector_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::
     }
     currentCoro->pushData(next);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

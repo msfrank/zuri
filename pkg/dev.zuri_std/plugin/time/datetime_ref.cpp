@@ -83,7 +83,7 @@ std_time_datetime_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtim
     auto ref = state->heapManager()->allocateRef<DatetimeRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -110,5 +110,5 @@ std_time_datetime_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
     instance->setCivilSecond(cs);
     instance->setSubseconds(ss);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

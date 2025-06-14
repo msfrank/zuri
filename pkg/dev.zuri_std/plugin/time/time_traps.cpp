@@ -41,7 +41,7 @@ std_time_now(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto *instance = static_cast<InstantRef *>(ref.data.ref);
     instance->setInstant(absl::Now());
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -90,5 +90,5 @@ std_time_parse_timezone(lyric_runtime::BytecodeInterpreter *interp, lyric_runtim
     auto *instance = static_cast<TimezoneRef *>(ref.data.ref);
     instance->setTimeZone(tz);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

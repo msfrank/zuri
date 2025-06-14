@@ -17,7 +17,7 @@ treemap_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto ref = state->heapManager()->allocateRef<TreeMapRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -37,7 +37,7 @@ treemap_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(cmp.type == lyric_runtime::DataCellType::CALL);
     instance->initialize(TreeMapComparator(interp, state, arg0, cmp));
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -53,7 +53,7 @@ treemap_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->size())));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -70,7 +70,7 @@ treemap_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(instance->contains(key)));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -87,7 +87,7 @@ treemap_get(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     currentCoro->pushData(instance->get(key));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -106,7 +106,7 @@ treemap_put(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     auto prev = instance->put(key, val);
     currentCoro->pushData(prev);
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -124,7 +124,7 @@ treemap_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     auto prev = instance->remove(key);
     currentCoro->pushData(prev);
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -141,5 +141,5 @@ treemap_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     instance->clear();
     currentCoro->pushData(lyric_runtime::DataCell::nil());
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

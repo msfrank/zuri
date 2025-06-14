@@ -32,12 +32,7 @@ TEST_F(StdLogLog, EvaluateLog)
 
     auto messages = mockSend->getMessages();
     ASSERT_EQ (messages.size(), 1);
-    auto message1 = messages.at(0).getPatchset();
-    ASSERT_EQ (message1.numChanges(), 1);
-    auto change1 = message1.getChange(0);
-    ASSERT_EQ (change1.getOperationType(), lyric_serde::ChangeOperation::EmitOperation);
-    auto emit = change1.getEmitOperation();
-    auto value = emit.getValue();
-    ASSERT_EQ (value.getValueType(), lyric_serde::ValueType::String);
-    ASSERT_EQ (std::string("hello world!"), value.getString());
+    auto &message1 = messages.at(0);
+    std::string_view payload((const char *) message1->getData(), message1->getSize());
+    ASSERT_EQ (std::string("hello world!"), payload);
 }

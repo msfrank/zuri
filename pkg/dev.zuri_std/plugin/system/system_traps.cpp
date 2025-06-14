@@ -63,7 +63,7 @@ std_system_acquire(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::In
     // push ref onto the stack and insert into the heap
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -97,7 +97,7 @@ std_system_await(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
 //    // push the future onto the top of the stack
 //    currentCoro->pushData(cell);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -116,7 +116,7 @@ std_system_get_result(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
     ref->resolveFuture(result);
     currentCoro->pushData(result);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 static void
@@ -165,7 +165,7 @@ std_system_sleep(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto *fut = ref.data.ref;
     fut->prepareFuture(promise);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 static void
@@ -245,5 +245,5 @@ std_system_spawn(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     // put worker task on the ready queue
     scheduler->resumeTask(workerTask);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

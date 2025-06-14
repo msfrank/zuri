@@ -118,7 +118,7 @@ queue_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto ref = state->heapManager()->allocateRef<QueueRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -137,7 +137,7 @@ queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interprete
     auto ret = instance->push(arg0);
     currentCoro->pushData(lyric_runtime::DataCell(ret));
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 static void
@@ -190,11 +190,11 @@ queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
     // special case: if the queue has an available element then take it and set the future immediately
     if (instance->containsAvailableElement()) {
         promise->complete(instance->takeAvailableElement());
-        return lyric_runtime::InterpreterStatus::ok();
+        return {};
     }
 
     // add the future to the queue
     instance->waitForPush(promise, async);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

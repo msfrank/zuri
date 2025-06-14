@@ -11,6 +11,8 @@
 
 #include "log_traps.h"
 
+#include <tempo_utils/memory_bytes.h>
+
 tempo_utils::Status
 std_log_log(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
@@ -35,31 +37,10 @@ std_log_log(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
         return lyric_runtime::InterpreterStatus::forCondition(lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "utf8 conversion failed");
 
-    lyric_serde::PatchsetState patchsetState;
-
-    auto appendValueResult = patchsetState.appendValue(tempo_schema::AttrValue(utf8));
-    if (appendValueResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(lyric_runtime::InterpreterCondition::kRuntimeInvariant,
-            "failed to append value");
-    auto *value = appendValueResult.getResult();
-
-    std::string changeId;
-    auto appendChangeResult = patchsetState.appendChange(changeId);
-    if (appendChangeResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(lyric_runtime::InterpreterCondition::kRuntimeInvariant,
-            "failed to append change");
-    auto *change = appendChangeResult.getResult();
-
-    change->setEmitOperation(value->getAddress());
-
-    auto toPatchsetResult = patchsetState.toPatchset();
-    if (toPatchsetResult.isStatus())
-        return lyric_runtime::InterpreterStatus::forCondition(lyric_runtime::InterpreterCondition::kRuntimeInvariant,
-            "failed to serialize patchset");
-
-    port->send(toPatchsetResult.getResult());
+    auto payload = tempo_utils::MemoryBytes::copy(utf8);
+    port->send(std::move(payload));
 
     currentCoro->pushData(lyric_runtime::DataCell(true));
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

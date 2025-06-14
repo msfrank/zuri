@@ -28,7 +28,7 @@ public:
 
     std::shared_ptr<lyric_runtime::DuplexPort> duplexPort();
 
-    bool send(const lyric_serde::LyricPatchset &patchset);
+    bool send(std::shared_ptr<tempo_utils::ImmutableBytes> payload);
     bool waitForReceive(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async);
 
 protected:

@@ -17,7 +17,7 @@ treeset_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto ref = state->heapManager()->allocateRef<TreeSetRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -45,7 +45,7 @@ treeset_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
         instance->add(item);
     }
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -61,7 +61,7 @@ treeset_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->size())));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -78,7 +78,7 @@ treeset_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(instance->contains(key)));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -96,7 +96,7 @@ treeset_add(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
     auto prev = instance->add(value);
     currentCoro->pushData(prev);
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -114,7 +114,7 @@ treeset_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
     auto prev = instance->remove(value);
     currentCoro->pushData(prev);
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -131,7 +131,7 @@ treeset_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
     instance->clear();
     currentCoro->pushData(lyric_runtime::DataCell::nil());
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -155,7 +155,7 @@ treeset_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
     auto ref = state->heapManager()->allocateRef<TreeSetIterator>(vtable, instance->begin(), instance);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -170,7 +170,7 @@ treeset_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
     auto ref = state->heapManager()->allocateRef<TreeSetIterator>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -187,7 +187,7 @@ treeset_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
     auto *instance = static_cast<lyric_runtime::AbstractRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(instance->iteratorValid()));
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -209,5 +209,5 @@ treeset_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
     }
     currentCoro->pushData(next);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

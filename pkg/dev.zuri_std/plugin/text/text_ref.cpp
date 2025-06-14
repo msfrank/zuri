@@ -136,7 +136,7 @@ std_text_text_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::I
     auto ref = state->heapManager()->allocateRef<TextRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -167,7 +167,7 @@ std_text_text_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::In
             "invalid utf8 argument {}", arg0.toString());
     }
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -184,7 +184,7 @@ std_text_text_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TextRef *>(receiver.data.ref);
     currentCoro->pushData(instance->textAt(index.data.i64));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -198,5 +198,5 @@ std_text_text_length(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TextRef *>(receiver.data.ref);
     currentCoro->pushData(instance->textSize());
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

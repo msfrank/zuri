@@ -2,32 +2,19 @@
 
 #include <tempo_utils/log_stream.h>
 
-#include "attr_ref.h"
-#include "element_ref.h"
 #include "future_ref.h"
 #include "native_system.h"
-#include "operation_ref.h"
 #include "port_ref.h"
 #include "queue_ref.h"
 #include "system_traps.h"
 
-std::array<lyric_runtime::NativeTrap,26> kStdSystemTraps = {{
-    {attr_alloc, "STD_SYSTEM_ATTR_ALLOC", 0},
-    {element_alloc, "STD_SYSTEM_ELEMENT_ALLOC", 0},
-    {element_ctor, "STD_SYSTEM_ELEMENT_CTOR", 0},
-    {element_get_or_else, "STD_SYSTEM_ELEMENT_GET_OR_ELSE", 0},
-    {element_size, "STD_SYSTEM_ELEMENT_SIZE", 0},
+std::array<lyric_runtime::NativeTrap,16> kStdSystemTraps = {{
     {future_alloc, "STD_SYSTEM_FUTURE_ALLOC", 0},
     {future_ctor, "STD_SYSTEM_FUTURE_CTOR", 0},
     {future_complete, "STD_SYSTEM_FUTURE_COMPLETE", 0},
     {future_reject, "STD_SYSTEM_FUTURE_REJECT", 0},
     {future_cancel, "STD_SYSTEM_FUTURE_CANCEL", 0},
     {future_then, "STD_SYSTEM_FUTURE_THEN", 0},
-    {append_operation_alloc, "STD_SYSTEM_APPEND_OPERATION_ALLOC", 0},
-    {insert_operation_alloc, "STD_SYSTEM_INSERT_OPERATION_ALLOC", 0},
-    {update_operation_alloc, "STD_SYSTEM_UPDATE_OPERATION_ALLOC", 0},
-    {replace_operation_alloc, "STD_SYSTEM_REPLACE_OPERATION_ALLOC", 0},
-    {emit_operation_alloc, "STD_SYSTEM_EMIT_OPERATION_ALLOC", 0},
     {port_receive, "STD_SYSTEM_PORT_RECEIVE", 0},
     {port_send, "STD_SYSTEM_PORT_SEND", 0},
     {queue_alloc, "STD_SYSTEM_QUEUE_ALLOC", 0},

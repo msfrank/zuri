@@ -69,7 +69,7 @@ std_time_timezone_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtim
     auto ref = state->heapManager()->allocateRef<TimezoneRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -92,5 +92,5 @@ std_time_timezone_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
     }
     instance->setTimeZone(absl::FixedTimeZone(offsetSeconds));
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

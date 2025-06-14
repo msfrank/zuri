@@ -17,7 +17,7 @@ hashmap_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto ref = state->heapManager()->allocateRef<HashMapRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -37,7 +37,7 @@ hashmap_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(cmp.type == lyric_runtime::DataCellType::CALL);
     instance->initialize(HashMapEq(interp, state, arg0, cmp));
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -53,7 +53,7 @@ hashmap_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->hashSize())));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -70,7 +70,7 @@ hashmap_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(instance->hashContains(key)));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -87,7 +87,7 @@ hashmap_get(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     currentCoro->pushData(instance->hashGet(key));
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -106,7 +106,7 @@ hashmap_put(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     auto prev = instance->hashPut(key, val);
     currentCoro->pushData(prev);
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -124,7 +124,7 @@ hashmap_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     auto prev = instance->hashRemove(key);
     currentCoro->pushData(prev);
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -141,5 +141,5 @@ hashmap_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     instance->hashClear();
     currentCoro->pushData(lyric_runtime::DataCell::nil());
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }

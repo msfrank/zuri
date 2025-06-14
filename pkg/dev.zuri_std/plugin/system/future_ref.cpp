@@ -151,13 +151,13 @@ FutureRef::complete(const lyric_runtime::DataCell &result)
         case FutureState::Initial:
             m_promise = lyric_runtime::Promise::completed(result);
             m_state = FutureState::Resolved;
-            return lyric_runtime::InterpreterStatus::ok();
+            return {};
 
         case FutureState::Ready:
         case FutureState::Waiting:
             m_promise->complete(result);
             m_state = FutureState::Resolved;
-            return lyric_runtime::InterpreterStatus::ok();
+            return {};
 
         default:
             return lyric_runtime::InterpreterStatus::forCondition(
@@ -173,13 +173,13 @@ FutureRef::reject(const lyric_runtime::DataCell &result)
         case FutureState::Initial:
             m_promise = lyric_runtime::Promise::rejected(result);
             m_state = FutureState::Resolved;
-            return lyric_runtime::InterpreterStatus::ok();
+            return {};
 
         case FutureState::Ready:
         case FutureState::Waiting:
             m_promise->reject(result);
             m_state = FutureState::Resolved;
-            return lyric_runtime::InterpreterStatus::ok();
+            return {};
 
         default:
             return lyric_runtime::InterpreterStatus::forCondition(
@@ -217,7 +217,7 @@ future_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
     currentCoro->pushData(ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
@@ -231,7 +231,7 @@ future_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     //auto *instance = static_cast<FutureRef *>(receiver.data.ref);
 
-    return lyric_runtime::InterpreterStatus::ok();
+    return {};
 }
 
 tempo_utils::Status
