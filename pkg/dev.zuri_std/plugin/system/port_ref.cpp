@@ -13,6 +13,13 @@
 
 #include <tempo_utils/memory_bytes.h>
 
+PortRef::PortRef(const lyric_runtime::VirtualTable *vtable)
+    : BaseRef(vtable),
+      m_interp(nullptr),
+      m_state(nullptr)
+{
+}
+
 PortRef::PortRef(
     const lyric_runtime::VirtualTable *vtable,
     lyric_runtime::BytecodeInterpreter *interp,
@@ -115,6 +122,21 @@ PortRef::clearMembersReachable()
     }
     //if (m_fut)
     //    m_fut->clearReachable();
+}
+
+tempo_utils::Status
+port_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->peekCall();
+    const auto *vtable = frame.getVirtualTable();
+    TU_ASSERT(vtable != nullptr);
+
+    auto ref = state->heapManager()->allocateRef<PortRef>(vtable);
+    currentCoro->pushData(ref);
+
+    return {};
 }
 
 tempo_utils::Status

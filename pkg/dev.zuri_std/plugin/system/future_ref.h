@@ -83,10 +83,6 @@ tempo_utils::Status future_reject(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);
 
-tempo_utils::Status future_cancel(
-    lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
-
 tempo_utils::Status future_then(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state);

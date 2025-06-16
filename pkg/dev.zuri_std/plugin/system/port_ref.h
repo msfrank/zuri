@@ -11,6 +11,7 @@
 class PortRef : public lyric_runtime::BaseRef {
 
 public:
+    explicit PortRef(const lyric_runtime::VirtualTable *vtable);
     PortRef(
         const lyric_runtime::VirtualTable *vtable,
         lyric_runtime::BytecodeInterpreter *interp,
@@ -41,6 +42,10 @@ private:
     std::shared_ptr<lyric_runtime::DuplexPort> m_port;
     std::vector<lyric_runtime::DataCell> m_values;
 };
+
+tempo_utils::Status port_alloc(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state);
 
 tempo_utils::Status port_send(
     lyric_runtime::BytecodeInterpreter *interp,

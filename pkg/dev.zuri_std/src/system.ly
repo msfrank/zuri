@@ -1,16 +1,13 @@
 
 @@Plugin("/system")
 
-defstruct Message final {
-    val Payload: Bytes
-}
 
 /*
  *
  */
 
 @AllocatorTrap("STD_SYSTEM_FUTURE_ALLOC")
-def Future[T] final {
+defclass Future[T] final {
 
     init() {
         @{
@@ -33,13 +30,11 @@ def Future[T] final {
     }
 
     def Cancel(): Bool {
-        @{
-            Trap("STD_SYSTEM_FUTURE_CANCEL")
-            PushResult(typeof Bool)
-        }
+        val cancelled: Cancelled = Cancelled{message = "cancelled"}
+        this.Reject(cancelled)
     }
 
-    def Then[U](fun: Function1[U|Status, T|Status): Future[U] {
+    def Then[U](fun: Function1[U|Status, T|Status]): Future[U] {
         @{
             Trap("STD_SYSTEM_FUTURE_THEN")
             PushResult(typeof Future[U])
@@ -49,12 +44,6 @@ def Future[T] final {
 
 @AllocatorTrap("STD_SYSTEM_QUEUE_ALLOC")
 defclass Queue[T] {
-
-    init() {
-        @{
-            Trap("STD_SYSTEM_QUEUE_CTOR")
-        }
-    }
 
     def Push(element: T): Bool {
         @{
@@ -71,14 +60,13 @@ defclass Queue[T] {
     }
 }
 
+defstruct Message {
+    val SeqNr: Int
+    val Payload: Bytes
+}
+
 @AllocatorTrap("STD_SYSTEM_PORT_ALLOC")
 defclass Port sealed {
-
-    init() {
-        @{
-            Trap("STD_SYSTEM_PORT_CTOR")
-        }
-    }
 
     def Send(payload: Bytes): Message | Status {
         @{
@@ -90,7 +78,7 @@ defclass Port sealed {
     def Receive(): Future[Message] {
         @{
             Trap("STD_SYSTEM_PORT_RECEIVE")
-            PushResult(typeof Future[Operation])
+            PushResult(typeof Future[Message])
         }
     }
 }
@@ -98,20 +86,29 @@ defclass Port sealed {
 def Acquire(url: Url): Port {
     @{
         Trap("STD_SYSTEM_ACQUIRE")
+        PushResult(typeof Port)
     }
 }
 
 def Await[T](fut: Future[T]): T | Status {
     @{
         Trap("STD_SYSTEM_AWAIT")
+        Trap("STD_SYSTEM_GET_RESULT")
         PushResult(typeof T | Status)
     }
 }
 
-def AwaitOrDefault(fut: Future[T], default: T): T | Status {
+def AwaitOrDefault[T](fut: Future[T], default: T): T {
+    var result: T | Status = default
     @{
-        Trap("STD_SYSTEM_AWAIT_OR_DEFAULT")
+        Trap("STD_SYSTEM_AWAIT")
+        Trap("STD_SYSTEM_GET_RESULT")
         PushResult(typeof T | Status)
+        StoreData(result)
+    }
+    match result {
+        when status: Status     default
+        else                    result
     }
 }
 
