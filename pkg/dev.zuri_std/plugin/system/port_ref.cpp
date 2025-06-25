@@ -129,7 +129,7 @@ port_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interprete
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -144,7 +144,7 @@ port_send(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
@@ -205,7 +205,7 @@ port_receive(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto *segmentManager = state->segmentManager();
     auto *scheduler = state->systemScheduler();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 

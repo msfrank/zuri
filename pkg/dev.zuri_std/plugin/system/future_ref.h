@@ -18,21 +18,6 @@ enum class FutureState {
     Resolved,
 };
 
-//enum class ResolveStatus {
-//    Invalid,
-//    Completed,
-//    Rejected,
-//    Cancelled,
-//    Failed,
-//};
-//
-//typedef tempo_utils::Result<ResolveStatus> (*ResolveCallback)(
-//    lyric_runtime::DataCell &,
-//    lyric_runtime::BytecodeInterpreter *,
-//    lyric_runtime::InterpreterState *,
-//    FutureRef *,
-//    void *);
-
 class FutureRef : public lyric_runtime::BaseRef {
 
 public:
@@ -49,9 +34,15 @@ public:
     std::string toString() const override;
 
     bool isFinished() const;
+    FutureState getState() const;
     std::shared_ptr<lyric_runtime::Promise> getPromise() const;
 
-    tempo_utils::Status forward(uv_async_t *async);
+    void addSource(FutureRef *fut);
+    void removeSource(FutureRef *fut);
+    absl::flat_hash_set<FutureRef *>::const_iterator sourcesBegin() const;
+    absl::flat_hash_set<FutureRef *>::const_iterator sourcesEnd() const;
+
+    tempo_utils::Status forward(uv_async_t *target);
     tempo_utils::Status complete(const lyric_runtime::DataCell &result);
     tempo_utils::Status reject(const lyric_runtime::DataCell &result);
 
@@ -62,7 +53,8 @@ protected:
 private:
     FutureState m_state;
     std::shared_ptr<lyric_runtime::Promise> m_promise;
-    std::vector<uv_async_t *> m_deps;
+    absl::flat_hash_set<FutureRef *> m_sources;
+    std::vector<uv_async_t *> m_targets;
 
     void checkState();
 };

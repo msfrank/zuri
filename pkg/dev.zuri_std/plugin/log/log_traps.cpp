@@ -25,7 +25,7 @@ std_log_log(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
         return lyric_runtime::InterpreterStatus::forCondition(lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "missing port dev.zuri.proto:log");
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);

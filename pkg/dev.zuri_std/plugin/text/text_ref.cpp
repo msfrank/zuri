@@ -129,7 +129,7 @@ std_text_text_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::I
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -144,7 +144,7 @@ std_text_text_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::In
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TextRef *>(receiver.data.ref);
@@ -175,7 +175,7 @@ std_text_text_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT (frame.numArguments() == 1);
     const auto &index = frame.getArgument(0);
@@ -192,7 +192,7 @@ std_text_text_length(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);

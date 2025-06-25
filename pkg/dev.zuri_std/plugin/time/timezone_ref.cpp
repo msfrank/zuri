@@ -62,7 +62,7 @@ std_time_timezone_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtim
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -77,7 +77,7 @@ std_time_timezone_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 1);
     auto arg0 = frame.getArgument(0);
     TU_ASSERT (arg0.type == lyric_runtime::DataCellType::I64);

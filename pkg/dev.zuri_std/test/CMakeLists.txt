@@ -7,7 +7,10 @@ include(GoogleTest)
 set(TEST_CASES
     datetime_tests.cpp
     instant_tests.cpp
+    future_tests.cpp
     log_tests.cpp
+    port_tests.cpp
+    queue_tests.cpp
     system_tests.cpp
     text_tests.cpp
     time_tests.cpp

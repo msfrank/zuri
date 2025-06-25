@@ -10,7 +10,7 @@ treeset_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -25,7 +25,7 @@ treeset_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
@@ -33,7 +33,8 @@ treeset_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT (frame.numArguments() == 1);
     const auto &ord = frame.getArgument(0);
     TU_ASSERT(ord.type == lyric_runtime::DataCellType::REF);
-    const auto cmp = currentCoro->popData();
+    lyric_runtime::DataCell cmp;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(cmp));
     TU_ASSERT(cmp.type == lyric_runtime::DataCellType::CALL);
     instance->initialize(TreeSetComparator(interp, state, ord, cmp));
 
@@ -53,7 +54,7 @@ treeset_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 
@@ -69,7 +70,7 @@ treeset_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &key = frame.getArgument(0);
@@ -86,7 +87,7 @@ treeset_add(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &value = frame.getArgument(0);
@@ -104,7 +105,7 @@ treeset_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &value = frame.getArgument(0);
@@ -122,7 +123,7 @@ treeset_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 
@@ -139,9 +140,10 @@ treeset_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
-    const auto cell = currentCoro->popData();
+    lyric_runtime::DataCell cell;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(cell));
     TU_ASSERT(cell.type == lyric_runtime::DataCellType::CLASS);
 
     auto receiver = frame.getReceiver();
@@ -163,7 +165,7 @@ treeset_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -178,7 +180,7 @@ treeset_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 
@@ -195,7 +197,7 @@ treeset_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 

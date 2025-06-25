@@ -15,7 +15,7 @@ std_system_acquire(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::In
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);
@@ -72,7 +72,7 @@ std_system_await(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto *currentCoro = state->currentCoro();
     auto *scheduler = state->systemScheduler();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);
@@ -105,7 +105,7 @@ std_system_get_result(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);
@@ -131,7 +131,7 @@ std_system_sleep(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto *scheduler = state->systemScheduler();
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);
@@ -175,9 +175,10 @@ on_worker_complete(lyric_runtime::Promise *promise)
 
     // complete the promise
     auto *workerCoro = workerTask->stackfulCoroutine();
-    auto result = workerCoro->peekData();
-    TU_LOG_INFO << "worker task " << workerTask << " terminated with result " << result;
-    promise->complete(result);
+    lyric_runtime::DataCell *result;
+    TU_RAISE_IF_NOT_OK (workerCoro->peekData(&result));
+    TU_LOG_INFO << "worker task " << workerTask << " terminated with result " << *result;
+    promise->complete(*result);
 
     // destroy the worker task
     auto *scheduler = workerTask->getSystemScheduler();
@@ -191,7 +192,7 @@ std_system_spawn(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto *scheduler = state->systemScheduler();
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);

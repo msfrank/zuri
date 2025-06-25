@@ -34,7 +34,7 @@ defclass Future[T] final {
         this.Reject(cancelled)
     }
 
-    def Then[U](fun: Function1[U|Status, T|Status]): Future[U] {
+    def Then[U](fun: Function1[U|Status, T]): Future[U] {
         @{
             Trap("STD_SYSTEM_FUTURE_THEN")
             PushResult(typeof Future[U])

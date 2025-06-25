@@ -10,7 +10,7 @@ hashmap_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -25,7 +25,7 @@ hashmap_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
@@ -33,7 +33,8 @@ hashmap_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT (frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
     TU_ASSERT(arg0.type == lyric_runtime::DataCellType::REF);
-    const auto cmp = currentCoro->popData();
+    lyric_runtime::DataCell cmp;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(cmp));
     TU_ASSERT(cmp.type == lyric_runtime::DataCellType::CALL);
     instance->initialize(HashMapEq(interp, state, arg0, cmp));
 
@@ -45,7 +46,7 @@ hashmap_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 
@@ -61,7 +62,7 @@ hashmap_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &key = frame.getArgument(0);
@@ -78,7 +79,7 @@ hashmap_get(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &key = frame.getArgument(0);
@@ -95,7 +96,7 @@ hashmap_put(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 2);
     const auto &key = frame.getArgument(0);
@@ -114,7 +115,7 @@ hashmap_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &key = frame.getArgument(0);
@@ -132,7 +133,7 @@ hashmap_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 

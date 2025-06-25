@@ -12,7 +12,7 @@ vector_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -27,7 +27,7 @@ vector_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
@@ -45,7 +45,7 @@ vector_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 
@@ -61,7 +61,7 @@ vector_at(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &idx = frame.getArgument(0);
@@ -79,7 +79,7 @@ vector_append(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &val = frame.getArgument(0);
@@ -97,7 +97,7 @@ vector_insert(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 2);
     const auto &idx = frame.getArgument(0);
@@ -117,7 +117,7 @@ vector_update(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 2);
     const auto &idx = frame.getArgument(0);
@@ -136,7 +136,7 @@ vector_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &idx = frame.getArgument(0);
@@ -154,7 +154,7 @@ vector_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 
@@ -171,9 +171,10 @@ vector_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
-    const auto cell = currentCoro->popData();
+    lyric_runtime::DataCell cell;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(cell));
     TU_ASSERT(cell.type == lyric_runtime::DataCellType::CLASS);
 
     auto receiver = frame.getReceiver();
@@ -195,7 +196,7 @@ vector_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -210,7 +211,7 @@ vector_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 
@@ -227,7 +228,7 @@ vector_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 0);
 

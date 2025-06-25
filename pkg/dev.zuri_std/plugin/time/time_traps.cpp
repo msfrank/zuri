@@ -15,7 +15,7 @@ std_time_now(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT(frame.numArguments() == 0);
 
     auto *segmentManager = state->segmentManager();
@@ -49,7 +49,7 @@ std_time_parse_timezone(lyric_runtime::BytecodeInterpreter *interp, lyric_runtim
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);

@@ -111,7 +111,7 @@ queue_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -126,7 +126,7 @@ queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interprete
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
@@ -153,7 +153,7 @@ queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
     auto *segmentManager = state->segmentManager();
     auto *scheduler = state->systemScheduler();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();

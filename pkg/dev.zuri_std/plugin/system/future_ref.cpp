@@ -59,7 +59,7 @@ FutureRef::checkState()
         case lyric_runtime::PromiseState::Completed:
         case lyric_runtime::PromiseState::Rejected:
             m_state = FutureState::Resolved;
-            return;
+            break;
         default:
             break;
     }
@@ -83,6 +83,7 @@ FutureRef::awaitFuture(lyric_runtime::SystemScheduler *systemScheduler)
 
     if (m_state == FutureState::Ready) {
         // suspend the current task and set state to Waiting
+        m_state = FutureState::Waiting;
         m_promise->await(systemScheduler);
         return true;
     }
@@ -118,28 +119,58 @@ FutureRef::isFinished() const
     return m_state == FutureState::Resolved;
 }
 
+FutureState
+FutureRef::getState() const
+{
+    return m_state;
+}
+
 std::shared_ptr<lyric_runtime::Promise>
 FutureRef::getPromise() const
 {
     return m_promise;
 }
 
-tempo_utils::Status
-FutureRef::forward(uv_async_t *async)
+void
+FutureRef::addSource(FutureRef *fut)
 {
-    TU_ASSERT (async != nullptr);
+    m_sources.insert(fut);
+}
+
+void
+FutureRef::removeSource(FutureRef *fut)
+{
+    m_sources.erase(fut);
+}
+
+absl::flat_hash_set<FutureRef *>::const_iterator
+FutureRef::sourcesBegin() const
+{
+    return m_sources.cbegin();
+}
+
+absl::flat_hash_set<FutureRef *>::const_iterator
+FutureRef::sourcesEnd() const
+{
+    return m_sources.cend();
+}
+
+tempo_utils::Status
+FutureRef::forward(uv_async_t *target)
+{
+    TU_ASSERT (target != nullptr);
 
     switch (m_state) {
 
         case FutureState::Initial:
         case FutureState::Ready:
         case FutureState::Waiting:
-            m_deps.push_back(async);
+            m_targets.push_back(target);
             return {};
 
-        default:
-            return lyric_runtime::InterpreterStatus::forCondition(
-                lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid future state");
+        case FutureState::Resolved:
+            uv_async_send(target);
+            return {};
     }
 }
 
@@ -151,6 +182,10 @@ FutureRef::complete(const lyric_runtime::DataCell &result)
         case FutureState::Initial:
             m_promise = lyric_runtime::Promise::completed(result);
             m_state = FutureState::Resolved;
+            for (auto *target : m_targets) {
+                uv_async_send(target);
+            }
+            m_targets.clear();
             return {};
 
         case FutureState::Ready:
@@ -190,6 +225,9 @@ FutureRef::reject(const lyric_runtime::DataCell &result)
 void
 FutureRef::setMembersReachable()
 {
+    for (auto *source : m_sources) {
+        source->setReachable();
+    }
     auto result = m_promise->getResult();
     if (result.type == lyric_runtime::DataCellType::REF) {
         result.data.ref->setReachable();
@@ -199,6 +237,9 @@ FutureRef::setMembersReachable()
 void
 FutureRef::clearMembersReachable()
 {
+    for (auto *source : m_sources) {
+        source->clearReachable();
+    }
     auto result = m_promise->getResult();
     if (result.type == lyric_runtime::DataCellType::REF) {
         result.data.ref->clearReachable();
@@ -210,7 +251,7 @@ future_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
@@ -225,7 +266,7 @@ future_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
@@ -239,7 +280,7 @@ future_complete(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto arg0 = frame.getArgument(0);
@@ -258,26 +299,7 @@ future_reject(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 {
     auto *currentCoro = state->currentCoro();
 
-    auto &frame = currentCoro->peekCall();
-
-    TU_ASSERT(frame.numArguments() == 1);
-    const auto arg0 = frame.getArgument(0);
-
-    auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
-    auto *instance = static_cast<FutureRef *>(receiver.data.ref);
-    TU_RETURN_IF_NOT_OK (instance->reject(arg0));
-
-    currentCoro->pushData(lyric_runtime::DataCell(true));
-    return {};
-}
-
-tempo_utils::Status
-future_cancel(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
-{
-    auto *currentCoro = state->currentCoro();
-
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto arg0 = frame.getArgument(0);
@@ -292,22 +314,26 @@ future_cancel(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 }
 
 struct ThenData {
-    lyric_runtime::DataCell result;
+    FutureRef *fut;
     lyric_runtime::DataCell fn;
 };
 
 static void
-on_map_result(
+on_adapt_then(
     lyric_runtime::Promise *promise,
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state)
 {
-    auto *data = static_cast<ThenData *>(promise->getData());
+    auto *thenData = static_cast<ThenData *>(promise->getData());
+
+    // construct closure args
+    auto *sourceFut = *thenData->fut->sourcesBegin();
+    auto sourceResult = sourceFut->getPromise()->getResult();;
+    std::vector args{sourceResult};
 
     // push a new frame onto the current task call stack
     auto *currentTask = state->systemScheduler()->currentTask();
-    std::vector<lyric_runtime::DataCell> args{data->result};
-    if (!data->fn.data.ref->applyClosure(currentTask, args, state)) {
+    if (!thenData->fn.data.ref->applyClosure(currentTask, args, state)) {
         TU_LOG_FATAL << "failed to apply closure";
     }
 
@@ -317,15 +343,22 @@ on_map_result(
         TU_LOG_FATAL << "failed to run closure: " << runClosureResult.getStatus();
     }
 
-    data->result = runClosureResult.getResult();
+    auto result = runClosureResult.getResult();
 
     // complete or reject the promise based on the fn result
-    if (data->result.type == lyric_runtime::DataCellType::REF
-        && data->result.data.ref->errorStatusCode() != tempo_utils::StatusCode::kOk) {
-        promise->reject(data->result);
+    if (result.type == lyric_runtime::DataCellType::REF
+        && result.data.ref->errorStatusCode() != tempo_utils::StatusCode::kOk) {
+        promise->reject(result);
     } else {
-        promise->complete(data->result);
+        promise->complete(result);
     }
+}
+
+static void
+on_reachable_then(void *data)
+{
+    auto *thenData = static_cast<ThenData *>(data);
+    thenData->fut->setReachable();
 }
 
 static void
@@ -340,7 +373,7 @@ future_then(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto *currentCoro = state->currentCoro();
     auto *scheduler = state->systemScheduler();
 
-    auto &frame = currentCoro->peekCall();
+    auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto arg0 = frame.getArgument(0);
@@ -349,39 +382,35 @@ future_then(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<FutureRef *>(receiver.data.ref);
 
+    // construct the dependent future
+    const auto *vtable = instance->getVirtualTable();
+    TU_ASSERT(vtable != nullptr);
+    auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
+    auto *fut = (FutureRef *) ref.data.ref;
+
     // allocate the promise data
     auto *data = static_cast<ThenData *>(std::malloc(sizeof(ThenData)));
-    data->result = {};
+    data->fut = fut;
     data->fn = arg0;
 
     // allocate the promise
     lyric_runtime::PromiseOptions options;
-    options.adapt = on_map_result;
+    options.adapt = on_adapt_then;
     options.release = std::free;
+    options.reachable = on_reachable_then;
     options.data = data;
     auto promise = lyric_runtime::Promise::create(on_future_complete, options);
 
     // register an async handle and bind it to the promise
     uv_async_t *async = nullptr;
     scheduler->registerAsync(&async, promise);
-
-    // construct the dependent future
-    const auto *vtable = instance->getVirtualTable();
-    TU_ASSERT(vtable != nullptr);
-    auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
-    auto *fut = ref.data.ref;
+    instance->forward(async);
 
     // attach the promise to the future
     fut->prepareFuture(promise);
 
-    // if instance is already finished then immediately finish the dependent future using the result
-    // from the instance promise. otherwise pass the async handle to the instance.
-    if (instance->isFinished()) {
-        data->result = instance->getPromise()->getResult();
-        uv_async_send(async);
-    } else {
-        TU_RETURN_IF_NOT_OK (instance->forward(async));
-    }
+    // add the instance as a source for the future
+    fut->addSource(instance);
 
     // return reference to the dependent future
     currentCoro->pushData(ref);

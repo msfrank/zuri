@@ -1,4 +1,5 @@
 
+#include <tempo_command/command_help.h>
 #include <zuri_build/target_builder.h>
 #include <zuri_build/target_writer.h>
 
@@ -75,8 +76,13 @@ TargetBuilder::buildLibraryTarget(const std::string &targetName, const TargetEnt
     TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTargets({collectModules},
         lyric_build::TaskSettings({}, {}, taskOverrides)));
 
-    auto diagnostics = targetComputationSet.getDiagnostics();
-    diagnostics->printDiagnostics();
+    auto targetComputation = targetComputationSet.getTarget(collectModules);
+    if (targetComputation.getState().getStatus() != lyric_build::TaskState::Status::COMPLETED) {
+        auto diagnostics = targetComputationSet.getDiagnostics();
+        diagnostics->printDiagnostics();
+        return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
+            "failed to build target '{}'", targetName);
+    }
 
     // construct the target writer
     TargetWriter targetWriter(m_installRoot, libraryTarget.specifier);

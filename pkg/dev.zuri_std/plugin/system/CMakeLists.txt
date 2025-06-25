@@ -6,7 +6,6 @@ set(PLUGIN_FILEPATH   "${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_FILENAME}")
 
 # build the std-system plugin
 add_library(std-system-plugin SHARED
-    base_value_ref.h
     future_ref.cpp
     future_ref.h
     native_system.cpp
