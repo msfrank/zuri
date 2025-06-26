@@ -319,7 +319,7 @@ struct ThenData {
 };
 
 static void
-on_adapt_then(
+on_then_adapt(
     lyric_runtime::Promise *promise,
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state)
@@ -355,7 +355,7 @@ on_adapt_then(
 }
 
 static void
-on_reachable_then(void *data)
+on_then_reachable(void *data)
 {
     auto *thenData = static_cast<ThenData *>(data);
     thenData->fut->setReachable();
@@ -395,9 +395,9 @@ future_then(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 
     // allocate the promise
     lyric_runtime::PromiseOptions options;
-    options.adapt = on_adapt_then;
+    options.adapt = on_then_adapt;
     options.release = std::free;
-    options.reachable = on_reachable_then;
+    options.reachable = on_then_reachable;
     options.data = data;
     auto promise = lyric_runtime::Promise::create(on_future_complete, options);
 

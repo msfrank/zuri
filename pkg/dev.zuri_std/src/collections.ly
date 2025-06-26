@@ -1,16 +1,17 @@
 
 @@Plugin("/collections")
 
+def _HashMapEquals[T](lhs: T, rhs: T, eq: Equality[T,T]): Bool {
+    eq.Equals(lhs, rhs)
+}
+
 @AllocatorTrap("STD_COLLECTIONS_HASHMAP_ALLOC")
 defclass HashMap[K,+V] {
 
-    val eq: Equality[K]
-
-    init(using eq: Equality[K]) {
-        set this.eq = eq
+    init(using eq: Equality[K,K]) {
         @{
-            PushData(#Equality.equals)
-            Trap("COLLECTIONS_HASHMAP_CTOR")
+            LoadData(#_HashMapEquals)
+            Trap("STD_COLLECTIONS_HASHMAP_CTOR")
         }
     }
 
@@ -21,38 +22,37 @@ defclass HashMap[K,+V] {
         }
     }
 
-    def Contains(): Bool {
+    def Contains(key: K): Bool {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_CONTAINS")
             PushResult(typeof Bool)
         }
     }
 
-    def Get(key: K): V | Undef {
+    def Get(key: K): V | Nil {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_GET")
-            PushResult(typeof V | Undef)
+            PushResult(typeof V | Nil)
         }
     }
 
-    def Put(key: K, value: V): V | Undef {
+    def Put(key: K, value: V): V | Nil {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_PUT")
-            PushResult(typeof V | Undef)
+            PushResult(typeof V | Nil)
         }
     }
 
-    def Remove(key: K): V | Undef {
+    def Remove(key: K): V | Nil {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_REMOVE")
-            PushResult(typeof V | Undef)
+            PushResult(typeof V | Nil)
         }
     }
 
-    def Clear(): Undef {
+    def Clear() {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_CLEAR")
-            PushResult(typeof Undef)
         }
     }
 }

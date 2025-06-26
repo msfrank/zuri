@@ -81,22 +81,6 @@ std_system_await(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto *fut = cell.data.ref;
     fut->awaitFuture(scheduler);
 
-//    // consume the waiter if it exists
-//    lyric_runtime::Waiter *waiter = nullptr;
-//
-//    if (ref->releaseWaiter(&waiter)) {
-//        if (waiter->handle) {
-//            // if the future has not been awaited and has not completed, then suspend the current task
-//            auto *scheduler = state->systemScheduler();
-//            waiter->task = scheduler->currentTask();
-//            TU_LOG_INFO << "suspending task " << waiter->task;
-//            scheduler->suspendTask(waiter->task);
-//        }
-//    }
-//
-//    // push the future onto the top of the stack
-//    currentCoro->pushData(cell);
-
     return {};
 }
 

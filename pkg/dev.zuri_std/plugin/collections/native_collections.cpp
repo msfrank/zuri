@@ -10,7 +10,7 @@
 #include "treeset_traps.h"
 #include "vector_traps.h"
 
-std::array<lyric_runtime::NativeTrap,41> kStdCollectionsTraps = {{
+std::array<lyric_runtime::NativeTrap,40> kStdCollectionsTraps = {{
     {hashmap_alloc, "STD_COLLECTIONS_HASHMAP_ALLOC", 0},
     {hashmap_ctor, "STD_COLLECTIONS_HASHMAP_CTOR", 0},
     {hashmap_size, "STD_COLLECTIONS_HASHMAP_SIZE", 0},

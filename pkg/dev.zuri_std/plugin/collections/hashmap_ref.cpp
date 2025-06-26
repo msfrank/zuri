@@ -131,14 +131,20 @@ HashMapRef::clearMembersReachable()
 HashMapEq::HashMapEq(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
-    const lyric_runtime::DataCell &eq,
-    const lyric_runtime::DataCell &cmp)
-    : m_interp(interp), m_state(state), m_eq(eq), m_cmp(cmp)
+    const lyric_runtime::DataCell &ctxArgument,
+    const lyric_runtime::DataCell &equalsCall)
+    : m_interp(interp),
+      m_state(state),
+      m_ctxArgument(ctxArgument),
+      m_equalsCall(equalsCall)
 {
 }
 
 HashMapEq::HashMapEq(const HashMapEq &other) noexcept
-    : m_interp(other.m_interp), m_state(other.m_state), m_eq(other.m_eq), m_cmp(other.m_cmp)
+    : m_interp(other.m_interp),
+      m_state(other.m_state),
+      m_ctxArgument(other.m_ctxArgument),
+      m_equalsCall(other.m_equalsCall)
 {
 }
 
@@ -146,12 +152,12 @@ bool
 HashMapEq::operator()(const HashMapKey& lhs, const HashMapKey& rhs) const
 {
     auto *currentCoro = m_state->currentCoro();
+    auto *subroutineManager = m_state->subroutineManager();
 
-    TU_ASSERT (m_cmp.data.descriptor->getSegmentIndex() == currentCoro->peekSP()->getSegmentIndex());
-
-    std::vector<lyric_runtime::DataCell> args {lhs.cell, rhs.cell, m_eq};
+    std::vector args {lhs.cell, rhs.cell, m_ctxArgument};
     lyric_runtime::InterpreterStatus status;
-    if (!m_state->subroutineManager()->callStatic(m_cmp.data.descriptor->getDescriptorIndex(), args, currentCoro, status))
+
+    if (!subroutineManager->callStatic(m_equalsCall, args, currentCoro, status))
         return false;
 
     auto equalsResult = m_interp->runSubinterpreter();

@@ -17,16 +17,16 @@ public:
     HashMapEq(
         lyric_runtime::BytecodeInterpreter *interp,
         lyric_runtime::InterpreterState *state,
-        const lyric_runtime::DataCell &eq,
-        const lyric_runtime::DataCell &cmp);
+        const lyric_runtime::DataCell &ctxArgument,
+        const lyric_runtime::DataCell &equalsCall);
     HashMapEq(const HashMapEq &other) noexcept;
     bool operator()(const HashMapKey& lhs, const HashMapKey& rhs) const;
 
 private:
     lyric_runtime::BytecodeInterpreter *m_interp = nullptr;
     lyric_runtime::InterpreterState *m_state = nullptr;
-    lyric_runtime::DataCell m_eq;
-    lyric_runtime::DataCell m_cmp;
+    lyric_runtime::DataCell m_ctxArgument;
+    lyric_runtime::DataCell m_equalsCall;
 };
 
 class HashMapRef : public lyric_runtime::BaseRef {

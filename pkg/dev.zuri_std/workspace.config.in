@@ -52,6 +52,7 @@
                 "type": "Library",
                 "specifier": "std-@FULL_VERSION@@zuri.dev",
                 "libraryModules": [
+                    "/collections",
                     "/log",
                     "/system",
                     "/text",
