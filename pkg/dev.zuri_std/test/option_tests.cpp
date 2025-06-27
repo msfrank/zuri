@@ -7,7 +7,7 @@
 #include <tempo_test/tempo_test.h>
 #include <zuri_test/zuri_tester.h>
 
-class StdCollectionsHashMap : public ::testing::Test {
+class StdCollectionsOption : public ::testing::Test {
 protected:
     std::unique_ptr<zuri_test::ZuriTester> tester;
 
@@ -19,110 +19,104 @@ protected:
     }
 };
 
-TEST_F(StdCollectionsHashMap, TestEvaluateNewHashMap)
+TEST_F(StdCollectionsOption, TestEvaluateNewEmptyOption)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints
+        val opt: Option[Int] = Option[Int]{}
+        opt
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
         DataCellRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/collections"),
-                lyric_common::SymbolPath({"HashMap"}))))));
+                lyric_common::SymbolPath({"Option"}))))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapConstruction)
+TEST_F(StdCollectionsOption, TestEvaluateNewOption)
 {
-    GTEST_SKIP();
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{
-            Tuple2[Int,Int]{1, 11},
-            Tuple2[Int,Int]{2, 12},
-            Tuple2[Int,Int]{3, 13}
-        }
-        ints.Size()
+        val opt: Option[Int] = Option[Int]{42}
+        opt
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(3LL))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+        DataCellRef(
+            lyric_common::SymbolUrl(
+                lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/collections"),
+                lyric_common::SymbolPath({"Option"}))))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapSize)
+TEST_F(StdCollectionsOption, TestEvaluateOptionIsEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.Put(1, 11)
-        ints.Put(2, 12)
-        ints.Put(3, 13)
-        ints.Size()
-    )");
-
-    ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(3LL))));
-}
-
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndContains)
-{
-    auto result = tester->runModule(R"(
-        import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.Put(1, 11)
-        ints.Put(2, 12)
-        ints.Put(3, 13)
-        ints.Contains(2)
+        val opt: Option[Int] = Option[Int]{}
+        opt.IsEmpty()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
         RunModule(DataCellBool(true))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndGet)
+TEST_F(StdCollectionsOption, TestEvaluateOptionIsNotEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.Put(1, 11)
-        ints.Put(2, 12)
-        ints.Put(3, 13)
-        ints.Get(2)
+        val opt: Option[Int] = Option[Int]{42}
+        opt.IsEmpty()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(12LL))));
+        RunModule(DataCellBool(false))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndRemove)
+TEST_F(StdCollectionsOption, TestEvaluateOptionGetWhenEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.Put(1, 11)
-        ints.Put(2, 12)
-        ints.Put(3, 13)
-        ints.Remove(2)
+        val opt: Option[Int] = Option[Int]{}
+        opt.Get()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(12LL))));
+        RunModule(DataCellNil())));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndClear)
+TEST_F(StdCollectionsOption, TestEvaluateOptionGetWhenNotEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
-        ints.Put(1, 11)
-        ints.Put(2, 12)
-        ints.Put(3, 13)
-        ints.Clear()
-        ints.Size()
+        val opt: Option[Int] = Option[Int]{42}
+        opt.Get()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(0LL))));
+        RunModule(DataCellInt(42))));
+}
+
+TEST_F(StdCollectionsOption, TestEvaluateOptionGetOrElseWhenEmpty)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
+        val opt: Option[Int] = Option[Int]{}
+        opt.GetOrElse(0)
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(
+        RunModule(DataCellInt(0))));
+}
+
+TEST_F(StdCollectionsOption, TestEvaluateOptionGetOrElseWhenNotEmpty)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
+        val opt: Option[Int] = Option[Int]{42}
+        opt.GetOrElse(0)
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(
+        RunModule(DataCellInt(42))));
 }

@@ -31,12 +31,13 @@ treemap_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
 
     TU_ASSERT (frame.numArguments() == 1);
-    const auto &arg0 = frame.getArgument(0);
-    TU_ASSERT(arg0.type == lyric_runtime::DataCellType::REF);
-    lyric_runtime::DataCell cmp;
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(cmp));
-    TU_ASSERT(cmp.type == lyric_runtime::DataCellType::CALL);
-    instance->initialize(TreeMapComparator(interp, state, arg0, cmp));
+    const auto &ctxArgument = frame.getArgument(0);
+    TU_ASSERT(ctxArgument.type == lyric_runtime::DataCellType::REF);
+
+    lyric_runtime::DataCell compareCall;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(compareCall));
+    TU_ASSERT(compareCall.type == lyric_runtime::DataCellType::CALL);
+    instance->initialize(TreeMapComparator(interp, state, ctxArgument, compareCall));
 
     return {};
 }

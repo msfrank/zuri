@@ -7,7 +7,7 @@
 #include <tempo_test/tempo_test.h>
 #include <zuri_test/zuri_tester.h>
 
-class StdCollectionsHashMap : public ::testing::Test {
+class StdCollectionsTreeMap : public ::testing::Test {
 protected:
     std::unique_ptr<zuri_test::ZuriTester> tester;
 
@@ -19,11 +19,11 @@ protected:
     }
 };
 
-TEST_F(StdCollectionsHashMap, TestEvaluateNewHashMap)
+TEST_F(StdCollectionsTreeMap, TestEvaluateNewMap)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: TreeMap[Int,Int] = TreeMap[Int,Int]{}
         ints
     )");
 
@@ -31,15 +31,15 @@ TEST_F(StdCollectionsHashMap, TestEvaluateNewHashMap)
         DataCellRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/collections"),
-                lyric_common::SymbolPath({"HashMap"}))))));
+                lyric_common::SymbolPath({"TreeMap"}))))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapConstruction)
+TEST_F(StdCollectionsTreeMap, TestEvaluateTreeMapConstruction)
 {
     GTEST_SKIP();
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{
+        val ints: TreeMap[Int,Int] = TreeMap[Int,Int]{
             Tuple2[Int,Int]{1, 11},
             Tuple2[Int,Int]{2, 12},
             Tuple2[Int,Int]{3, 13}
@@ -51,11 +51,11 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapConstruction)
         RunModule(DataCellInt(3LL))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapSize)
+TEST_F(StdCollectionsTreeMap, TestEvaluateMapSize)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: TreeMap[Int,Int] = TreeMap[Int,Int]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -66,11 +66,11 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapSize)
         RunModule(DataCellInt(3LL))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndContains)
+TEST_F(StdCollectionsTreeMap, TestEvaluateMapPutAndContains)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: TreeMap[Int,Int] = TreeMap[Int,Int]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -81,11 +81,11 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndContains)
         RunModule(DataCellBool(true))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndGet)
+TEST_F(StdCollectionsTreeMap, TestEvaluateMapPutAndGet)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: TreeMap[Int,Int] = TreeMap[Int,Int]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -96,11 +96,11 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndGet)
         RunModule(DataCellInt(12LL))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndRemove)
+TEST_F(StdCollectionsTreeMap, TestEvaluateMapPutAndRemove)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: TreeMap[Int,Int] = TreeMap[Int,Int]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -111,11 +111,11 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndRemove)
         RunModule(DataCellInt(12LL))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndClear)
+TEST_F(StdCollectionsTreeMap, TestEvaluateMapPutAndClear)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: TreeMap[Int,Int] = TreeMap[Int,Int]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)

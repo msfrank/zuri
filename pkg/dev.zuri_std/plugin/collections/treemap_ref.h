@@ -14,16 +14,16 @@ public:
     TreeMapComparator(
         lyric_runtime::BytecodeInterpreter *interp,
         lyric_runtime::InterpreterState *state,
-        const lyric_runtime::DataCell &ord,
-        const lyric_runtime::DataCell &cmp);
+        const lyric_runtime::DataCell &ctxArgument,
+        const lyric_runtime::DataCell &compareCall);
     TreeMapComparator(const TreeMapComparator &other) noexcept;
     bool operator()(const lyric_runtime::DataCell& lhs, const lyric_runtime::DataCell& rhs) const;
 
 private:
     lyric_runtime::BytecodeInterpreter *m_interp = nullptr;
     lyric_runtime::InterpreterState *m_state = nullptr;
-    lyric_runtime::DataCell m_ord;
-    lyric_runtime::DataCell m_cmp;
+    lyric_runtime::DataCell m_ctxArgument;
+    lyric_runtime::DataCell m_compareCall;
 };
 
 class TreeMapRef : public lyric_runtime::BaseRef {

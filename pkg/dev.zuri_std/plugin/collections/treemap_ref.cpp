@@ -155,14 +155,20 @@ TreeMapRef::clearMembersReachable()
 TreeMapComparator::TreeMapComparator(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
-    const lyric_runtime::DataCell &ord,
-    const lyric_runtime::DataCell &cmp)
-    : m_interp(interp), m_state(state), m_ord(ord), m_cmp(cmp)
+    const lyric_runtime::DataCell &ctxArgument,
+    const lyric_runtime::DataCell &compareCall)
+    : m_interp(interp),
+      m_state(state),
+      m_ctxArgument(ctxArgument),
+      m_compareCall(compareCall)
 {
 }
 
 TreeMapComparator::TreeMapComparator(const TreeMapComparator &other) noexcept
-    : m_interp(other.m_interp), m_state(other.m_state), m_ord(other.m_ord), m_cmp(other.m_cmp)
+    : m_interp(other.m_interp),
+      m_state(other.m_state),
+      m_ctxArgument(other.m_ctxArgument),
+      m_compareCall(other.m_compareCall)
 {
 }
 
@@ -171,11 +177,10 @@ TreeMapComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
 {
     auto *currentCoro = m_state->currentCoro();
 
-    TU_ASSERT (m_cmp.data.descriptor->getSegmentIndex() == currentCoro->peekSP()->getSegmentIndex());
-
-    std::vector<lyric_runtime::DataCell> args {lhs, rhs, m_ord};
+    std::vector args {lhs, rhs, m_ctxArgument};
     lyric_runtime::InterpreterStatus status;
-    if (!m_state->subroutineManager()->callStatic(m_cmp.data.descriptor->getDescriptorIndex(), args, currentCoro, status))
+
+    if (!m_state->subroutineManager()->callStatic(m_compareCall, args, currentCoro, status))
         return false;
 
     auto compareResult = m_interp->runSubinterpreter();

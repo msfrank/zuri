@@ -10,12 +10,14 @@ set(TEST_CASES
     instant_tests.cpp
     future_tests.cpp
     log_tests.cpp
+    option_tests.cpp
     port_tests.cpp
     queue_tests.cpp
     system_tests.cpp
     text_tests.cpp
     time_tests.cpp
     timezone_tests.cpp
+    treemap_tests.cpp
     )
 
 # define test suite driver
