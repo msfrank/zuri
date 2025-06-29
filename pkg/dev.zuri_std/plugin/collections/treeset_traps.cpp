@@ -31,12 +31,13 @@ treeset_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
 
     TU_ASSERT (frame.numArguments() == 1);
-    const auto &ord = frame.getArgument(0);
-    TU_ASSERT(ord.type == lyric_runtime::DataCellType::REF);
-    lyric_runtime::DataCell cmp;
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(cmp));
-    TU_ASSERT(cmp.type == lyric_runtime::DataCellType::CALL);
-    instance->initialize(TreeSetComparator(interp, state, ord, cmp));
+    const auto &ctxArgument = frame.getArgument(0);
+    TU_ASSERT(ctxArgument.type == lyric_runtime::DataCellType::REF);
+
+    lyric_runtime::DataCell compareCall;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(compareCall));
+    TU_ASSERT(compareCall.type == lyric_runtime::DataCellType::CALL);
+    instance->initialize(TreeSetComparator(interp, state, ctxArgument, compareCall));
 
     std::vector<lyric_runtime::DataCell> items;
     for (int i = 0; i < frame.numRest(); i++) {
@@ -119,6 +120,24 @@ treeset_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
 }
 
 tempo_utils::Status
+treeset_replace(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+
+    TU_ASSERT(frame.numArguments() == 1);
+    const auto &value = frame.getArgument(0);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
+    auto prev = instance->replace(value);
+    currentCoro->pushData(prev);
+    return {};
+}
+
+tempo_utils::Status
 treeset_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
@@ -131,7 +150,6 @@ treeset_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
     instance->clear();
-    currentCoro->pushData(lyric_runtime::DataCell::nil());
     return {};
 }
 
@@ -154,7 +172,7 @@ treeset_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
     const auto *vtable = state->segmentManager()->resolveClassVirtualTable(cell, status);
     TU_ASSERT(vtable != nullptr);
 
-    auto ref = state->heapManager()->allocateRef<TreeSetIterator>(vtable, instance->begin(), instance);
+    auto ref = state->heapManager()->allocateRef<TreeSetIterator>(vtable, instance);
     currentCoro->pushData(ref);
 
     return {};

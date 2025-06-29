@@ -178,7 +178,7 @@ TreeMapComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
     auto *currentCoro = m_state->currentCoro();
 
     std::vector args {lhs, rhs, m_ctxArgument};
-    lyric_runtime::InterpreterStatus status;
+    tempo_utils::Status status;
 
     if (!m_state->subroutineManager()->callStatic(m_compareCall, args, currentCoro, status))
         return false;

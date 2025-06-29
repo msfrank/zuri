@@ -10,7 +10,7 @@
 #include "treeset_traps.h"
 #include "vector_traps.h"
 
-std::array<lyric_runtime::NativeTrap,40> kStdCollectionsTraps = {{
+std::array<lyric_runtime::NativeTrap,41> kStdCollectionsTraps = {{
     {hashmap_alloc, "STD_COLLECTIONS_HASHMAP_ALLOC", 0},
     {hashmap_ctor, "STD_COLLECTIONS_HASHMAP_CTOR", 0},
     {hashmap_size, "STD_COLLECTIONS_HASHMAP_SIZE", 0},
@@ -33,8 +33,9 @@ std::array<lyric_runtime::NativeTrap,40> kStdCollectionsTraps = {{
     {treeset_contains, "STD_COLLECTIONS_TREESET_CONTAINS", 0},
     {treeset_add, "STD_COLLECTIONS_TREESET_ADD", 0},
     {treeset_remove, "STD_COLLECTIONS_TREESET_REMOVE", 0},
+    {treeset_replace, "STD_COLLECTIONS_TREESET_REPLACE", 0},
     {treeset_clear, "STD_COLLECTIONS_TREESET_CLEAR", 0},
-    {treeset_iterate, "STD_COLLECTIONS_TREESET_ITERATE", 0},
+    {treeset_iterate, "STD_COLLECTIONS_TREESET_ITERABLE_ITERATE", 0},
     {treeset_iterator_alloc, "STD_COLLECTIONS_TREESET_ITERATOR_ALLOC", 0},
     {treeset_iterator_next, "STD_COLLECTIONS_TREESET_ITERATOR_NEXT", 0},
     {treeset_iterator_valid, "STD_COLLECTIONS_TREESET_ITERATOR_VALID", 0},
@@ -44,10 +45,10 @@ std::array<lyric_runtime::NativeTrap,40> kStdCollectionsTraps = {{
     {vector_at, "STD_COLLECTIONS_VECTOR_AT", 0},
     {vector_append, "STD_COLLECTIONS_VECTOR_APPEND", 0},
     {vector_insert, "STD_COLLECTIONS_VECTOR_INSERT", 0},
-    {vector_update, "STD_COLLECTIONS_VECTOR_UPDATE", 0},
+    {vector_replace, "STD_COLLECTIONS_VECTOR_REPLACE", 0},
     {vector_remove, "STD_COLLECTIONS_VECTOR_REMOVE", 0},
     {vector_clear, "STD_COLLECTIONS_VECTOR_CLEAR", 0},
-    {vector_iterate, "STD_COLLECTIONS_VECTOR_ITERATE", 0},
+    {vector_iterate, "STD_COLLECTIONS_VECTOR_ITERABLE_ITERATE", 0},
     {vector_iterator_alloc, "STD_COLLECTIONS_VECTOR_ITERATOR_ALLOC", 0},
     {vector_iterator_next, "STD_COLLECTIONS_VECTOR_ITERATOR_NEXT", 0},
     {vector_iterator_valid, "STD_COLLECTIONS_VECTOR_ITERATOR_VALID", 0}

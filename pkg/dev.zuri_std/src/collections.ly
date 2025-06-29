@@ -139,3 +139,169 @@ defclass TreeMap[K,+V] {
         }
     }
 }
+
+@AllocatorTrap("STD_COLLECTIONS_TREESET_ITERATOR_ALLOC")
+defclass TreeSetIterator[T] {
+    impl Iterator[T] {
+        def Valid(): Bool {
+            @{
+                Trap("STD_COLLECTIONS_TREESET_ITERATOR_VALID")
+                PushResult(typeof Bool)
+            }
+        }
+        def Next(): T {
+            @{
+                Trap("STD_COLLECTIONS_TREESET_ITERATOR_NEXT")
+                PushResult(typeof T)
+            }
+        }
+    }
+}
+
+@AllocatorTrap("STD_COLLECTIONS_TREESET_ALLOC")
+defclass TreeSet[+T] {
+
+    init(using ord: Ordered[T]) {
+        @{
+            LoadData(#_ElementCompare)
+            Trap("STD_COLLECTIONS_TREESET_CTOR")
+        }
+    }
+
+    def Size(): Int {
+        @{
+            Trap("STD_COLLECTIONS_TREESET_SIZE")
+            PushResult(typeof Int)
+        }
+    }
+
+    def Contains(value: T): Bool {
+        @{
+            Trap("STD_COLLECTIONS_TREESET_CONTAINS")
+            PushResult(typeof Bool)
+        }
+    }
+
+    def Add(value: T): Bool {
+        @{
+            Trap("STD_COLLECTIONS_TREESET_ADD")
+            PushResult(typeof Bool)
+        }
+    }
+
+    def Remove(value: T): Bool {
+        @{
+            Trap("STD_COLLECTIONS_TREESET_REMOVE")
+            PushResult(typeof Bool)
+        }
+    }
+
+    def Replace(value: T): T | Nil {
+        @{
+            Trap("STD_COLLECTIONS_TREESET_REPLACE")
+            PushResult(typeof T | Nil)
+        }
+    }
+
+    def Clear() {
+        @{
+            Trap("STD_COLLECTIONS_TREESET_CLEAR")
+        }
+    }
+
+    impl Iterable[T] {
+
+        def Iterate(): Iterator[T] {
+            @{
+                LoadData(#TreeSetIterator)
+                Trap("STD_COLLECTIONS_TREESET_ITERABLE_ITERATE")
+                PushResult(typeof Iterator[T])
+            }
+        }
+    }
+}
+
+@AllocatorTrap("STD_COLLECTIONS_VECTOR_ITERATOR_ALLOC")
+defclass VectorIterator[T] {
+    impl Iterator[T] {
+        def Valid(): Bool {
+            @{
+                Trap("STD_COLLECTIONS_VECTOR_ITERATOR_VALID")
+                PushResult(typeof Bool)
+            }
+        }
+        def Next(): T {
+            @{
+                Trap("STD_COLLECTIONS_VECTOR_ITERATOR_NEXT")
+                PushResult(typeof T)
+            }
+        }
+    }
+}
+
+@AllocatorTrap("STD_COLLECTIONS_VECTOR_ALLOC")
+defclass Vector[+T] {
+
+    init() {
+        @{
+            Trap("STD_COLLECTIONS_VECTOR_CTOR")
+        }
+    }
+
+    def Size(): Int {
+        @{
+            Trap("STD_COLLECTIONS_VECTOR_SIZE")
+            PushResult(typeof Int)
+        }
+    }
+
+    def At(index: Int): T {
+        @{
+            Trap("STD_COLLECTIONS_VECTOR_AT")
+            PushResult(typeof T)
+        }
+    }
+
+    def Insert(index: Int, value: T) {
+        @{
+            Trap("STD_COLLECTIONS_VECTOR_INSERT")
+        }
+    }
+
+    def Append(value: T) {
+        @{
+            Trap("STD_COLLECTIONS_VECTOR_APPEND")
+        }
+    }
+
+    def Replace(index: Int, value: T): T | Nil {
+        @{
+            Trap("STD_COLLECTIONS_VECTOR_REPLACE")
+            PushResult(typeof T | Nil)
+        }
+    }
+
+    def Remove(index: Int): T | Nil {
+        @{
+            Trap("STD_COLLECTIONS_VECTOR_REMOVE")
+            PushResult(typeof T | Nil)
+        }
+    }
+
+    def Clear() {
+        @{
+            Trap("STD_COLLECTIONS_VECTOR_CLEAR")
+        }
+    }
+
+    impl Iterable[T] {
+
+        def Iterate(): Iterator[T] {
+            @{
+                LoadData(#VectorIterator)
+                Trap("STD_COLLECTIONS_VECTOR_ITERABLE_ITERATE")
+                PushResult(typeof Iterator[T])
+            }
+        }
+    }
+}

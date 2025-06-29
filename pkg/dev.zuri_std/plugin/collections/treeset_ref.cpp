@@ -7,7 +7,8 @@
 #include "treeset_ref.h"
 
 TreeSetRef::TreeSetRef(const lyric_runtime::VirtualTable *vtable)
-    : BaseRef(vtable)
+    : BaseRef(vtable),
+      m_gen(0)
 {
 }
 
@@ -39,7 +40,8 @@ TreeSetRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::
 std::string
 TreeSetRef::toString() const
 {
-    return absl::Substitute("<$0: TreeSet contains $1 entries>", this, m_set.size());
+    return absl::Substitute("<$0: TreeSet with $1 entries, gen=$2>",
+        this, m_set.size(), m_gen);
 }
 
 int
@@ -72,18 +74,41 @@ TreeSetRef::last() const
     return *iterator;
 }
 
+int
+TreeSetRef::generation() const
+{
+    return m_gen;
+}
+
 lyric_runtime::DataCell
 TreeSetRef::add(const lyric_runtime::DataCell &value)
 {
     auto result = m_set.insert(value);
-    return lyric_runtime::DataCell(result.second);     // return true if value was added, false if value was already present
+    m_gen++;
+    // return true if value was added, false if value was already present
+    return lyric_runtime::DataCell(result.second);
 }
 
 lyric_runtime::DataCell
 TreeSetRef::remove(const lyric_runtime::DataCell &value)
 {
     auto result = m_set.extract(value);
-    return lyric_runtime::DataCell(!result.empty());    // return true if value was removed, false if value was not present
+    m_gen++;
+    // return true if value was removed, false if value was not present
+    return lyric_runtime::DataCell(!result.empty());
+}
+
+lyric_runtime::DataCell
+TreeSetRef::replace(const lyric_runtime::DataCell &value)
+{
+    // remove the prev value if it exists
+    auto result = m_set.extract(value);
+    // result is either prev value or nil
+    lyric_runtime::DataCell prev = result.empty()? lyric_runtime::DataCell::nil(): result.value();
+    // insert the new value
+    m_set.insert(value);
+    m_gen++;
+    return prev;
 }
 
 absl::btree_set<lyric_runtime::DataCell,TreeSetComparator>::iterator
@@ -102,6 +127,7 @@ void
 TreeSetRef::clear()
 {
     m_set.clear();
+    m_gen++;
 }
 
 void
@@ -129,14 +155,20 @@ TreeSetRef::clearMembersReachable()
 TreeSetComparator::TreeSetComparator(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
-    const lyric_runtime::DataCell &ord,
-    const lyric_runtime::DataCell &cmp)
-    : m_interp(interp), m_state(state), m_ord(ord), m_cmp(cmp)
+    const lyric_runtime::DataCell &ctxArgument,
+    const lyric_runtime::DataCell &compareCall)
+    : m_interp(interp),
+      m_state(state),
+      m_ctxArgument(ctxArgument),
+      m_compareCall(compareCall)
 {
 }
 
 TreeSetComparator::TreeSetComparator(const TreeSetComparator &other) noexcept
-    : m_interp(other.m_interp), m_state(other.m_state), m_ord(other.m_ord), m_cmp(other.m_cmp)
+    : m_interp(other.m_interp),
+      m_state(other.m_state),
+      m_ctxArgument(other.m_ctxArgument),
+      m_compareCall(other.m_compareCall)
 {
 }
 
@@ -145,12 +177,10 @@ TreeSetComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
 {
     auto *currentCoro = m_state->currentCoro();
 
-    TU_ASSERT (m_cmp.data.descriptor->getSegmentIndex() == currentCoro->peekSP()->getSegmentIndex());
+    std::vector args {lhs, rhs, m_ctxArgument};
+    tempo_utils::Status status;
 
-    std::vector<lyric_runtime::DataCell> args {lhs, rhs, m_ord};
-    lyric_runtime::InterpreterStatus status;
-    if (!m_state->subroutineManager()->callStatic(
-        m_cmp.data.descriptor->getDescriptorIndex(), args, currentCoro, status))
+    if (!m_state->subroutineManager()->callStatic(m_compareCall, args, currentCoro, status))
         return false;
 
     auto compareResult = m_interp->runSubinterpreter();
@@ -170,13 +200,13 @@ TreeSetIterator::TreeSetIterator(const lyric_runtime::VirtualTable *vtable)
 
 TreeSetIterator::TreeSetIterator(
     const lyric_runtime::VirtualTable *vtable,
-    absl::btree_set<lyric_runtime::DataCell,TreeSetComparator>::iterator iter,
     TreeSetRef *set)
     : BaseRef(vtable),
-      m_iter(iter),
       m_set(set)
 {
     TU_ASSERT (m_set != nullptr);
+    m_iter = set->begin();
+    m_gen = set->generation();
 }
 
 lyric_runtime::DataCell
@@ -194,7 +224,7 @@ TreeSetIterator::setField(const lyric_runtime::DataCell &field, const lyric_runt
 std::string
 TreeSetIterator::toString() const
 {
-    return absl::Substitute("<$0: TreeSetIterator>", this);
+    return absl::Substitute("<$0: TreeSetIterator gen=$1>", this, m_gen);
 }
 
 bool

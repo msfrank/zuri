@@ -18,6 +18,8 @@ set(TEST_CASES
     time_tests.cpp
     timezone_tests.cpp
     treemap_tests.cpp
+    treeset_tests.cpp
+    vector_tests.cpp
     )
 
 # define test suite driver

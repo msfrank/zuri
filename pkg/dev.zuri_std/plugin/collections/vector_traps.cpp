@@ -88,7 +88,6 @@ vector_append(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     instance->append(val);
-    currentCoro->pushData(lyric_runtime::DataCell::nil());
     return {};
 }
 
@@ -108,12 +107,11 @@ vector_insert(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<VectorRef *>(receiver.data.ref);
     instance->insert(idx.data.i64, val);
-    currentCoro->pushData(lyric_runtime::DataCell::nil());
     return {};
 }
 
 tempo_utils::Status
-vector_update(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+vector_replace(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 

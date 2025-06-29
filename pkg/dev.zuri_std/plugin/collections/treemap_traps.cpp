@@ -142,6 +142,5 @@ treemap_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
     instance->clear();
-    currentCoro->pushData(lyric_runtime::DataCell::nil());
     return {};
 }

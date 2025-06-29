@@ -143,6 +143,5 @@ hashmap_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     instance->hashClear();
-    currentCoro->pushData(lyric_runtime::DataCell::nil());
     return {};
 }
