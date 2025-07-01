@@ -34,6 +34,18 @@ TEST_F(StdCollectionsVector, TestEvaluateNewVector)
                 lyric_common::SymbolPath({"Vector"}))))));
 }
 
+TEST_F(StdCollectionsVector, TestEvaluateConstructVectorWithElements)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
+        val ints: Vector[Int] = Vector[Int]{1, 2, 3}
+        ints.Size()
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+        DataCellInt(3))));
+}
+
 TEST_F(StdCollectionsVector, TestEvaluateVectorSize)
 {
     auto result = tester->runModule(R"(

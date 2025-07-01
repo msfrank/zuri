@@ -39,10 +39,13 @@ defclass Option[+T] {
 @AllocatorTrap("STD_COLLECTIONS_HASHMAP_ALLOC")
 defclass HashMap[K,+V] {
 
-    init(using eq: Equality[K,K]) {
+    init(using eq: Equality[K,K], entries: ...Tuple2[K,V]) {
         @{
             LoadData(#_ElementEquals)
             Trap("STD_COLLECTIONS_HASHMAP_CTOR")
+        }
+        for entry: Tuple2[K,V] in entries {
+            this.Put(entry.Element0, entry.Element1)
         }
     }
 
@@ -91,10 +94,13 @@ defclass HashMap[K,+V] {
 @AllocatorTrap("STD_COLLECTIONS_TREEMAP_ALLOC")
 defclass TreeMap[K,+V] {
 
-    init(using ord: Ordered[K]) {
+    init(using ord: Ordered[K], entries: ...Tuple2[K,V]) {
         @{
             LoadData(#_ElementCompare)
             Trap("STD_COLLECTIONS_TREEMAP_CTOR")
+        }
+        for entry: Tuple2[K,V] in entries {
+            this.Put(entry.Element0, entry.Element1)
         }
     }
 
@@ -161,10 +167,13 @@ defclass TreeSetIterator[T] {
 @AllocatorTrap("STD_COLLECTIONS_TREESET_ALLOC")
 defclass TreeSet[+T] {
 
-    init(using ord: Ordered[T]) {
+    init(using ord: Ordered[T], elements: ...T) {
         @{
             LoadData(#_ElementCompare)
             Trap("STD_COLLECTIONS_TREESET_CTOR")
+        }
+        for element: T in elements {
+            this.Add(element)
         }
     }
 
@@ -242,9 +251,12 @@ defclass VectorIterator[T] {
 @AllocatorTrap("STD_COLLECTIONS_VECTOR_ALLOC")
 defclass Vector[+T] {
 
-    init() {
+    init(elements: ...T) {
         @{
             Trap("STD_COLLECTIONS_VECTOR_CTOR")
+        }
+        for element: T in elements {
+            this.Append(element)
         }
     }
 

@@ -114,13 +114,17 @@ zuri_test::ZuriTester::runModule(
     auto cache = builder->getCache();
     auto tempRoot = builder->getTempRoot();
 
+    // define the module origin
+    auto origin = lyric_common::ModuleLocation::fromString(
+        absl::StrCat("dev.zuri.tester://", tempo_utils::UUID::randomUUID().toString()));
+
     // construct the loader
     auto targetState = targetComputation.getState();
     lyric_build::BuildGeneration targetGen(targetState.getGeneration());
     lyric_build::TempDirectory tempDirectory(tempRoot, targetGen);
     std::shared_ptr<lyric_build::DependencyLoader> dependencyLoader;
     TU_ASSIGN_OR_RETURN (dependencyLoader, lyric_build::DependencyLoader::create(
-        targetComputation, cache, &tempDirectory));
+        origin, targetComputation, cache, &tempDirectory));
 
     lyric_runtime::InterpreterStateOptions options;
 
@@ -132,7 +136,8 @@ zuri_test::ZuriTester::runModule(
 
     // construct the interpreter state
     std::shared_ptr<lyric_runtime::InterpreterState> state;
-    TU_ASSIGN_OR_RETURN (state, lyric_runtime::InterpreterState::create(options, moduleLocation));
+    TU_ASSIGN_OR_RETURN (state, lyric_runtime::InterpreterState::create(
+        options, origin.resolve(moduleLocation)));
 
     // run the module in the interpreter
     lyric_test::TestInspector inspector;

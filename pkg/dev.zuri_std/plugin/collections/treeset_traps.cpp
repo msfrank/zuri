@@ -39,14 +39,6 @@ treeset_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     TU_ASSERT(compareCall.type == lyric_runtime::DataCellType::CALL);
     instance->initialize(TreeSetComparator(interp, state, ctxArgument, compareCall));
 
-    std::vector<lyric_runtime::DataCell> items;
-    for (int i = 0; i < frame.numRest(); i++) {
-        items.push_back(frame.getRest(i));
-    }
-    for (const auto &item : items) {
-        instance->add(item);
-    }
-
     return {};
 }
 

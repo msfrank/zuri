@@ -34,6 +34,18 @@ TEST_F(StdCollectionsTreeSet, TestEvaluateNewTreeSet)
                 lyric_common::SymbolPath({"TreeSet"}))))));
 }
 
+TEST_F(StdCollectionsTreeSet, TestEvaluateConstructTreeSetWithElements)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
+        val ints: TreeSet[Int] = TreeSet[Int]{1, 2, 3}
+        ints.Size()
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+        DataCellInt(3))));
+}
+
 TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetSize)
 {
     auto result = tester->runModule(R"(

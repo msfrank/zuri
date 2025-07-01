@@ -34,9 +34,8 @@ TEST_F(StdCollectionsHashMap, TestEvaluateNewHashMap)
                 lyric_common::SymbolPath({"HashMap"}))))));
 }
 
-TEST_F(StdCollectionsHashMap, TestEvaluateHashMapConstruction)
+TEST_F(StdCollectionsHashMap, TestEvaluateConstructHashMapWithEntries)
 {
-    GTEST_SKIP();
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
         val ints: HashMap[Int,Int] = HashMap[Int,Int]{
@@ -48,7 +47,7 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapConstruction)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(3LL))));
+        RunModule(DataCellInt(3))));
 }
 
 TEST_F(StdCollectionsHashMap, TestEvaluateHashMapSize)

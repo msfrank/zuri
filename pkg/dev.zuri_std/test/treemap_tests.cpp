@@ -34,9 +34,8 @@ TEST_F(StdCollectionsTreeMap, TestEvaluateNewMap)
                 lyric_common::SymbolPath({"TreeMap"}))))));
 }
 
-TEST_F(StdCollectionsTreeMap, TestEvaluateTreeMapConstruction)
+TEST_F(StdCollectionsTreeMap, TestEvaluateConstructTreeMapWithEntries)
 {
-    GTEST_SKIP();
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
         val ints: TreeMap[Int,Int] = TreeMap[Int,Int]{
@@ -48,7 +47,7 @@ TEST_F(StdCollectionsTreeMap, TestEvaluateTreeMapConstruction)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(3LL))));
+        RunModule(DataCellInt(3))));
 }
 
 TEST_F(StdCollectionsTreeMap, TestEvaluateMapSize)

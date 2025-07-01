@@ -30,13 +30,6 @@ vector_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
-    auto *instance = static_cast<VectorRef *>(receiver.data.ref);
-
-    for (int i = 0; i < frame.numRest(); i++) {
-        const auto &item = frame.getRest(i);
-        instance->append(item);
-    }
-
     return {};
 }
 
