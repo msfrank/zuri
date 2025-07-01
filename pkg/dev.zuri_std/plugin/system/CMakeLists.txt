@@ -12,8 +12,8 @@ add_library(std-system-plugin SHARED
     native_system.h
     port_ref.cpp
     port_ref.h
-    queue_ref.cpp
-    queue_ref.h
+    work_queue_ref.cpp
+    work_queue_ref.h
     system_traps.cpp
     system_traps.h
     )

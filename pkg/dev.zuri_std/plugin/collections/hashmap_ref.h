@@ -43,13 +43,14 @@ public:
         const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
-    bool hashContains(const lyric_runtime::DataCell &key) const;
-    int hashSize() const;
-    lyric_runtime::DataCell hashGet(const lyric_runtime::DataCell &key) const;
+    bool contains(const lyric_runtime::DataCell &key) const;
+    int size() const;
+    lyric_runtime::DataCell get(const lyric_runtime::DataCell &key) const;
+    int generation() const;
 
-    lyric_runtime::DataCell hashPut(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value);
-    lyric_runtime::DataCell hashRemove(const lyric_runtime::DataCell &key);
-    void hashClear();
+    lyric_runtime::DataCell put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value);
+    lyric_runtime::DataCell remove(const lyric_runtime::DataCell &key);
+    void clear();
 
 protected:
     void setMembersReachable() override;
@@ -61,6 +62,7 @@ private:
         lyric_runtime::DataCell,
         absl::flat_hash_map<HashMapKey,lyric_runtime::DataCell>::hasher,
         HashMapEq> m_map;
+    int m_gen;
     HashMapEq m_eq;
 };
 

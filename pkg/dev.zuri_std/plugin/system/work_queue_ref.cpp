@@ -8,38 +8,38 @@
 #include <tempo_utils/log_stream.h>
 
 #include "future_ref.h"
-#include "queue_ref.h"
+#include "work_queue_ref.h"
 
-QueueRef::QueueRef(const lyric_runtime::VirtualTable *vtable)
+WorkQueueRef::WorkQueueRef(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable)
 {
 }
 
-QueueRef::~QueueRef()
+WorkQueueRef::~WorkQueueRef()
 {
-    TU_LOG_INFO << "free" << QueueRef::toString();
+    TU_LOG_INFO << "free" << WorkQueueRef::toString();
 }
 
 lyric_runtime::DataCell
-QueueRef::getField(const lyric_runtime::DataCell &field) const
+WorkQueueRef::getField(const lyric_runtime::DataCell &field) const
 {
     return {};
 }
 
 lyric_runtime::DataCell
-QueueRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
+WorkQueueRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
 {
     return {};
 }
 
 std::string
-QueueRef::toString() const
+WorkQueueRef::toString() const
 {
-    return absl::Substitute("<$0: QueueRef>", this);
+    return absl::Substitute("<$0: WorkQueue>", this);
 }
 
 bool
-QueueRef::push(const lyric_runtime::DataCell &element)
+WorkQueueRef::push(const lyric_runtime::DataCell &element)
 {
     // if there are no registered futures then push the element and return
     if (m_waiting.empty()) {
@@ -59,13 +59,13 @@ QueueRef::push(const lyric_runtime::DataCell &element)
 }
 
 bool
-QueueRef::containsAvailableElement() const
+WorkQueueRef::containsAvailableElement() const
 {
     return m_waiting.empty() && !m_elements.empty();
 }
 
 lyric_runtime::DataCell
-QueueRef::takeAvailableElement()
+WorkQueueRef::takeAvailableElement()
 {
     TU_ASSERT (!m_elements.empty());
     auto next = m_elements.front();
@@ -74,14 +74,14 @@ QueueRef::takeAvailableElement()
 }
 
 bool
-QueueRef::waitForPush(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async)
+WorkQueueRef::waitForPush(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async)
 {
     m_waiting.push_back({promise, async});
     return true;
 }
 
 void
-QueueRef::setMembersReachable()
+WorkQueueRef::setMembersReachable()
 {
     for (auto &element : m_elements) {
         if (element.type == lyric_runtime::DataCellType::REF) {
@@ -94,7 +94,7 @@ QueueRef::setMembersReachable()
 }
 
 void
-QueueRef::clearMembersReachable()
+WorkQueueRef::clearMembersReachable()
 {
     for (auto &element : m_elements) {
         if (element.type == lyric_runtime::DataCellType::REF) {
@@ -107,7 +107,7 @@ QueueRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-queue_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+work_queue_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -115,14 +115,14 @@ queue_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
 
-    auto ref = state->heapManager()->allocateRef<QueueRef>(vtable);
+    auto ref = state->heapManager()->allocateRef<WorkQueueRef>(vtable);
     currentCoro->pushData(ref);
 
     return {};
 }
 
 tempo_utils::Status
-queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+work_queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -133,7 +133,7 @@ queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interprete
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
-    auto *instance = static_cast<QueueRef *>(receiver.data.ref);
+    auto *instance = static_cast<WorkQueueRef *>(receiver.data.ref);
     auto ret = instance->push(arg0);
     currentCoro->pushData(lyric_runtime::DataCell(ret));
 
@@ -147,7 +147,7 @@ on_async_complete(lyric_runtime::Promise *promise)
 }
 
 tempo_utils::Status
-queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+work_queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
 {
     auto *currentCoro = state->currentCoro();
     auto *segmentManager = state->segmentManager();
@@ -158,7 +158,7 @@ queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpreter
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
-    auto *instance = static_cast<QueueRef *>(receiver.data.ref);
+    auto *instance = static_cast<WorkQueueRef *>(receiver.data.ref);
 
     // resolve the virtual table for Future
     auto *segment = currentCoro->peekSP();

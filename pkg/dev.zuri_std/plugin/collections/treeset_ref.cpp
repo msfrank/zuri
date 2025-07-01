@@ -61,7 +61,7 @@ TreeSetRef::first() const
 {
     auto iterator = m_set.cbegin();
     if (iterator == m_set.cend())
-        return lyric_runtime::DataCell();
+        return {};
     return *iterator;
 }
 
@@ -70,7 +70,7 @@ TreeSetRef::last() const
 {
     auto iterator = m_set.crbegin();
     if (iterator == m_set.crend())
-        return lyric_runtime::DataCell();
+        return {};
     return *iterator;
 }
 
@@ -84,7 +84,7 @@ lyric_runtime::DataCell
 TreeSetRef::add(const lyric_runtime::DataCell &value)
 {
     auto result = m_set.insert(value);
-    m_gen++;
+    ++m_gen;
     // return true if value was added, false if value was already present
     return lyric_runtime::DataCell(result.second);
 }
@@ -93,7 +93,7 @@ lyric_runtime::DataCell
 TreeSetRef::remove(const lyric_runtime::DataCell &value)
 {
     auto result = m_set.extract(value);
-    m_gen++;
+    ++m_gen;
     // return true if value was removed, false if value was not present
     return lyric_runtime::DataCell(!result.empty());
 }
@@ -107,7 +107,7 @@ TreeSetRef::replace(const lyric_runtime::DataCell &value)
     lyric_runtime::DataCell prev = result.empty()? lyric_runtime::DataCell::nil(): result.value();
     // insert the new value
     m_set.insert(value);
-    m_gen++;
+    ++m_gen;
     return prev;
 }
 
@@ -127,7 +127,7 @@ void
 TreeSetRef::clear()
 {
     m_set.clear();
-    m_gen++;
+    ++m_gen;
 }
 
 void
@@ -230,13 +230,13 @@ TreeSetIterator::toString() const
 bool
 TreeSetIterator::iteratorValid()
 {
-    return m_set && m_iter != m_set->end();
+    return m_set && m_iter != m_set->end() && m_gen == m_set->generation();
 }
 
 bool
 TreeSetIterator::iteratorNext(lyric_runtime::DataCell &next)
 {
-    if (!m_set || m_iter == m_set->end())
+    if (!iteratorValid())
         return false;
     next = *m_iter++;
     return true;

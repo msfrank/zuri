@@ -51,7 +51,7 @@ TextRef::toString() const
         s = tempo_utils::convert_to_utf8(utf16);
     }
 
-    return absl::Substitute("<$0: TextRef \"$1\">", this, s);
+    return absl::Substitute("<$0: Text \"$1\">", this, s);
 }
 
 lyric_runtime::DataCell

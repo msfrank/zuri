@@ -7,7 +7,8 @@
 #include "treemap_ref.h"
 
 TreeMapRef::TreeMapRef(const lyric_runtime::VirtualTable *vtable)
-    : BaseRef(vtable)
+    : BaseRef(vtable),
+      m_gen(0)
 {
 }
 
@@ -42,7 +43,8 @@ TreeMapRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::
 std::string
 TreeMapRef::toString() const
 {
-    return absl::Substitute("<$0: TreeMap contains $1 entries>", this, m_map.size());
+    return absl::Substitute("<$0: TreeMap contains $1 entries, gen=$2>",
+        this, m_map.size(), m_gen);
 }
 
 int
@@ -61,7 +63,7 @@ lyric_runtime::DataCell
 TreeMapRef::get(const lyric_runtime::DataCell &key) const
 {
     if (!m_map.contains(key))
-        return lyric_runtime::DataCell();
+        return {};
     return m_map.at(key);
 }
 
@@ -73,7 +75,7 @@ TreeMapRef::at(int index) const
         std::advance(iterator, index);
         return iterator->second;
     }
-    return lyric_runtime::DataCell();
+    return {};
 }
 
 lyric_runtime::DataCell
@@ -81,7 +83,7 @@ TreeMapRef::first() const
 {
     auto iterator = m_map.cbegin();
     if (iterator == m_map.cend())
-        return lyric_runtime::DataCell();
+        return {};
     return iterator->second;
 }
 
@@ -90,8 +92,14 @@ TreeMapRef::last() const
 {
     auto iterator = m_map.crbegin();
     if (iterator == m_map.crend())
-        return lyric_runtime::DataCell();
+        return {};
     return iterator->second;
+}
+
+int
+TreeMapRef::generation() const
+{
+    return m_gen;
 }
 
 lyric_runtime::DataCell
@@ -99,6 +107,7 @@ TreeMapRef::put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCel
 {
     auto prev = remove(key);
     m_map[key] = value;
+    ++m_gen;
     return prev;
 }
 
@@ -106,9 +115,10 @@ lyric_runtime::DataCell
 TreeMapRef::remove(const lyric_runtime::DataCell &key)
 {
     if (!m_map.contains(key))
-        return lyric_runtime::DataCell();
+        return {};
     lyric_runtime::DataCell value = m_map.at(key);
     m_map.erase(key);
+    ++m_gen;
     return value;
 }
 
@@ -116,6 +126,7 @@ void
 TreeMapRef::clear()
 {
     m_map.clear();
+    ++m_gen;
 }
 
 void

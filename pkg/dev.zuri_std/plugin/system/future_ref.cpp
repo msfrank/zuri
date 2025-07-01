@@ -110,7 +110,7 @@ FutureRef::resolveFuture(lyric_runtime::DataCell &result)
 std::string
 FutureRef::toString() const
 {
-    return absl::Substitute("<$0: FutureRef>", this);
+    return absl::Substitute("<$0: Future>", this);
 }
 
 bool

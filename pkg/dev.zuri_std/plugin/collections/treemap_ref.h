@@ -46,6 +46,7 @@ public:
     lyric_runtime::DataCell at(int index) const;
     lyric_runtime::DataCell first() const;
     lyric_runtime::DataCell last() const;
+    int generation() const;
 
     lyric_runtime::DataCell put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value);
     lyric_runtime::DataCell remove(const lyric_runtime::DataCell &key);
@@ -60,6 +61,7 @@ private:
         lyric_runtime::DataCell,
         lyric_runtime::DataCell,
         TreeMapComparator> m_map;
+    int m_gen;
     TreeMapComparator m_cmp;
 };
 

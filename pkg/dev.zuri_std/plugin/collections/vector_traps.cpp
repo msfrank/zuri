@@ -176,7 +176,7 @@ vector_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     const auto *vtable = state->segmentManager()->resolveClassVirtualTable(cell, status);
     TU_ASSERT(vtable != nullptr);
 
-    auto ref = state->heapManager()->allocateRef<VectorIterator>(vtable, instance->begin(), instance);
+    auto ref = state->heapManager()->allocateRef<VectorIterator>(vtable, instance);
     currentCoro->pushData(ref);
 
     return {};

@@ -7,7 +7,8 @@
 #include "hashmap_ref.h"
 
 HashMapRef::HashMapRef(const lyric_runtime::VirtualTable *vtable)
-    : BaseRef(vtable)
+    : BaseRef(vtable),
+      m_gen(0)
 {
 }
 
@@ -43,55 +44,59 @@ HashMapRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::
 std::string
 HashMapRef::toString() const
 {
-    return absl::Substitute("<$0: HashMap contains $1 entries>", this, m_map.size());
+    return absl::Substitute("<$0: HashMap contains $1 entries, gen=$2>",
+        this, m_map.size(), m_gen);
 }
 
 bool
-HashMapRef::hashContains(const lyric_runtime::DataCell &key) const
+HashMapRef::contains(const lyric_runtime::DataCell &key) const
 {
     HashMapKey k{ key };
     return m_map.contains(k);
 }
 
 int
-HashMapRef::hashSize() const
+HashMapRef::size() const
 {
     return m_map.size();
 }
 
 lyric_runtime::DataCell
-HashMapRef::hashGet(const lyric_runtime::DataCell &key) const
+HashMapRef::get(const lyric_runtime::DataCell &key) const
 {
     HashMapKey k{ key };
     if (!m_map.contains(k))
-        return lyric_runtime::DataCell();
+        return {};
     return m_map.at(k);
 }
 
 lyric_runtime::DataCell
-HashMapRef::hashPut(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value)
+HashMapRef::put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value)
 {
     HashMapKey k{ key };
-    auto prev = hashRemove(key);
+    auto prev = remove(key);
     m_map[k] = value;
+    ++m_gen;
     return prev;
 }
 
 lyric_runtime::DataCell
-HashMapRef::hashRemove(const lyric_runtime::DataCell &key)
+HashMapRef::remove(const lyric_runtime::DataCell &key)
 {
     HashMapKey k{ key };
     if (!m_map.contains(k))
-        return lyric_runtime::DataCell();
+        return {};
     lyric_runtime::DataCell value = m_map.at(k);
     m_map.erase(k);
+    ++m_gen;
     return value;
 }
 
 void
-HashMapRef::hashClear()
+HashMapRef::clear()
 {
     m_map.clear();
+    ++m_gen;
 }
 
 void

@@ -7,7 +7,7 @@
 #include <tempo_test/tempo_test.h>
 #include <zuri_test/zuri_tester.h>
 
-class StdSystemQueue : public ::testing::Test {
+class StdSystemWorkQueue : public ::testing::Test {
 protected:
     std::unique_ptr<zuri_test::ZuriTester> tester;
 
@@ -19,11 +19,11 @@ protected:
     }
 };
 
-TEST_F(StdSystemQueue, EvaluatePushAndAwaitPop)
+TEST_F(StdSystemWorkQueue, EvaluatePushAndAwaitPop)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val queue: Queue[Int] = Queue[Int]{}
+        val queue: WorkQueue[Int] = WorkQueue[Int]{}
         queue.Push(42)
         Await(queue.Pop())
     )");
@@ -31,11 +31,11 @@ TEST_F(StdSystemQueue, EvaluatePushAndAwaitPop)
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(42))));
 }
 
-TEST_F(StdSystemQueue, EvaluatePushMultipleAndAwaitPop)
+TEST_F(StdSystemWorkQueue, EvaluatePushMultipleAndAwaitPop)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val queue: Queue[Int] = Queue[Int]{}
+        val queue: WorkQueue[Int] = WorkQueue[Int]{}
         queue.Push(1)
         queue.Push(1)
         queue.Push(1)
@@ -45,12 +45,12 @@ TEST_F(StdSystemQueue, EvaluatePushMultipleAndAwaitPop)
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(3))));
 }
 
-TEST_F(StdSystemQueue, EvaluatePushMultipleAndAwaitPopInSeparateTasks)
+TEST_F(StdSystemWorkQueue, EvaluatePushMultipleAndAwaitPopInSeparateTasks)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
 
-        val queue: Queue[Int] = Queue[Int]{}
+        val queue: WorkQueue[Int] = WorkQueue[Int]{}
 
         val p1: Function0[Bool] = lambda(): Bool {
             queue.Push(1) and queue.Push(1) and queue.Push(1)

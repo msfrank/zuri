@@ -67,7 +67,7 @@ PortRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::Dat
 std::string
 PortRef::toString() const
 {
-    return absl::Substitute("<$0: PortRef>", this);
+    return absl::Substitute("<$0: Port>", this);
 }
 
 std::shared_ptr<lyric_runtime::DuplexPort>

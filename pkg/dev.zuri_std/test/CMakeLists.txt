@@ -12,7 +12,7 @@ set(TEST_CASES
     log_tests.cpp
     option_tests.cpp
     port_tests.cpp
-    queue_tests.cpp
+    work_queue_tests.cpp
     system_tests.cpp
     text_tests.cpp
     time_tests.cpp

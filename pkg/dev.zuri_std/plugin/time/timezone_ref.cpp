@@ -32,7 +32,7 @@ TimezoneRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime:
 std::string
 TimezoneRef::toString() const
 {
-    return absl::Substitute("<$0: TimezoneRef $1>", this, m_tz.name());
+    return absl::Substitute("<$0: Timezone $1>", this, m_tz.name());
 }
 
 absl::TimeZone

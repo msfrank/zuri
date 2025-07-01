@@ -55,7 +55,7 @@ hashmap_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
-    currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->hashSize())));
+    currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->size())));
     return {};
 }
 
@@ -72,7 +72,7 @@ hashmap_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
-    currentCoro->pushData(lyric_runtime::DataCell(instance->hashContains(key)));
+    currentCoro->pushData(lyric_runtime::DataCell(instance->contains(key)));
     return {};
 }
 
@@ -89,7 +89,7 @@ hashmap_get(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
-    currentCoro->pushData(instance->hashGet(key));
+    currentCoro->pushData(instance->get(key));
     return {};
 }
 
@@ -107,7 +107,7 @@ hashmap_put(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
-    auto prev = instance->hashPut(key, val);
+    auto prev = instance->put(key, val);
     currentCoro->pushData(prev);
     return {};
 }
@@ -125,7 +125,7 @@ hashmap_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
-    auto prev = instance->hashRemove(key);
+    auto prev = instance->remove(key);
     currentCoro->pushData(prev);
     return {};
 }
@@ -142,6 +142,6 @@ hashmap_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
-    instance->hashClear();
+    instance->clear();
     return {};
 }

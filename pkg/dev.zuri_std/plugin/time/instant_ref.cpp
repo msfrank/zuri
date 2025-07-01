@@ -32,7 +32,7 @@ InstantRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::
 std::string
 InstantRef::toString() const
 {
-    return absl::Substitute("<$0: InstantRef $1>", this, absl::FormatTime(m_instant));
+    return absl::Substitute("<$0: Instant $1>", this, absl::FormatTime(m_instant));
 }
 
 absl::Time

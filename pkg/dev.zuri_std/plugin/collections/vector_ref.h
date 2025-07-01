@@ -24,6 +24,7 @@ public:
     lyric_runtime::DataCell first() const;
     lyric_runtime::DataCell last() const;
     int size() const;
+    int generation() const;
 
     void insert(int index, lyric_runtime::DataCell value);
     void append(const lyric_runtime::DataCell &value);
@@ -39,6 +40,7 @@ protected:
 
 private:
     absl::InlinedVector<lyric_runtime::DataCell,16> m_seq;
+    int m_gen;
 };
 
 class VectorIterator : public lyric_runtime::BaseRef {
@@ -47,7 +49,6 @@ public:
     explicit VectorIterator(const lyric_runtime::VirtualTable *vtable);
     VectorIterator(
         const lyric_runtime::VirtualTable *vtable,
-        absl::InlinedVector<lyric_runtime::DataCell,16>::iterator iter,
         VectorRef *vector);
 
     lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
@@ -66,6 +67,7 @@ protected:
 private:
     absl::InlinedVector<lyric_runtime::DataCell,16>::iterator m_iter;
     VectorRef *m_vector;
+    int m_gen;
 };
 
 #endif // ZURI_STD_COLLECTIONS_VECTOR_REF_H

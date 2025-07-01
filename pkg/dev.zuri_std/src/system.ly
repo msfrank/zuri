@@ -42,19 +42,19 @@ defclass Future[T] final {
     }
 }
 
-@AllocatorTrap("STD_SYSTEM_QUEUE_ALLOC")
-defclass Queue[T] {
+@AllocatorTrap("STD_SYSTEM_WORK_QUEUE_ALLOC")
+defclass WorkQueue[T] {
 
     def Push(element: T): Bool {
         @{
-            Trap("STD_SYSTEM_QUEUE_PUSH")
+            Trap("STD_SYSTEM_WORK_QUEUE_PUSH")
             PushResult(typeof Bool)
         }
     }
 
     def Pop(): Future[T] {
         @{
-            Trap("STD_SYSTEM_QUEUE_POP")
+            Trap("STD_SYSTEM_WORK_QUEUE_POP")
             PushResult(typeof Future[T])
         }
     }

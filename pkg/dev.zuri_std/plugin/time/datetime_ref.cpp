@@ -34,7 +34,7 @@ DatetimeRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime:
 std::string
 DatetimeRef::toString() const
 {
-    return absl::Substitute("<$0: DatetimeRef $1>", this, absl::FormatCivilTime(m_cs));
+    return absl::Substitute("<$0: Datetime $1>", this, absl::FormatCivilTime(m_cs));
 }
 
 absl::CivilSecond

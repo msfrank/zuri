@@ -5,8 +5,8 @@
 #include "future_ref.h"
 #include "native_system.h"
 #include "port_ref.h"
-#include "queue_ref.h"
 #include "system_traps.h"
+#include "work_queue_ref.h"
 
 std::array<lyric_runtime::NativeTrap,16> kStdSystemTraps = {{
     {future_alloc, "STD_SYSTEM_FUTURE_ALLOC", 0},
@@ -17,9 +17,9 @@ std::array<lyric_runtime::NativeTrap,16> kStdSystemTraps = {{
     {port_alloc, "STD_SYSTEM_PORT_ALLOC", 0},
     {port_receive, "STD_SYSTEM_PORT_RECEIVE", 0},
     {port_send, "STD_SYSTEM_PORT_SEND", 0},
-    {queue_alloc, "STD_SYSTEM_QUEUE_ALLOC", 0},
-    {queue_pop, "STD_SYSTEM_QUEUE_POP", 0},
-    {queue_push, "STD_SYSTEM_QUEUE_PUSH", 0},
+    {work_queue_alloc, "STD_SYSTEM_WORK_QUEUE_ALLOC", 0},
+    {work_queue_pop, "STD_SYSTEM_WORK_QUEUE_POP", 0},
+    {work_queue_push, "STD_SYSTEM_WORK_QUEUE_PUSH", 0},
     {std_system_acquire, "STD_SYSTEM_ACQUIRE", 0},
     {std_system_await, "STD_SYSTEM_AWAIT", 0},
     {std_system_get_result, "STD_SYSTEM_GET_RESULT", 0},
