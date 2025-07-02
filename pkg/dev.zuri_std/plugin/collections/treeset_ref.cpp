@@ -194,7 +194,8 @@ TreeSetComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
 
 TreeSetIterator::TreeSetIterator(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable),
-      m_set(nullptr)
+      m_set(nullptr),
+      m_gen(0)
 {
 }
 

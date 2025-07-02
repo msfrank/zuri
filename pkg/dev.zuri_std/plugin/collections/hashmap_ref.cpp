@@ -70,6 +70,12 @@ HashMapRef::get(const lyric_runtime::DataCell &key) const
     return m_map.at(k);
 }
 
+int
+HashMapRef::generation() const
+{
+    return m_gen;
+}
+
 lyric_runtime::DataCell
 HashMapRef::put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value)
 {
@@ -90,6 +96,18 @@ HashMapRef::remove(const lyric_runtime::DataCell &key)
     m_map.erase(k);
     ++m_gen;
     return value;
+}
+
+HashMapImpl::iterator
+HashMapRef::begin()
+{
+    return m_map.begin();
+}
+
+HashMapImpl::iterator
+HashMapRef::end()
+{
+    return m_map.end();
 }
 
 void
@@ -170,4 +188,83 @@ HashMapEq::operator()(const HashMapKey& lhs, const HashMapKey& rhs) const
         return false;
     auto ret = equalsResult.getResult();
     return ret.type == lyric_runtime::DataCellType::BOOL && ret.data.b;
+}
+
+HashMapIterator::HashMapIterator(const lyric_runtime::VirtualTable *vtable)
+    : BaseRef(vtable),
+      m_map(nullptr),
+      m_gen(0)
+{
+}
+
+HashMapIterator::HashMapIterator(
+    const lyric_runtime::VirtualTable *vtable,
+    HashMapRef *map)
+    : BaseRef(vtable),
+      m_map(map)
+{
+    TU_ASSERT (m_map != nullptr);
+    m_iter = map->begin();
+    m_gen = map->generation();
+}
+
+lyric_runtime::DataCell
+HashMapIterator::getField(const lyric_runtime::DataCell &field) const
+{
+    return {};
+}
+
+lyric_runtime::DataCell
+HashMapIterator::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
+{
+    return {};
+}
+
+std::string
+HashMapIterator::toString() const
+{
+    return absl::Substitute("<$0: HashMapIterator gen=$1>", this, m_gen);
+}
+
+bool
+HashMapIterator::valid()
+{
+    return m_map && m_iter != m_map->end() && m_gen == m_map->generation();
+}
+
+lyric_runtime::DataCell
+HashMapIterator::key()
+{
+    if (!valid())
+        return {};
+    return m_iter->first.cell;
+}
+
+lyric_runtime::DataCell
+HashMapIterator::value()
+{
+    if (!valid())
+        return {};
+    return m_iter->second;
+}
+
+bool
+HashMapIterator::next()
+{
+    if (!valid())
+        return false;
+    ++m_iter;
+    return true;
+}
+
+void
+HashMapIterator::setMembersReachable()
+{
+    m_map->setReachable();
+}
+
+void
+HashMapIterator::clearMembersReachable()
+{
+    m_map->clearReachable();
 }

@@ -144,3 +144,111 @@ treemap_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
     instance->clear();
     return {};
 }
+
+tempo_utils::Status
+treemap_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+
+    lyric_runtime::DataCell cell;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(cell));
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::CLASS);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapRef *>(receiver.data.ref);
+
+    lyric_runtime::InterpreterStatus status;
+    const auto *vtable = state->segmentManager()->resolveClassVirtualTable(cell, status);
+    TU_ASSERT(vtable != nullptr);
+
+    auto ref = state->heapManager()->allocateRef<TreeMapIterator>(vtable, instance);
+    currentCoro->pushData(ref);
+
+    return {};
+}
+
+tempo_utils::Status
+treemap_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+    const auto *vtable = frame.getVirtualTable();
+    TU_ASSERT(vtable != nullptr);
+
+    auto ref = state->heapManager()->allocateRef<TreeMapIterator>(vtable);
+    currentCoro->pushData(ref);
+
+    return {};
+}
+
+tempo_utils::Status
+treemap_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+
+    TU_ASSERT(frame.numArguments() == 0);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapIterator *>(receiver.data.ref);
+    currentCoro->pushData(lyric_runtime::DataCell(instance->valid()));
+
+    return {};
+}
+
+tempo_utils::Status
+treemap_iterator_get_key(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+
+    TU_ASSERT(frame.numArguments() == 0);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapIterator *>(receiver.data.ref);
+    currentCoro->pushData(instance->key());
+
+    return {};
+}
+
+tempo_utils::Status
+treemap_iterator_get_value(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+
+    TU_ASSERT(frame.numArguments() == 0);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapIterator *>(receiver.data.ref);
+    currentCoro->pushData(instance->value());
+
+    return {};
+}
+
+tempo_utils::Status
+treemap_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+
+    TU_ASSERT(frame.numArguments() == 0);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<TreeMapIterator *>(receiver.data.ref);
+    instance->next();
+
+    return {};
+}

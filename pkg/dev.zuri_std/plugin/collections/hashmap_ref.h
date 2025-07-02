@@ -11,7 +11,7 @@
 
 #include "hashmap_key.h"
 
-struct HashMapEq {
+class HashMapEq {
 public:
     HashMapEq() = default;
     HashMapEq(
@@ -28,6 +28,12 @@ private:
     lyric_runtime::DataCell m_ctxArgument;
     lyric_runtime::DataCell m_equalsCall;
 };
+
+using HashMapImpl = absl::flat_hash_map<
+    HashMapKey,
+    lyric_runtime::DataCell,
+    absl::flat_hash_map<HashMapKey,lyric_runtime::DataCell>::hasher,
+    HashMapEq>;
 
 class HashMapRef : public lyric_runtime::BaseRef {
 
@@ -50,6 +56,8 @@ public:
 
     lyric_runtime::DataCell put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value);
     lyric_runtime::DataCell remove(const lyric_runtime::DataCell &key);
+    HashMapImpl::iterator begin();
+    HashMapImpl::iterator end();
     void clear();
 
 protected:
@@ -57,13 +65,36 @@ protected:
     void clearMembersReachable() override;
 
 private:
-    absl::flat_hash_map<
-        HashMapKey,
-        lyric_runtime::DataCell,
-        absl::flat_hash_map<HashMapKey,lyric_runtime::DataCell>::hasher,
-        HashMapEq> m_map;
+    HashMapImpl m_map;
     int m_gen;
     HashMapEq m_eq;
+};
+
+class HashMapIterator : public lyric_runtime::BaseRef {
+
+public:
+    explicit HashMapIterator(const lyric_runtime::VirtualTable *vtable);
+    HashMapIterator(
+        const lyric_runtime::VirtualTable *vtable,
+        HashMapRef *map);
+
+    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
+    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
+    std::string toString() const override;
+
+    bool valid();
+    lyric_runtime::DataCell key();
+    lyric_runtime::DataCell value();
+    bool next();
+
+protected:
+    void setMembersReachable() override;
+    void clearMembersReachable() override;
+
+private:
+    HashMapImpl::iterator m_iter;
+    HashMapRef *m_map;
+    int m_gen;
 };
 
 #endif // ZURI_STD_COLLECTIONS_HASHMAP_REF_H

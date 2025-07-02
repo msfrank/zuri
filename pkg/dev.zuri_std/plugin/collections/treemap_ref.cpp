@@ -122,6 +122,18 @@ TreeMapRef::remove(const lyric_runtime::DataCell &key)
     return value;
 }
 
+TreeMapImpl::iterator
+TreeMapRef::begin()
+{
+    return m_map.begin();
+}
+
+TreeMapImpl::iterator
+TreeMapRef::end()
+{
+    return m_map.end();
+}
+
 void
 TreeMapRef::clear()
 {
@@ -201,4 +213,83 @@ TreeMapComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
     if (ret.type == lyric_runtime::DataCellType::I64)
         return ret.data.i64 < 0;
     return false;
+}
+
+TreeMapIterator::TreeMapIterator(const lyric_runtime::VirtualTable *vtable)
+    : BaseRef(vtable),
+      m_map(nullptr),
+      m_gen(0)
+{
+}
+
+TreeMapIterator::TreeMapIterator(
+    const lyric_runtime::VirtualTable *vtable,
+    TreeMapRef *map)
+    : BaseRef(vtable),
+      m_map(map)
+{
+    TU_ASSERT (m_map != nullptr);
+    m_iter = map->begin();
+    m_gen = map->generation();
+}
+
+lyric_runtime::DataCell
+TreeMapIterator::getField(const lyric_runtime::DataCell &field) const
+{
+    return {};
+}
+
+lyric_runtime::DataCell
+TreeMapIterator::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
+{
+    return {};
+}
+
+std::string
+TreeMapIterator::toString() const
+{
+    return absl::Substitute("<$0: TreeMapIterator gen=$1>", this, m_gen);
+}
+
+bool
+TreeMapIterator::valid()
+{
+    return m_map && m_iter != m_map->end() && m_gen == m_map->generation();
+}
+
+lyric_runtime::DataCell
+TreeMapIterator::key()
+{
+    if (!valid())
+        return {};
+    return m_iter->first;
+}
+
+lyric_runtime::DataCell
+TreeMapIterator::value()
+{
+    if (!valid())
+        return {};
+    return m_iter->second;
+}
+
+bool
+TreeMapIterator::next()
+{
+    if (!valid())
+        return false;
+    ++m_iter;
+    return true;
+}
+
+void
+TreeMapIterator::setMembersReachable()
+{
+    m_map->setReachable();
+}
+
+void
+TreeMapIterator::clearMembersReachable()
+{
+    m_map->clearReachable();
 }

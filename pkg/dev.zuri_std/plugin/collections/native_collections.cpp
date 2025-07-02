@@ -10,7 +10,7 @@
 #include "treeset_traps.h"
 #include "vector_traps.h"
 
-std::array<lyric_runtime::NativeTrap,41> kStdCollectionsTraps = {{
+std::array<lyric_runtime::NativeTrap,53> kStdCollectionsTraps = {{
     {hashmap_alloc, "STD_COLLECTIONS_HASHMAP_ALLOC", 0},
     {hashmap_ctor, "STD_COLLECTIONS_HASHMAP_CTOR", 0},
     {hashmap_size, "STD_COLLECTIONS_HASHMAP_SIZE", 0},
@@ -19,6 +19,12 @@ std::array<lyric_runtime::NativeTrap,41> kStdCollectionsTraps = {{
     {hashmap_put, "STD_COLLECTIONS_HASHMAP_PUT", 0},
     {hashmap_remove, "STD_COLLECTIONS_HASHMAP_REMOVE", 0},
     {hashmap_clear, "STD_COLLECTIONS_HASHMAP_CLEAR", 0},
+    {hashmap_iterate, "STD_COLLECTIONS_HASHMAP_ITERABLE_ITERATE", 0},
+    {hashmap_iterator_alloc, "STD_COLLECTIONS_HASHMAP_ITERATOR_ALLOC", 0},
+    {hashmap_iterator_valid, "STD_COLLECTIONS_HASHMAP_ITERATOR_VALID", 0},
+    {hashmap_iterator_get_key, "STD_COLLECTIONS_HASHMAP_ITERATOR_GET_KEY", 0},
+    {hashmap_iterator_get_value, "STD_COLLECTIONS_HASHMAP_ITERATOR_GET_VALUE", 0},
+    {hashmap_iterator_next, "STD_COLLECTIONS_HASHMAP_ITERATOR_NEXT", 0},
     {treemap_alloc, "STD_COLLECTIONS_TREEMAP_ALLOC", 0},
     {treemap_ctor, "STD_COLLECTIONS_TREEMAP_CTOR", 0},
     {treemap_size, "STD_COLLECTIONS_TREEMAP_SIZE", 0},
@@ -27,7 +33,13 @@ std::array<lyric_runtime::NativeTrap,41> kStdCollectionsTraps = {{
     {treemap_put, "STD_COLLECTIONS_TREEMAP_PUT", 0},
     {treemap_remove, "STD_COLLECTIONS_TREEMAP_REMOVE", 0},
     {treemap_clear, "STD_COLLECTIONS_TREEMAP_CLEAR", 0},
-    {treeset_alloc, "STD_COLLECTIONS_TREESET_ALLOC", 0},
+    {treemap_iterate, "STD_COLLECTIONS_TREEMAP_ITERABLE_ITERATE", 0},
+    {treemap_iterator_alloc, "STD_COLLECTIONS_TREEMAP_ITERATOR_ALLOC", 0},
+    {treemap_iterator_valid, "STD_COLLECTIONS_TREEMAP_ITERATOR_VALID", 0},
+    {treemap_iterator_get_key, "STD_COLLECTIONS_TREEMAP_ITERATOR_GET_KEY", 0},
+    {treemap_iterator_get_value, "STD_COLLECTIONS_TREEMAP_ITERATOR_GET_VALUE", 0},
+    {treemap_iterator_next, "STD_COLLECTIONS_TREEMAP_ITERATOR_NEXT", 0},
+    {treemap_alloc, "STD_COLLECTIONS_TREESET_ALLOC", 0},
     {treeset_ctor, "STD_COLLECTIONS_TREESET_CTOR", 0},
     {treeset_size, "STD_COLLECTIONS_TREESET_SIZE", 0},
     {treeset_contains, "STD_COLLECTIONS_TREESET_CONTAINS", 0},

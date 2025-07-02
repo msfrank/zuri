@@ -36,6 +36,38 @@ defclass Option[+T] {
     }
 }
 
+@AllocatorTrap("STD_COLLECTIONS_HASHMAP_ITERATOR_ALLOC")
+defclass HashMapIterator[K,V] final {
+    def _GetKey(): K {
+        @{
+            Trap("STD_COLLECTIONS_HASHMAP_ITERATOR_GET_KEY")
+            PushResult(typeof K)
+        }
+    }
+    def _GetValue(): V {
+        @{
+            Trap("STD_COLLECTIONS_HASHMAP_ITERATOR_GET_VALUE")
+            PushResult(typeof V)
+        }
+    }
+    impl Iterator[Tuple2[K,V]] {
+        def Valid(): Bool {
+            @{
+                Trap("STD_COLLECTIONS_HASHMAP_ITERATOR_VALID")
+                PushResult(typeof Bool)
+            }
+        }
+        def Next(): Tuple2[K,V] {
+            val key: K = this._GetKey()
+            val value: V = this._GetValue()
+            @{
+                Trap("STD_COLLECTIONS_HASHMAP_ITERATOR_NEXT")
+            }
+            Tuple2[K,V]{key, value}
+        }
+    }
+}
+
 @AllocatorTrap("STD_COLLECTIONS_HASHMAP_ALLOC")
 defclass HashMap[K,+V] {
 
@@ -87,6 +119,49 @@ defclass HashMap[K,+V] {
     def Clear() {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_CLEAR")
+        }
+    }
+
+    impl Iterable[Tuple2[K,V]] {
+
+        def Iterate(): Iterator[Tuple2[K,V]] {
+            @{
+                LoadData(#HashMapIterator)
+                Trap("STD_COLLECTIONS_HASHMAP_ITERABLE_ITERATE")
+                PushResult(typeof Iterator[Tuple2[K,V]])
+            }
+        }
+    }
+}
+
+@AllocatorTrap("STD_COLLECTIONS_TREEMAP_ITERATOR_ALLOC")
+defclass TreeMapIterator[K,V] final {
+    def _GetKey(): K {
+        @{
+            Trap("STD_COLLECTIONS_TREEMAP_ITERATOR_GET_KEY")
+            PushResult(typeof K)
+        }
+    }
+    def _GetValue(): V {
+        @{
+            Trap("STD_COLLECTIONS_TREEMAP_ITERATOR_GET_VALUE")
+            PushResult(typeof V)
+        }
+    }
+    impl Iterator[Tuple2[K,V]] {
+        def Valid(): Bool {
+            @{
+                Trap("STD_COLLECTIONS_TREEMAP_ITERATOR_VALID")
+                PushResult(typeof Bool)
+            }
+        }
+        def Next(): Tuple2[K,V] {
+            val key: K = this._GetKey()
+            val value: V = this._GetValue()
+            @{
+                Trap("STD_COLLECTIONS_TREEMAP_ITERATOR_NEXT")
+            }
+            Tuple2[K,V]{key, value}
         }
     }
 }
@@ -142,6 +217,17 @@ defclass TreeMap[K,+V] {
     def Clear() {
         @{
             Trap("STD_COLLECTIONS_TREEMAP_CLEAR")
+        }
+    }
+
+    impl Iterable[Tuple2[K,V]] {
+
+        def Iterate(): Iterator[Tuple2[K,V]] {
+            @{
+                LoadData(#TreeMapIterator)
+                Trap("STD_COLLECTIONS_TREEMAP_ITERABLE_ITERATE")
+                PushResult(typeof Iterator[Tuple2[K,V]])
+            }
         }
     }
 }

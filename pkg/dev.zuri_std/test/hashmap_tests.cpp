@@ -125,3 +125,23 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndClear)
     ASSERT_THAT (result, tempo_test::ContainsResult(
         RunModule(DataCellInt(0LL))));
 }
+
+TEST_F(StdCollectionsHashMap, TestEvaluateHashMapIterate)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
+        val ints: HashMap[Int,Int] = HashMap[Int,Int]{
+            Tuple2[Int,Int]{1, 11},
+            Tuple2[Int,Int]{2, 12},
+            Tuple2[Int,Int]{3, 13}
+        }
+        var sum: Int = 0
+        for entry: Tuple2[Int,Int] in ints {
+            set sum += entry.Element1
+        }
+        sum
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(
+        RunModule(DataCellInt(36))));
+}

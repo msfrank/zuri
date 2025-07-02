@@ -26,6 +26,11 @@ private:
     lyric_runtime::DataCell m_compareCall;
 };
 
+using TreeMapImpl = absl::btree_map<
+    lyric_runtime::DataCell,
+    lyric_runtime::DataCell,
+    TreeMapComparator>;
+
 class TreeMapRef : public lyric_runtime::BaseRef {
 
 public:
@@ -50,6 +55,8 @@ public:
 
     lyric_runtime::DataCell put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value);
     lyric_runtime::DataCell remove(const lyric_runtime::DataCell &key);
+    TreeMapImpl::iterator begin();
+    TreeMapImpl::iterator end();
     void clear();
 
 protected:
@@ -57,12 +64,36 @@ protected:
     void clearMembersReachable() override;
 
 private:
-    absl::btree_map<
-        lyric_runtime::DataCell,
-        lyric_runtime::DataCell,
-        TreeMapComparator> m_map;
+    TreeMapImpl m_map;
     int m_gen;
     TreeMapComparator m_cmp;
+};
+
+class TreeMapIterator : public lyric_runtime::BaseRef {
+
+public:
+    explicit TreeMapIterator(const lyric_runtime::VirtualTable *vtable);
+    TreeMapIterator(
+        const lyric_runtime::VirtualTable *vtable,
+        TreeMapRef *map);
+
+    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
+    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
+    std::string toString() const override;
+
+    bool valid();
+    lyric_runtime::DataCell key();
+    lyric_runtime::DataCell value();
+    bool next();
+
+protected:
+    void setMembersReachable() override;
+    void clearMembersReachable() override;
+
+private:
+    TreeMapImpl::iterator m_iter;
+    TreeMapRef *m_map;
+    int m_gen;
 };
 
 #endif // ZURI_STD_COLLECTIONS_TREEMAP_REF_H

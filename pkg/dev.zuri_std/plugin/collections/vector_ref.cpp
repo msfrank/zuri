@@ -151,7 +151,8 @@ VectorRef::clearMembersReachable()
 
 VectorIterator::VectorIterator(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable),
-      m_vector(nullptr)
+      m_vector(nullptr),
+      m_gen(0)
 {
 }
 
