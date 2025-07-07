@@ -6,13 +6,16 @@
 TargetBuilder::TargetBuilder(
     std::shared_ptr<BuildGraph> buildGraph,
     lyric_build::LyricBuilder *builder,
+    std::shared_ptr<zuri_distributor::PackageCache> targetPackageCache,
     const std::filesystem::path &installRoot)
     : m_buildGraph(std::move(buildGraph)),
       m_builder(builder),
+      m_targetPackageCache(std::move(targetPackageCache)),
       m_installRoot(installRoot)
 {
     TU_ASSERT (m_buildGraph != nullptr);
     TU_ASSERT (m_builder != nullptr);
+    TU_ASSERT (m_targetPackageCache != nullptr);
     TU_ASSERT (!m_installRoot.empty());
 }
 
@@ -23,23 +26,38 @@ TargetBuilder::buildTarget(const std::string &targetName)
     TU_ASSIGN_OR_RETURN (targetBuildOrder, m_buildGraph->calculateBuildOrder(targetName));
 
     std::filesystem::path targetPath;
+    std::filesystem::path prevTargetPath;
 
     auto targetStore = m_buildGraph->getTargetStore();
-    for (const auto &nextTarget : targetBuildOrder) {
-        const auto &nextEntry = targetStore->getTarget(nextTarget);
-        switch (nextEntry.type) {
+    for (const auto &currTarget : targetBuildOrder) {
+
+        // if target dependency exists then install it in the target package cache
+        if (!prevTargetPath.empty()) {
+            std::shared_ptr<zuri_packager::PackageReader> packageReader;
+            TU_ASSIGN_OR_RETURN (packageReader, zuri_packager::PackageReader::open(prevTargetPath));
+            zuri_packager::PackageSpecifier specifier;
+            TU_ASSIGN_OR_RETURN (specifier, packageReader->readPackageSpecifier());
+            if (m_targetPackageCache->containsPackage(specifier)) {
+                TU_RETURN_IF_NOT_OK (m_targetPackageCache->removePackage(specifier));
+            }
+            TU_RETURN_IF_STATUS (m_targetPackageCache->installPackage(packageReader));
+        }
+
+        const auto &currEntry = targetStore->getTarget(currTarget);
+        switch (currEntry.type) {
             case TargetEntryType::Program: {
-                TU_ASSIGN_OR_RETURN (targetPath, buildProgramTarget(nextTarget, nextEntry));
+                TU_ASSIGN_OR_RETURN (targetPath, buildProgramTarget(currTarget, currEntry));
                 break;
             }
             case TargetEntryType::Library: {
-                TU_ASSIGN_OR_RETURN (targetPath, buildLibraryTarget(nextTarget, nextEntry));
+                TU_ASSIGN_OR_RETURN (targetPath, buildLibraryTarget(currTarget, currEntry));
                 break;
             }
             default:
                 return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kConfigInvariant,
-                    "invalid type for build target {}", nextTarget);
+                    "invalid type for build target {}", currTarget);
         }
+        prevTargetPath = targetPath;
     }
 
     return targetPath;
@@ -49,6 +67,7 @@ tempo_utils::Result<std::filesystem::path>
 TargetBuilder::buildProgramTarget(const std::string &targetName, const TargetEntry &programTarget)
 {
     TU_ASSERT (programTarget.type == TargetEntryType::Program);
+
     return {};
 }
 

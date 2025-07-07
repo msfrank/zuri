@@ -13,12 +13,18 @@ namespace zuri_packager {
     public:
         PackageDependency();
         PackageDependency(
-            const std::string &name,
-            const std::string &domain,
+            const PackageId &packageId,
+            const RequirementsList &requirements);
+        PackageDependency(
+            const std::string &packageName,
+            const std::string &packageDomain,
             const std::vector<std::shared_ptr<AbstractPackageRequirement>> &requirements);
         PackageDependency(const PackageDependency &other);
 
         bool isValid() const;
+
+        PackageId getPackageId() const;
+        RequirementsList getRequirements() const;
 
         std::string getName() const;
         std::string getDomain() const;
@@ -33,9 +39,8 @@ namespace zuri_packager {
 
     private:
         struct Priv {
-            std::string name;
-            std::string domain;
-            std::vector<std::shared_ptr<AbstractPackageRequirement>> requirements;
+            PackageId id;
+            RequirementsList requirements;
         };
         std::shared_ptr<Priv> m_priv;
     };

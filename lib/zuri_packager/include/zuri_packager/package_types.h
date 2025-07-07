@@ -2,6 +2,7 @@
 #define ZURI_PACKAGER_PACKAGE_TYPES_H
 
 #include <memory>
+#include <string>
 
 #include <tempo_utils/integer_types.h>
 
@@ -95,6 +96,77 @@ namespace zuri_packager {
     private:
         NamespaceAddress m_address;
         tu_uint32 m_type;
+    };
+
+    class PackageId {
+    public:
+        PackageId();
+        PackageId(std::string_view name, std::string_view domain);
+        PackageId(const PackageId &other);
+
+        bool isValid() const;
+
+        std::string getName() const;
+        std::string getDomain() const;
+
+        std::string toString() const;
+
+        bool operator==(const PackageId &other) const;
+        bool operator!=(const PackageId &other) const;
+
+        template <typename H>
+        friend H AbslHashValue(H h, const PackageId &id) {
+            if (id.isValid())
+                return H::combine(std::move(h), id.getName(), id.getDomain());
+            return H::combine(std::move(h), 0);
+        }
+
+    private:
+        struct Priv {
+            std::string name;
+            std::string domain;
+        };
+        std::shared_ptr<Priv> m_priv;
+    };
+
+    class PackageVersion {
+    public:
+        PackageVersion();
+        PackageVersion(tu_uint32 majorVersion, tu_uint32 minorVersion, tu_uint32 patchVersion);
+        PackageVersion(const PackageVersion &other);
+
+        bool isValid() const;
+
+        tu_uint32 getMajorVersion() const;
+        tu_uint32 getMinorVersion() const;
+        tu_uint32 getPatchVersion() const;
+
+        std::string toString() const;
+
+        int compare(const PackageVersion &other) const;
+
+        bool operator==(const PackageVersion &other) const;
+        bool operator!=(const PackageVersion &other) const;
+        bool operator<=(const PackageVersion &other) const;
+        bool operator<(const PackageVersion &other) const;
+        bool operator>=(const PackageVersion &other) const;
+        bool operator>(const PackageVersion &other) const;
+
+        template <typename H>
+        friend H AbslHashValue(H h, const PackageVersion &version) {
+            if (version.isValid())
+                return H::combine(std::move(h), version.getMajorVersion(),
+                    version.getMinorVersion(), version.getPatchVersion());
+            return H::combine(std::move(h), 0);
+        }
+
+    private:
+        struct Priv {
+            tu_uint32 majorVersion;
+            tu_uint32 minorVersion;
+            tu_uint32 patchVersion;
+        };
+        std::shared_ptr<Priv> m_priv;
     };
 
     // forward declarations

@@ -14,6 +14,7 @@ namespace zuri_packager {
     enum class PackageCondition {
         kInvalidHeader,
         kInvalidManifest,
+        kMissingEntry,
         kDuplicateEntry,
         kDuplicateAttr,
         kDuplicateNamespace,
@@ -90,6 +91,8 @@ namespace tempo_utils {
                     return StatusCode::kInvalidArgument;
                 case zuri_packager::PackageCondition::kInvalidManifest:
                     return StatusCode::kInvalidArgument;
+                case zuri_packager::PackageCondition::kMissingEntry:
+                    return StatusCode::kNotFound;
                 case zuri_packager::PackageCondition::kDuplicateEntry:
                     return StatusCode::kInvalidArgument;
                 case zuri_packager::PackageCondition::kDuplicateAttr:
@@ -109,6 +112,8 @@ namespace tempo_utils {
                     return "Invalid header";
                 case zuri_packager::PackageCondition::kInvalidManifest:
                     return "Invalid manifest";
+                case zuri_packager::PackageCondition::kMissingEntry:
+                    return "Missing entry";
                 case zuri_packager::PackageCondition::kDuplicateEntry:
                     return "Duplicate entry";
                 case zuri_packager::PackageCondition::kDuplicateAttr:

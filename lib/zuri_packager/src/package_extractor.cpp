@@ -6,9 +6,8 @@
 #include <tempo_utils/file_writer.h>
 #include <tempo_utils/tempdir_maker.h>
 #include <zuri_packager/package_extractor.h>
-
-#include "zuri_packager/package_reader.h"
-#include "zuri_packager/package_specifier.h"
+#include <zuri_packager/package_reader.h>
+#include <zuri_packager/package_specifier.h>
 
 zuri_packager::PackageExtractor::PackageExtractor(
     std::shared_ptr<PackageReader> reader,
@@ -26,36 +25,7 @@ zuri_packager::PackageExtractor::configure()
         return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
             "extractor is already configured");
 
-    auto packageConfigSlice = m_reader->getFileContents(tempo_utils::UrlPath::fromString("/package.config"));
-    if (packageConfigSlice.isEmpty())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
-            "missing package.config");
-
-    //
-    std::string_view packageConfigString((const char *) packageConfigSlice.getData(), packageConfigSlice.getSize());
-    tempo_config::ConfigNode packageConfig;
-    TU_ASSIGN_OR_RETURN (packageConfig, tempo_config::read_config_string(
-        packageConfigString, std::make_shared<tempo_config::ConfigSource>(
-            tempo_config::ConfigSourceType::File, "<zuri-package>/package.config")));
-    auto packageConfigRoot = packageConfig.toMap();
-
-    //
-    tempo_config::StringParser nameParser;
-    std::string packageName;
-    tempo_config::parse_config(packageName, nameParser, packageConfigRoot, "name");
-
-    //
-    tempo_config::StringParser versionParser;
-    std::string packageVersion;
-    tempo_config::parse_config(packageVersion, versionParser, packageConfigRoot, "version");
-
-    //
-    tempo_config::StringParser domainParser;
-    std::string packageDomain;
-    tempo_config::parse_config(packageDomain, domainParser, packageConfigRoot, "domain");
-
-    m_specifier = PackageSpecifier::fromString(absl::StrCat(
-        packageName, "-", packageVersion, "@", packageDomain));
+    TU_ASSIGN_OR_RETURN (m_specifier, m_reader->readPackageSpecifier());
 
     return {};
 }
@@ -122,7 +92,8 @@ zuri_packager::PackageExtractor::extractFile(const EntryWalker &file)
 {
     auto relativePath = file.getPath().toRelative();
     auto filePath = relativePath.toFilesystemPath(m_workdirPath);
-    auto slice = m_reader->getFileContents(file.getPath());
+    tempo_utils::Slice slice;
+    TU_ASSIGN_OR_RETURN (slice, m_reader->readFileContents(file.getPath()));
     tempo_utils::FileWriter fileWriter(filePath, slice.toImmutableBytes(), tempo_utils::FileWriterMode::CREATE_ONLY);
     return fileWriter.getStatus();
 }

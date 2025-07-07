@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <lyric_build/build_conversions.h>
 #include <lyric_build/lyric_builder.h>
+#include <lyric_runtime/chain_loader.h>
 #include <tempo_command/command_config.h>
 #include <tempo_command/command_help.h>
 #include <tempo_command/command_parser.h>
@@ -11,13 +11,17 @@
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
 #include <zuri_build/build_graph.h>
+#include <zuri_build/collect_modules_task.h>
 #include <zuri_build/import_store.h>
-#include <zuri_build/workspace_config.h>
 #include <zuri_build/target_builder.h>
 #include <zuri_build/target_store.h>
+#include <zuri_build/workspace_config.h>
 #include <zuri_build/zuri_build.h>
 
-#include "zuri_build/collect_modules_task.h"
+#include "zuri_build/dependency_resolver.h"
+#include "zuri_distributor/distributor_result.h"
+#include "zuri_distributor/package_cache.h"
+#include "zuri_distributor/package_cache_loader.h"
 
 tempo_utils::Status
 run_zuri_build(int argc, const char *argv[])
@@ -254,15 +258,6 @@ run_zuri_build(int argc, const char *argv[])
         builderOptions.numThreads = jobParallelism;
     }
 
-    // create task registry and add build task domains
-    auto taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
-    taskRegistry->registerTaskDomain("collect_modules", new_collect_modules_task);
-    builderOptions.taskRegistry = std::move(taskRegistry);
-
-    // construct the builder based on workspace config and config overrides
-    lyric_build::LyricBuilder builder(workspaceRoot, taskSettings, builderOptions);
-    TU_RETURN_IF_NOT_OK (builder.configure());
-
     // verify there is at least one target and all targets are defined
     if (targets.empty())
         return tempo_command::CommandStatus::forCondition(
@@ -275,9 +270,50 @@ run_zuri_build(int argc, const char *argv[])
                 "unknown target '{}'", target);
     }
 
+    // open or create the import package cache
+    std::shared_ptr<zuri_distributor::PackageCache> importPackageCache;
+    TU_ASSIGN_OR_RETURN (importPackageCache, zuri_distributor::PackageCache::openOrCreate(
+        buildRoot, "imports"));
+
+    // create the shortcut resolver
+    auto shortcutResolver = std::make_shared<lyric_importer::ShortcutResolver>();
+
+    // create the dependency resolver
+    ImportInstaller importInstaller({}, importPackageCache);
+    for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); ++it) {
+        const auto &importEntry = it->second;
+        switch (importEntry.type) {
+            case ImportEntryType::Requirement:
+            default:
+                break;
+        }
+    }
+
+    // create task registry and register build task domains
+    auto taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
+    taskRegistry->registerTaskDomain("collect_modules", new_collect_modules_task);
+    builderOptions.taskRegistry = std::move(taskRegistry);
+
+    // open or create the target package cache
+    std::shared_ptr<zuri_distributor::PackageCache> targetPackageCache;
+    TU_ASSIGN_OR_RETURN (targetPackageCache, zuri_distributor::PackageCache::openOrCreate(
+        buildRoot, "targets"));
+
+    // set the fallback loader to load from the package cache hierarchy
+    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
+    loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(targetPackageCache));
+    loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(importPackageCache));
+    builderOptions.fallbackLoader = std::make_shared<lyric_runtime::ChainLoader>();
+
+    //
+
+    // construct the builder based on workspace config and config overrides
+    lyric_build::LyricBuilder builder(workspaceRoot, taskSettings, builderOptions);
+    TU_RETURN_IF_NOT_OK (builder.configure());
+
     // build each target (and its dependencies) in the order specified on the command line
     for (const auto &target : targets) {
-        TargetBuilder targetBuilder(buildGraph, &builder, installRoot);
+        TargetBuilder targetBuilder(buildGraph, &builder, targetPackageCache, installRoot);
         TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target));
     }
 

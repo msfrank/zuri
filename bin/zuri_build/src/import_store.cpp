@@ -1,5 +1,4 @@
 
-#include <lyric_build/build_conversions.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_config/enum_conversions.h>
@@ -13,21 +12,21 @@ ImportStore::ImportStore(const tempo_config::ConfigMap &importsConfig)
 
 class ImportEntryParser : public tempo_config::AbstractConverter<ImportEntry> {
 public:
-    tempo_utils::Status parseTarget(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const {
+    static tempo_utils::Status parseTarget(const tempo_config::ConfigMap &map, ImportEntry &importEntry) {
         tempo_config::StringParser targetNameParser;
         TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
             importEntry.targetName, targetNameParser, map, "targetName"));
         return {};
     }
 
-    tempo_utils::Status parseRequirement(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const {
+    static tempo_utils::Status parseRequirement(const tempo_config::ConfigMap &map, ImportEntry &importEntry) {
         tempo_config::StringParser requirementSpecParser;
         TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
             importEntry.requirementSpec, requirementSpecParser, map, "requirementSpec"));
         return {};
     }
 
-    tempo_utils::Status parsePackage(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const {
+    static tempo_utils::Status parsePackage(const tempo_config::ConfigMap &map, ImportEntry &importEntry) {
         tempo_config::UrlParser packageUrlParser;
         TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
             importEntry.packageUrl, packageUrlParser, map, "packageUrl"));

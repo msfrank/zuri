@@ -44,7 +44,7 @@ zuri_test::ZuriTester::configure()
     // open the existing package cache if specified, otherwise create a new one
     std::shared_ptr<zuri_distributor::PackageCache> packageCache;
     if (m_options.existingPackageCache.empty()) {
-        TU_ASSIGN_OR_RETURN (packageCache, zuri_distributor::PackageCache::create(
+        TU_ASSIGN_OR_RETURN (packageCache, zuri_distributor::PackageCache::openOrCreate(
             runner->getTesterDirectory(), "packages"));
     } else {
         TU_ASSIGN_OR_RETURN (packageCache, zuri_distributor::PackageCache::open(

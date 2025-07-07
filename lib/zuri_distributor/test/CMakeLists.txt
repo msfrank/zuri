@@ -6,6 +6,7 @@ include(GoogleTest)
 # define unit tests
 
 set(TEST_CASES
+    dependency_set_tests.cpp
     package_cache_tests.cpp
     )
 

@@ -11,6 +11,55 @@ zuri_distributor::PackageCache::PackageCache(const std::filesystem::path &cacheD
     TU_ASSERT (!m_cacheDirectory.empty());
 }
 
+bool
+zuri_distributor::PackageCache::containsPackage(const zuri_packager::PackageSpecifier &specifier) const
+{
+    if (!specifier.isValid())
+        return false;
+    auto packagePath = m_cacheDirectory / specifier.toString();
+    return std::filesystem::is_directory(packagePath);
+}
+
+tempo_utils::Result<Option<std::filesystem::path>>
+zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageSpecifier &specifier) const
+{
+    if (!specifier.isValid())
+        return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
+            "invalid package specifier");
+
+    auto packagePath = m_cacheDirectory / specifier.toString();
+    if (!std::filesystem::is_directory(packagePath))
+        return Option<std::filesystem::path>();
+
+    return Option(packagePath);
+}
+
+tempo_utils::Result<Option<std::filesystem::path>>
+zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageDependency &dependency) const
+{
+    std::vector<std::pair<zuri_packager::PackageSpecifier,std::filesystem::path>> suitablePackages;
+
+    std::filesystem::directory_iterator dir(m_cacheDirectory);
+    for (const auto &entry : dir) {
+        if (!entry.is_directory())
+            continue;
+        auto path = entry.path();
+        auto specifier = zuri_packager::PackageSpecifier::fromFilesystemName(path.filename());
+        if (dependency.satisfiedBy(specifier))
+            continue;
+        suitablePackages.emplace_back(specifier, path);
+    }
+
+    if (suitablePackages.empty())
+        return Option<std::filesystem::path>();
+
+    std::sort(suitablePackages.begin(), suitablePackages.end(), [](auto &a, auto &b) {
+        return a.first < b.first;
+    });
+
+    return Option(suitablePackages.back().second);
+}
+
 tempo_utils::Result<std::filesystem::path>
 zuri_distributor::PackageCache::installPackage(const std::filesystem::path &packagePath)
 {
@@ -47,51 +96,15 @@ zuri_distributor::PackageCache::removePackage(const zuri_packager::PackageSpecif
     return {};
 }
 
-tempo_utils::Result<Option<std::filesystem::path>>
-zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageSpecifier &specifier)
-{
-    if (!specifier.isValid())
-        return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-            "invalid package specifier");
-
-    auto packagePath = m_cacheDirectory / specifier.toString();
-    if (!std::filesystem::is_directory(packagePath))
-        return Option<std::filesystem::path>();
-
-    return Option(packagePath);
-}
-
-tempo_utils::Result<Option<std::filesystem::path>>
-zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageDependency &dependency)
-{
-    std::vector<std::pair<zuri_packager::PackageSpecifier,std::filesystem::path>> suitablePackages;
-
-    std::filesystem::directory_iterator dir(m_cacheDirectory);
-    for (const auto &entry : dir) {
-        if (!entry.is_directory())
-            continue;
-        auto path = entry.path();
-        auto specifier = zuri_packager::PackageSpecifier::fromFilesystemName(path.filename());
-        if (dependency.satisfiedBy(specifier))
-            continue;
-        suitablePackages.emplace_back(specifier, path);
-    }
-
-    if (suitablePackages.empty())
-        return Option<std::filesystem::path>();
-
-    std::sort(suitablePackages.begin(), suitablePackages.end(), [](auto &a, auto &b) {
-        return a.first < b.first;
-    });
-
-    return Option(suitablePackages.back().second);
-}
-
 tempo_utils::Result<std::shared_ptr<zuri_distributor::PackageCache>>
-zuri_distributor::PackageCache::create(
+zuri_distributor::PackageCache::openOrCreate(
     const std::filesystem::path &distributionRoot,
     std::string_view cacheName)
 {
+    auto packageCachePath = distributionRoot / cacheName;
+    if (std::filesystem::exists(packageCachePath))
+        return open(packageCachePath);
+
     if (!std::filesystem::is_directory(distributionRoot))
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "distribution root {} does not exist", distributionRoot.string());
@@ -99,7 +112,6 @@ zuri_distributor::PackageCache::create(
     tempo_utils::TempdirMaker cacheTempDir(distributionRoot, absl::StrCat(cacheName, ".XXXXXXXX"));
     TU_RETURN_IF_NOT_OK (cacheTempDir.getStatus());
 
-    auto packageCachePath = distributionRoot / cacheName;
     std::error_code ec;
     std::filesystem::rename(cacheTempDir.getTempdir(), packageCachePath, ec);
     if (ec)

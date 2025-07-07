@@ -7,14 +7,24 @@ zuri_packager::PackageDependency::PackageDependency()
 }
 
 zuri_packager::PackageDependency::PackageDependency(
-    const std::string &name,
-    const std::string &domain,
-    const std::vector<std::shared_ptr<AbstractPackageRequirement>> &requirements)
+    const PackageId &packageId,
+    const RequirementsList &requirements)
+    : m_priv(std::make_shared<Priv>())
 {
-    m_priv = std::make_shared<Priv>(name, domain, requirements);
-    TU_ASSERT (!m_priv->name.empty());
-    TU_ASSERT (!m_priv->domain.empty());
-    TU_ASSERT (!m_priv->requirements.empty());
+    m_priv->id = packageId;
+    m_priv->requirements = requirements;
+    TU_ASSERT (m_priv->id.isValid());
+}
+
+zuri_packager::PackageDependency::PackageDependency(
+    const std::string &packageName,
+    const std::string &packageDomain,
+    const std::vector<std::shared_ptr<AbstractPackageRequirement>> &requirements)
+    : m_priv(std::make_shared<Priv>())
+{
+    m_priv->id = PackageId(packageName, packageDomain);
+    m_priv->requirements = RequirementsList(requirements);
+    TU_ASSERT (m_priv->id.isValid());
 }
 
 zuri_packager::PackageDependency::PackageDependency(const PackageDependency &other)
@@ -25,37 +35,57 @@ zuri_packager::PackageDependency::PackageDependency(const PackageDependency &oth
 bool
 zuri_packager::PackageDependency::isValid() const
 {
-    return !m_priv->name.empty() && !m_priv->domain.empty();
+    return m_priv->id.isValid();
+}
+
+zuri_packager::PackageId
+zuri_packager::PackageDependency::getPackageId() const
+{
+    if (isValid())
+        return m_priv->id;
+    return {};
+}
+
+zuri_packager::RequirementsList
+zuri_packager::PackageDependency::getRequirements() const
+{
+    if (isValid())
+        return m_priv->requirements;
+    return {};
 }
 
 std::string
 zuri_packager::PackageDependency::getName() const
 {
-    return m_priv->name;
+    if (isValid())
+        return m_priv->id.getName();
+    return {};
 }
 
 std::string
 zuri_packager::PackageDependency::getDomain() const
 {
-    return m_priv->domain;
+    if (isValid())
+        return m_priv->id.getDomain();
+    return {};
 }
 
 std::vector<std::shared_ptr<zuri_packager::AbstractPackageRequirement>>::const_iterator
 zuri_packager::PackageDependency::requirementsBegin() const
 {
-    return m_priv->requirements.cbegin();
+    return m_priv->requirements.requirementsBegin();
 }
 
 std::vector<std::shared_ptr<zuri_packager::AbstractPackageRequirement>>::const_iterator
 zuri_packager::PackageDependency::requirementsEnd() const
 {
-    return m_priv->requirements.cend();
+    return m_priv->requirements.requirementsEnd();
 }
 
 int
 zuri_packager::PackageDependency::numRequirements() const
 {
-    return m_priv->requirements.size();
+    return m_priv->requirements.numRequirements();
 }
 
 bool
@@ -63,13 +93,12 @@ zuri_packager::PackageDependency::satisfiedBy(const PackageSpecifier &specifier)
 {
     if (!isValid())
         return false;
-    if (specifier.getPackageDomain() != m_priv->domain)
+    if (m_priv->id != specifier.getPackageId())
         return false;
-    if (specifier.getPackageName() != m_priv->name)
-        return false;
-
-    for (const auto &requirement : m_priv->requirements) {
-        if (!requirement->satisfiedBy(specifier))
+    auto version = specifier.getPackageVersion();
+    for (auto it = m_priv->requirements.requirementsBegin(); it != m_priv->requirements.requirementsEnd(); ++it) {
+        auto &requirement = *it;
+        if (!requirement->satisfiedBy(version))
             return false;
     }
     return true;
@@ -78,16 +107,22 @@ zuri_packager::PackageDependency::satisfiedBy(const PackageSpecifier &specifier)
 tempo_config::ConfigNode
 zuri_packager::PackageDependency::toNode() const
 {
-    if (m_priv->requirements.size() == 1) {
-        auto node = m_priv->requirements.front()->toNode();
+    auto numRequirements = m_priv->requirements.numRequirements();
+    if (numRequirements == 0)
+        return tempo_config::startSeq().buildNode();
+
+    auto it = m_priv->requirements.requirementsBegin();
+
+    if (m_priv->requirements.numRequirements() == 1) {
+        auto node = (*it)->toNode();
         if (node.getNodeType() == tempo_config::ConfigNodeType::kValue)
             return node;
         return {};
     }
 
     auto requirementsBuilder = tempo_config::startSeq();
-    for (const auto &req : m_priv->requirements) {
-        auto node = req->toNode();
+    for (; it != m_priv->requirements.requirementsEnd(); ++it) {
+        auto node = (*it)->toNode();
         if (node.getNodeType() != tempo_config::ConfigNodeType::kValue)
             return {};
         requirementsBuilder = requirementsBuilder.append(node);

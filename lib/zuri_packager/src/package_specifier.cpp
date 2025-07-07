@@ -7,8 +7,18 @@
 #include <zuri_packager/package_types.h>
 
 zuri_packager::PackageSpecifier::PackageSpecifier()
-    : m_priv(std::make_shared<Priv>())
 {
+}
+
+zuri_packager::PackageSpecifier::PackageSpecifier(
+    const PackageId &packageId,
+    const PackageVersion &packageVersion)
+{
+    m_priv = std::make_shared<Priv>();
+    m_priv->id = packageId;
+    m_priv->version = packageVersion;
+    TU_ASSERT (m_priv->id.isValid());
+    TU_ASSERT (m_priv->version.isValid());
 }
 
 zuri_packager::PackageSpecifier::PackageSpecifier(
@@ -18,10 +28,11 @@ zuri_packager::PackageSpecifier::PackageSpecifier(
     tu_uint32 minorVersion,
     tu_uint32 patchVersion)
 {
-    m_priv = std::make_shared<Priv>(packageName, packageDomain, majorVersion, minorVersion, patchVersion);
-    TU_ASSERT (!m_priv->packageName.empty());
-    TU_ASSERT (!m_priv->packageDomain.empty());
-    TU_ASSERT (!(m_priv->majorVersion == 0 && m_priv->minorVersion == 0 && m_priv->patchVersion == 0));
+    m_priv = std::make_shared<Priv>();
+    m_priv->id = PackageId(packageName, packageDomain);
+    m_priv->version = PackageVersion(majorVersion, minorVersion, patchVersion);
+    TU_ASSERT (m_priv->id.isValid());
+    TU_ASSERT (m_priv->version.isValid());
 }
 
 zuri_packager::PackageSpecifier::PackageSpecifier(const PackageSpecifier &other)
@@ -32,70 +43,93 @@ zuri_packager::PackageSpecifier::PackageSpecifier(const PackageSpecifier &other)
 bool
 zuri_packager::PackageSpecifier::isValid() const
 {
-    return !m_priv->packageName.empty() && !m_priv->packageDomain.empty();
+    return m_priv != nullptr;
+}
+
+zuri_packager::PackageId
+zuri_packager::PackageSpecifier::getPackageId() const
+{
+    if (isValid())
+        return m_priv->id;
+    return {};
+}
+
+zuri_packager::PackageVersion
+zuri_packager::PackageSpecifier::getPackageVersion() const
+{
+    if (isValid())
+        return m_priv->version;
+    return {};
 }
 
 std::string
 zuri_packager::PackageSpecifier::getPackageName() const
 {
-    return m_priv->packageName;
+    if (isValid())
+        return m_priv->id.getName();
+    return {};
 }
 
 std::string
 zuri_packager::PackageSpecifier::getPackageDomain() const
 {
-    return m_priv->packageDomain;
+    if (isValid())
+        return m_priv->id.getDomain();
+    return {};
 }
 
 tu_uint32
 zuri_packager::PackageSpecifier::getMajorVersion() const
 {
-    return m_priv->majorVersion;
+    if (isValid())
+        return m_priv->version.getMajorVersion();
+    return 0;
 }
 
 tu_uint32
 zuri_packager::PackageSpecifier::getMinorVersion() const
 {
-    return m_priv->minorVersion;
+    if (isValid())
+        return m_priv->version.getMinorVersion();
+    return 0;
 }
 
 tu_uint32
 zuri_packager::PackageSpecifier::getPatchVersion() const
 {
-    return m_priv->patchVersion;
+    if (isValid())
+        return m_priv->version.getPatchVersion();
+    return 0;
 }
 
 std::string
 zuri_packager::PackageSpecifier::getVersionString() const
 {
-    return absl::StrCat(
-        m_priv->majorVersion,
-        ".",
-        m_priv->minorVersion,
-        ".",
-        m_priv->patchVersion);
+    if (isValid())
+        return absl::StrCat(
+            m_priv->version.getMajorVersion(),
+            ".",
+            m_priv->version.getMinorVersion(),
+            ".",
+            m_priv->version.getPatchVersion());
+    return {};
 }
 
 int
 zuri_packager::PackageSpecifier::compare(const PackageSpecifier &other) const
 {
-    if (!m_priv && other.m_priv)
-        return -1;
-    if (m_priv && !other.m_priv)
-        return 1;
-    int domaincmp = m_priv->packageDomain.compare(other.m_priv->packageDomain);
-    if (domaincmp != 0)
-        return domaincmp;
-    int namecmp = m_priv->packageName.compare(other.m_priv->packageName);
-    if (namecmp != 0)
-        return namecmp;
-    if (m_priv->majorVersion != other.m_priv->majorVersion)
-        return m_priv->majorVersion < other.m_priv->majorVersion? -1 : 1;
-    if (m_priv->minorVersion != other.m_priv->minorVersion)
-        return m_priv->minorVersion < other.m_priv->minorVersion? -1 : 1;
-    if (m_priv->patchVersion != other.m_priv->patchVersion)
-        return m_priv->patchVersion < other.m_priv->patchVersion? -1 : 1;
-    return 0;
+    if (m_priv) {
+        if (!other.m_priv)
+            return 1;
+        int domaincmp = getPackageDomain().compare(other.getPackageDomain());
+        if (domaincmp != 0)
+            return domaincmp;
+        int namecmp = getPackageName().compare(other.getPackageName());
+        if (namecmp != 0)
+            return namecmp;
+        return m_priv->version.compare(other.m_priv->version);
+    }
+    return other.m_priv? -1 : 0;
 }
 
 bool
@@ -121,18 +155,18 @@ zuri_packager::PackageSpecifier::toString() const
 {
     if (!isValid())
         return {};
-    std::vector<std::string> hostParts = absl::StrSplit(m_priv->packageDomain, ".");
+    std::vector<std::string> hostParts = absl::StrSplit(getPackageDomain(), ".");
     std::reverse(hostParts.begin(), hostParts.end());
     return absl::StrCat(
         absl::StrJoin(hostParts, "."),
         "_",
-        m_priv->packageName,
+        getPackageName(),
         "-",
-        m_priv->majorVersion,
+        getMajorVersion(),
         ".",
-        m_priv->minorVersion,
+        getMinorVersion(),
         ".",
-        m_priv->patchVersion);
+        getPatchVersion());
 }
 
 std::filesystem::path
@@ -151,15 +185,15 @@ zuri_packager::PackageSpecifier::toUrl() const
     if (!isValid())
         return {};
     auto username = absl::StrCat(
-        m_priv->packageName,
+        getPackageName(),
         "-",
-        m_priv->majorVersion,
+        getMajorVersion(),
         ".",
-        m_priv->minorVersion,
+        getMinorVersion(),
         ".",
-        m_priv->patchVersion);
+        getPatchVersion());
     return tempo_utils::Url::fromOrigin(
-        absl::StrCat("dev.zuri.pkg://", username, "@", m_priv->packageDomain));
+        absl::StrCat("dev.zuri.pkg://", username, "@", getPackageDomain()));
 }
 
 zuri_packager::PackageSpecifier

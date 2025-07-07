@@ -7,12 +7,17 @@
 #include <tempo_utils/integer_types.h>
 #include <tempo_utils/url.h>
 
+#include "package_types.h"
+
 namespace zuri_packager {
 
     class PackageSpecifier {
 
     public:
         PackageSpecifier();
+        PackageSpecifier(
+            const PackageId &packageId,
+            const PackageVersion &packageVersion);
         PackageSpecifier(
             const std::string &packageName,
             const std::string &packageDomain,
@@ -23,11 +28,15 @@ namespace zuri_packager {
 
         bool isValid() const;
 
+        PackageId getPackageId() const;
+        PackageVersion getPackageVersion() const;
+
         std::string getPackageName() const;
         std::string getPackageDomain() const;
         tu_uint32 getMajorVersion() const;
         tu_uint32 getMinorVersion() const;
         tu_uint32 getPatchVersion() const;
+
         std::string getVersionString() const;
 
         int compare(const PackageSpecifier &other) const;
@@ -47,11 +56,8 @@ namespace zuri_packager {
 
     private:
         struct Priv {
-            std::string packageName;
-            std::string packageDomain;
-            tu_uint32 majorVersion = 0;
-            tu_uint32 minorVersion = 0;
-            tu_uint32 patchVersion = 0;
+            PackageId id;
+            PackageVersion version;
         };
         std::shared_ptr<Priv> m_priv;
     };
