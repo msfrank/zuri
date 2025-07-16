@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 #include <lyric_build/build_result.h>
-#include <lyric_build/sha256_hash.h>
+#include <tempo_security/sha256_hash.h>
 #include <tempo_utils/memory_bytes.h>
 #include <tempo_utils/uuid.h>
 #include <zuri/fragment_store.h>
@@ -99,7 +99,7 @@ FragmentStore::insertFragment(
 {
     lyric_build::Resource resource;
     resource.id = tempo_utils::UUID::randomUUID().toString();
-    resource.entityTag = lyric_build::Sha256Hash::hash(fragment);
+    resource.entityTag = tempo_security::Sha256Hash::hash(fragment);
     resource.lastModifiedMillis = lastModifiedMillis;
     m_meta[fragmentUrl] = resource;
 

@@ -11,7 +11,10 @@ namespace zuri_packager {
     enum class RequirementType {
         Invalid,
         ExactVersion,
-        VersionRange,
+        StarRange,
+        HyphenRange,
+        TildeRange,
+        CaretRange,
     };
 
     struct VersionInterval {
@@ -35,6 +38,7 @@ namespace zuri_packager {
     class ExactVersionRequirement : public AbstractPackageRequirement {
     public:
         static std::shared_ptr<AbstractPackageRequirement> create(const PackageVersion &packageVersion);
+        static std::shared_ptr<AbstractPackageRequirement> create(tu_uint32 major, tu_uint32 minor, tu_uint32 patch);
 
         RequirementType getType() const override;
         VersionInterval getInterval() const override;
@@ -48,7 +52,7 @@ namespace zuri_packager {
         explicit ExactVersionRequirement(const PackageVersion &version);
     };
 
-    class VersionRangeRequirement : public AbstractPackageRequirement {
+    class HyphenRangeRequirement : public AbstractPackageRequirement {
     public:
         static std::shared_ptr<AbstractPackageRequirement> create(
             const PackageVersion &lowerBound,
@@ -64,7 +68,47 @@ namespace zuri_packager {
         PackageVersion m_lowerBound;
         PackageVersion m_upperBound;
 
-        VersionRangeRequirement(const PackageVersion &lower, const PackageVersion &upper);
+        HyphenRangeRequirement(const PackageVersion &lower, const PackageVersion &upper);
+    };
+
+    class TildeRangeRequirement : public AbstractPackageRequirement {
+    public:
+        static std::shared_ptr<AbstractPackageRequirement> create(const PackageVersion &version);
+        static std::shared_ptr<AbstractPackageRequirement> create(tu_uint32 major, tu_uint32 minor, tu_uint32 patch);
+        static std::shared_ptr<AbstractPackageRequirement> create(tu_uint32 major, tu_uint32 minor);
+        static std::shared_ptr<AbstractPackageRequirement> create(tu_uint32 major);
+
+        RequirementType getType() const override;
+        VersionInterval getInterval() const override;
+        bool satisfiedBy(const PackageVersion &version) const override;
+
+        tempo_config::ConfigNode toNode() const override;
+
+    private:
+        VersionInterval m_interval;
+        tempo_config::ConfigNode m_node;
+
+        TildeRangeRequirement(const VersionInterval &interval, const tempo_config::ConfigNode &node);
+    };
+
+    class CaretRangeRequirement : public AbstractPackageRequirement {
+    public:
+        static std::shared_ptr<AbstractPackageRequirement> create(const PackageVersion &version);
+        static std::shared_ptr<AbstractPackageRequirement> create(tu_uint32 major, tu_uint32 minor, tu_uint32 patch);
+        static std::shared_ptr<AbstractPackageRequirement> create(tu_uint32 major, tu_uint32 minor);
+        static std::shared_ptr<AbstractPackageRequirement> create(tu_uint32 major);
+
+        RequirementType getType() const override;
+        VersionInterval getInterval() const override;
+        bool satisfiedBy(const PackageVersion &version) const override;
+
+        tempo_config::ConfigNode toNode() const override;
+
+    private:
+        VersionInterval m_interval;
+        tempo_config::ConfigNode m_node;
+
+        CaretRangeRequirement(const VersionInterval &interval, const tempo_config::ConfigNode &node);
     };
 
     class RequirementsList {

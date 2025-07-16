@@ -12,6 +12,7 @@ set(TEST_CASES
     package_requirement_tests.cpp
     package_specifier_tests.cpp
     package_writer_tests.cpp
+    requirement_parser_tests.cpp
     )
 
 # define test suite driver

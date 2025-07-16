@@ -2,8 +2,10 @@
 #include "zuri_packager/package_types.h"
 
 #include <absl/strings/str_cat.h>
+#include <absl/strings/str_split.h>
 #include <zuri_packager/package_types.h>
 #include <tempo_utils/log_message.h>
+#include <tempo_utils/url_authority.h>
 
 zuri_packager::AttrId::AttrId()
     : m_address(),
@@ -91,21 +93,69 @@ zuri_packager::PackageId::toString() const
     return {};
 }
 
+int
+zuri_packager::PackageId::compare(const PackageId &other) const
+{
+    if (m_priv != nullptr) {
+        if (other.m_priv == nullptr)
+            return 1;
+        int namecmp = m_priv->name.compare(other.m_priv->name);
+        if (namecmp != 0)
+            return namecmp;
+        return m_priv->domain.compare(other.m_priv->domain);
+    }
+    return other.m_priv == nullptr? 0 : -1;
+}
+
 bool
 zuri_packager::PackageId::operator==(const PackageId &other) const
 {
-    if (m_priv) {
-        if (!other.m_priv)
-            return false;
-        return m_priv->name == other.m_priv->name && m_priv->domain == other.m_priv->domain;
-    }
-    return other.m_priv == nullptr;
+    return compare(other) == 0;
 }
 
 bool
 zuri_packager::PackageId::operator!=(const PackageId &other) const
 {
-    return !(*this == other);
+    return compare(other) != 0;
+}
+
+bool
+zuri_packager::PackageId::operator<=(const PackageId &other) const
+{
+    return compare(other) <= 0;
+}
+
+bool
+zuri_packager::PackageId::operator<(const PackageId &other) const
+{
+    return compare(other) < 0;
+}
+
+bool
+zuri_packager::PackageId::operator>=(const PackageId &other) const
+{
+    return compare(other) >= 0;
+}
+
+bool
+zuri_packager::PackageId::operator>(const PackageId &other) const
+{
+    return compare(other) > 0;
+}
+
+zuri_packager::PackageId
+zuri_packager::PackageId::fromString(std::string_view s)
+{
+    auto authority = tempo_utils::UrlAuthority::fromString(s);
+    if (!authority.isValid())
+        return {};
+    auto name = authority.getUsername();
+    if (name.empty())
+        return {};
+    auto domain = authority.getHost();
+    if (domain.empty())
+        return {};
+    return PackageId(name, domain);
 }
 
 zuri_packager::PackageVersion::PackageVersion()
@@ -233,4 +283,73 @@ bool
 zuri_packager::PackageVersion::operator>(const PackageVersion &other) const
 {
     return compare(other) > 0;
+}
+
+inline bool
+parse_version_digit(std::string_view s, tu_uint32 &digit)
+{
+    if (s.empty())
+        return false;
+    auto first = s.front();
+    if (s.size() == 1) {
+        if (!std::isdigit(first))
+            return false;
+    } else {
+        if (!std::isdigit(first) || first == '0')
+            return false;
+    }
+    return absl::SimpleAtoi(s, &digit);
+}
+
+zuri_packager::PackageVersion
+zuri_packager::PackageVersion::fromString(std::string_view s)
+{
+    // parse the version
+    std::vector<std::string> versionParts = absl::StrSplit(s, '.');
+    if (versionParts.size() != 3)
+        return {};
+
+    tu_uint32 major;
+    tu_uint32 minor;
+    tu_uint32 patch;
+
+    if (!parse_version_digit(versionParts.at(0), major))
+        return {};
+    if (!parse_version_digit(versionParts.at(1), minor))
+        return {};
+    if (!parse_version_digit(versionParts.at(2), patch))
+        return {};
+    return PackageVersion(major, minor, patch);
+}
+
+zuri_packager::RequirementsMap::RequirementsMap()
+    : m_requirements(std::make_shared<absl::flat_hash_map<PackageId,PackageVersion>>())
+{
+}
+
+zuri_packager::RequirementsMap::RequirementsMap(const absl::flat_hash_map<PackageId,PackageVersion> &requirements)
+    : m_requirements(std::make_shared<absl::flat_hash_map<PackageId,PackageVersion>>(requirements))
+{
+}
+
+zuri_packager::RequirementsMap::RequirementsMap(const RequirementsMap &other)
+    : m_requirements(other.m_requirements)
+{
+}
+
+absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion>::const_iterator
+zuri_packager::RequirementsMap::requirementsBegin() const
+{
+    return m_requirements->cbegin();
+}
+
+absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion>::const_iterator
+zuri_packager::RequirementsMap::requirementsEnd() const
+{
+    return m_requirements->cend();
+}
+
+int zuri_packager::RequirementsMap::numRequirements() const
+{
+    return m_requirements->size();
 }

@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <tempo_config/config_builder.h>
-#include <tempo_config/config_serde.h>
 
 #include <tempo_test/result_matchers.h>
 #include <tempo_test/status_matchers.h>

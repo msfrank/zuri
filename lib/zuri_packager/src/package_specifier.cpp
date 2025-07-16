@@ -145,9 +145,27 @@ zuri_packager::PackageSpecifier::operator!=(const PackageSpecifier &other) const
 }
 
 bool
+zuri_packager::PackageSpecifier::operator<=(const PackageSpecifier &other) const
+{
+    return compare(other) <= 0;
+}
+
+bool
 zuri_packager::PackageSpecifier::operator<(const PackageSpecifier &other) const
 {
     return compare(other) < 0;
+}
+
+bool
+zuri_packager::PackageSpecifier::operator>=(const PackageSpecifier &other) const
+{
+    return compare(other) >= 0;
+}
+
+bool
+zuri_packager::PackageSpecifier::operator>(const PackageSpecifier &other) const
+{
+    return compare(other) > 0;
 }
 
 std::string
@@ -155,9 +173,27 @@ zuri_packager::PackageSpecifier::toString() const
 {
     if (!isValid())
         return {};
+    return absl::StrCat(
+        getPackageName(),
+        "-",
+        getMajorVersion(),
+        ".",
+        getMinorVersion(),
+        ".",
+        getPatchVersion(),
+        "@",
+        getPackageDomain());
+}
+
+std::filesystem::path
+zuri_packager::PackageSpecifier::toFilesystemPath(const std::filesystem::path &base) const
+{
+    if (!isValid())
+        return {};
+
     std::vector<std::string> hostParts = absl::StrSplit(getPackageDomain(), ".");
     std::reverse(hostParts.begin(), hostParts.end());
-    return absl::StrCat(
+    auto basename = absl::StrCat(
         absl::StrJoin(hostParts, "."),
         "_",
         getPackageName(),
@@ -167,14 +203,8 @@ zuri_packager::PackageSpecifier::toString() const
         getMinorVersion(),
         ".",
         getPatchVersion());
-}
 
-std::filesystem::path
-zuri_packager::PackageSpecifier::toFilesystemPath(const std::filesystem::path &base) const
-{
-    if (!isValid())
-        return {};
-    auto path = base / toString();
+    auto path = base / basename;
     path += kPackageFileDotSuffix;
     return path;
 }
@@ -239,23 +269,17 @@ zuri_packager::PackageSpecifier::fromAuthority(const tempo_utils::UrlAuthority &
     auto packageName = nameAndVersion.substr(0, lastDash);
     auto versionString = nameAndVersion.substr(lastDash + 1);
 
-    // parse the version
-    std::vector<std::string> versionParts = absl::StrSplit(versionString, '.');
-    if (versionParts.size() != 3)
+    // build the id
+    PackageId packageId(packageName, packageDomain);
+    if (!packageId.isValid())
         return {};
 
-    tu_uint32 majorVersion;
-    tu_uint32 minorVersion;
-    tu_uint32 patchVersion;
-
-    if (!parse_version_digit(versionParts.at(0), majorVersion))
-        return {};
-    if (!parse_version_digit(versionParts.at(1), minorVersion))
-        return {};
-    if (!parse_version_digit(versionParts.at(2), patchVersion))
+    // build the version
+    auto packageVersion = PackageVersion::fromString(versionString);
+    if (!packageVersion.isValid())
         return {};
 
-    return PackageSpecifier(packageName, packageDomain, majorVersion, minorVersion, patchVersion);
+    return PackageSpecifier(packageId, packageVersion);
 }
 
 zuri_packager::PackageSpecifier

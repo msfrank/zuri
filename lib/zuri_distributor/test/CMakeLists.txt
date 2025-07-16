@@ -7,6 +7,7 @@ include(GoogleTest)
 
 set(TEST_CASES
     dependency_set_tests.cpp
+    dependency_selector_tests.cpp
     package_cache_tests.cpp
     )
 

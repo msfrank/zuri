@@ -8,7 +8,7 @@
 #include <tempo_utils/memory_mapped_bytes.h>
 
 #include "manifest_state.h"
-#include "manifest_walker.h"
+#include "package_requirement.h"
 #include "package_specifier.h"
 #include "zuri_manifest.h"
 
@@ -29,6 +29,7 @@ namespace zuri_packager {
         ZuriManifest getManifest() const;
 
         tempo_utils::Result<PackageSpecifier> readPackageSpecifier() const;
+        tempo_utils::Result<RequirementsMap> readRequirementsMap() const;
         tempo_utils::Result<tempo_config::ConfigMap> readPackageConfig() const;
         tempo_utils::Result<tempo_utils::Slice> readFileContents(
             const tempo_utils::UrlPath &entryPath,

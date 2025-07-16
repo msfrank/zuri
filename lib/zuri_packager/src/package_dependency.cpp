@@ -98,10 +98,10 @@ zuri_packager::PackageDependency::satisfiedBy(const PackageSpecifier &specifier)
     auto version = specifier.getPackageVersion();
     for (auto it = m_priv->requirements.requirementsBegin(); it != m_priv->requirements.requirementsEnd(); ++it) {
         auto &requirement = *it;
-        if (!requirement->satisfiedBy(version))
-            return false;
+        if (requirement->satisfiedBy(version))
+            return true;
     }
-    return true;
+    return false;
 }
 
 tempo_config::ConfigNode

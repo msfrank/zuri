@@ -3,38 +3,33 @@
 
 #include <zuri_packager/package_requirement.h>
 
-TEST(VersionRequirement, SatisfiesEqual)
+TEST(ExactVersionRequirement, ConstructsInterval)
 {
-    auto req = zuri_packager::VersionRequirement::create(
-        zuri_packager::PackageSpecifier::fromString("foo-1.0.1@foocorp"),
-        zuri_packager::VersionComparison::Equal);
+    auto req = zuri_packager::ExactVersionRequirement::create(
+        1, 2, 3);
 
-    ASSERT_TRUE (req->satisfiedBy(zuri_packager::PackageSpecifier::fromString("foo-1.0.1@foocorp")));
+    auto interval = req->getInterval();
+    ASSERT_EQ (interval.closedLowerBound, zuri_packager::PackageVersion(1, 2, 3));
+    ASSERT_EQ (interval.openUpperBound, zuri_packager::PackageVersion(1, 2, 4));
 }
 
-TEST(VersionRequirement, EqualNotSatisfied)
+TEST(CaretRangeRequirement, ConstructsIntervalForFullVersion)
 {
-    auto req = zuri_packager::VersionRequirement::create(
-        zuri_packager::PackageSpecifier::fromString("foo-1.0.1@foocorp"),
-        zuri_packager::VersionComparison::Equal);
+    auto req = zuri_packager::CaretRangeRequirement::create(
+        1, 2, 3);
 
-    ASSERT_FALSE (req->satisfiedBy(zuri_packager::PackageSpecifier::fromString("foo-1.0.2@foocorp")));
+    auto interval = req->getInterval();
+    ASSERT_EQ (interval.closedLowerBound, zuri_packager::PackageVersion(1, 2, 3));
+    ASSERT_EQ (interval.openUpperBound, zuri_packager::PackageVersion(2, 0, 0));
 }
 
-TEST(VersionRequirement, SatisfiesNotEqual)
+TEST(CaretRangeRequirement, ConstructsIntervalForApiVersion)
 {
-    auto req = zuri_packager::VersionRequirement::create(
-        zuri_packager::PackageSpecifier::fromString("foo-1.0.1@foocorp"),
-        zuri_packager::VersionComparison::NotEqual);
+    auto req = zuri_packager::CaretRangeRequirement::create(
+        1, 2);
 
-    ASSERT_TRUE (req->satisfiedBy(zuri_packager::PackageSpecifier::fromString("foo-1.0.2@foocorp")));
+    auto interval = req->getInterval();
+    ASSERT_EQ (interval.closedLowerBound, zuri_packager::PackageVersion(1, 2, 0));
+    ASSERT_EQ (interval.openUpperBound, zuri_packager::PackageVersion(2, 0, 0));
 }
 
-TEST(VersionRequirement, NotEqualNotSatisfied)
-{
-    auto req = zuri_packager::VersionRequirement::create(
-        zuri_packager::PackageSpecifier::fromString("foo-1.0.1@foocorp"),
-        zuri_packager::VersionComparison::NotEqual);
-
-    ASSERT_FALSE (req->satisfiedBy(zuri_packager::PackageSpecifier::fromString("foo-1.0.1@foocorp")));
-}

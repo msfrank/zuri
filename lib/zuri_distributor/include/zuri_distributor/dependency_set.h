@@ -9,28 +9,23 @@
 
 namespace zuri_distributor {
 
-    struct ResolvedPackage {
-        zuri_packager::PackageId packageId;
-        std::vector<zuri_packager::VersionInterval> validIntervals;
-    };
-
     class DependencySet {
     public:
         DependencySet();
-        DependencySet(const zuri_packager::PackageId &rootId);
         DependencySet(const DependencySet &other);
 
-        bool isValid() const;
+        tempo_utils::Status addDirectDependency(const zuri_packager::PackageSpecifier &dependency);
+        tempo_utils::Result<bool> addTransitiveDependency(
+            const zuri_packager::PackageSpecifier &target,
+            const zuri_packager::PackageSpecifier &dependency);
 
-        tempo_utils::Status addDependency(const zuri_packager::PackageDependency &dependency);
-        tempo_utils::Status addDependency(
-            const zuri_packager::PackageId &targetId,
-            const zuri_packager::PackageDependency &targetDependency);
+        bool satisfiesDependency(const zuri_packager::PackageSpecifier &specifier) const;
 
-        tempo_utils::Result<std::vector<ResolvedPackage>> calculateResolutionOrder() const;
+        tempo_utils::Result<std::vector<zuri_packager::PackageSpecifier>> calculateResolutionOrder() const;
+
+        struct Priv;
 
     private:
-        struct Priv;
         std::shared_ptr<Priv> m_priv;
     };
 }

@@ -26,6 +26,7 @@ set(ZURI_PACKAGER_INCLUDES
     include/zuri_packager/package_types.h
     include/zuri_packager/package_writer.h
     include/zuri_packager/packaging_conversions.h
+    include/zuri_packager/requirement_parser.h
     )
 set_target_properties(zuri_packager PROPERTIES PUBLIC_HEADER "${ZURI_PACKAGER_INCLUDES}")
 
@@ -58,6 +59,35 @@ add_custom_command(
       ${CMAKE_CURRENT_SOURCE_DIR}/share/manifest.fbs
 )
 
+# generate antlr4 files for Tempo config grammar
+add_custom_command (
+    OUTPUT
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementLexer.cpp
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementLexer.h
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementLexer.interp
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementLexer.tokens
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParserBaseListener.cpp
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParserBaseListener.h
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParser.cpp
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParser.h
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParser.interp
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParser.tokens
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParserListener.cpp
+      ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParserListener.h
+    COMMAND
+      cmake -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/src
+    COMMAND
+      ${ANTLR}
+      -o ${CMAKE_CURRENT_BINARY_DIR}/src
+      -lib ${CMAKE_CURRENT_SOURCE_DIR}/share
+      -Werror
+      -Dlanguage=Cpp
+      -package "zpr1"
+      ${CMAKE_CURRENT_SOURCE_DIR}/share/RequirementLexer.g4 ${CMAKE_CURRENT_SOURCE_DIR}/share/RequirementParser.g4
+    DEPENDS
+      ${CMAKE_CURRENT_SOURCE_DIR}/share/RequirementLexer.g4 ${CMAKE_CURRENT_SOURCE_DIR}/share/RequirementParser.g4
+)
+
 target_sources(zuri_packager PRIVATE
     src/entry_walker.cpp
     src/zuri_manifest.cpp
@@ -78,12 +108,29 @@ target_sources(zuri_packager PRIVATE
     src/package_types.cpp
     src/package_writer.cpp
     src/packaging_conversions.cpp
+    src/requirement_parser.cpp
 
     include/zuri_packager/internal/manifest_reader.h
     src/internal/manifest_reader.cpp
+    include/zuri_packager/internal/version_spec.h
+    src/internal/version_spec.cpp
+    include/zuri_packager/internal/requirement_listener.h
+    src/internal/requirement_listener.cpp
+    include/zuri_packager/internal/tracing_error_listener.h
+    src/internal/tracing_error_listener.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/include/zuri_packager/generated/manifest.h
     ${CMAKE_CURRENT_BINARY_DIR}/include/zuri_packager/generated/manifest_schema.h
+
+    # antlr auto-generated sources
+    ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementLexer.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementLexer.h
+    ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParserBaseListener.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParserBaseListener.h
+    ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParser.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParser.h
+    ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParserListener.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/src/RequirementParserListener.h
     )
 
 # set the library version
@@ -117,6 +164,7 @@ target_link_libraries(zuri_packager
     tempo::tempo_utils
     PRIVATE
     flatbuffers::flatbuffers
+    antlr::antlr
     )
 
 # install targets

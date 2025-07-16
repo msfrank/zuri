@@ -127,7 +127,7 @@ zuri_packager::PackageExtractor::extractPackage()
     TU_RETURN_IF_NOT_OK (extractRoot(rootEntry));
 
     auto destinationRoot = !m_options.destinationRoot.empty()? m_options.destinationRoot : std::filesystem::current_path();
-    auto destinationPath = destinationRoot / m_specifier.toString();
+    auto destinationPath = m_specifier.toFilesystemPath(destinationRoot);
     std::filesystem::rename(m_workdirPath, destinationPath);
 
     return destinationPath;

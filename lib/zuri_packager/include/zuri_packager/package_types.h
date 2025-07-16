@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <absl/container/flat_hash_map.h>
 
 #include <tempo_utils/integer_types.h>
 
@@ -11,7 +12,6 @@
 #define ZURI_PACKAGER_PACKAGE_CONTENT_TYPE               "application/vnd.zuri.package"
 
 namespace zuri_packager {
-
     constexpr tu_uint32 kInvalidOffsetU32       = 0xffffffff;
     constexpr tu_uint16 kInvalidOffsetU16       = 0xffff;
     constexpr tu_uint8 kInvalidOffsetU8         = 0xff;
@@ -111,8 +111,16 @@ namespace zuri_packager {
 
         std::string toString() const;
 
+        int compare(const PackageId &other) const;
+
         bool operator==(const PackageId &other) const;
         bool operator!=(const PackageId &other) const;
+        bool operator<=(const PackageId &other) const;
+        bool operator<(const PackageId &other) const;
+        bool operator>=(const PackageId &other) const;
+        bool operator>(const PackageId &other) const;
+
+        static PackageId fromString(std::string_view s);
 
         template <typename H>
         friend H AbslHashValue(H h, const PackageId &id) {
@@ -152,6 +160,8 @@ namespace zuri_packager {
         bool operator>=(const PackageVersion &other) const;
         bool operator>(const PackageVersion &other) const;
 
+        static PackageVersion fromString(std::string_view s);
+
         template <typename H>
         friend H AbslHashValue(H h, const PackageVersion &version) {
             if (version.isValid())
@@ -167,6 +177,20 @@ namespace zuri_packager {
             tu_uint32 patchVersion;
         };
         std::shared_ptr<Priv> m_priv;
+    };
+
+    class RequirementsMap {
+    public:
+        RequirementsMap();
+        explicit RequirementsMap(const absl::flat_hash_map<PackageId,PackageVersion> &requirements);
+        RequirementsMap(const RequirementsMap &other);
+
+        absl::flat_hash_map<PackageId,PackageVersion>::const_iterator requirementsBegin() const;
+        absl::flat_hash_map<PackageId,PackageVersion>::const_iterator requirementsEnd() const;
+        int numRequirements() const;
+
+    private:
+        std::shared_ptr<absl::flat_hash_map<PackageId,PackageVersion>> m_requirements;
     };
 
     // forward declarations

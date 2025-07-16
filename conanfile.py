@@ -29,6 +29,7 @@ class Zuri(ConanFile):
         'tempo/0.0.1',
         # requirements from timbre
         'absl/20250127.1@timbre',
+        'antlr/4.9.3@timbre',
         'boost/1.88.0@timbre',
         'cppterminal/20231011.1@timbre',
         'fmt/9.1.0@timbre',
@@ -48,10 +49,12 @@ class Zuri(ConanFile):
         cmake_layout(self)
 
     def generate(self):
+        antlr = self.dependencies['antlr'].buildenv_info.vars(self)
         flatbuffers = self.dependencies['flatbuffers'].buildenv_info.vars(self)
 
         tc = CMakeToolchain(self)
         tc.variables['ZURI_PACKAGE_VERSION'] = self.version
+        tc.variables['ANTLR_TOOL_JAR'] = antlr.get('ANTLR_TOOL_JAR')
         tc.variables['FLATBUFFERS_FLATC'] = flatbuffers.get('FLATBUFFERS_FLATC')
         tc.generate()
         deps = CMakeDeps(self)

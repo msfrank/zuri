@@ -43,7 +43,10 @@ namespace zuri_packager {
 
         bool operator==(const PackageSpecifier &other) const;
         bool operator!=(const PackageSpecifier &other) const;
+        bool operator<=(const PackageSpecifier &other) const;
         bool operator<(const PackageSpecifier &other) const;
+        bool operator>=(const PackageSpecifier &other) const;
+        bool operator>(const PackageSpecifier &other) const;
 
         std::string toString() const;
         std::filesystem::path toFilesystemPath(const std::filesystem::path &base = {}) const;
@@ -53,6 +56,13 @@ namespace zuri_packager {
         static PackageSpecifier fromAuthority(const tempo_utils::UrlAuthority &authority);
         static PackageSpecifier fromUrl(const tempo_utils::Url &url);
         static PackageSpecifier fromFilesystemName(const std::filesystem::path &name);
+
+        template <typename H>
+        friend H AbslHashValue(H h, const PackageSpecifier &specifier) {
+            if (specifier.isValid())
+                return H::combine(std::move(h), specifier.getPackageId(), specifier.getPackageVersion());
+            return H::combine(std::move(h), 0);
+        }
 
     private:
         struct Priv {

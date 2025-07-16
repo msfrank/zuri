@@ -18,7 +18,7 @@
 #include <zuri_build/workspace_config.h>
 #include <zuri_build/zuri_build.h>
 
-#include "zuri_build/dependency_resolver.h"
+#include "zuri_build/import_resolver.h"
 #include "zuri_distributor/distributor_result.h"
 #include "zuri_distributor/package_cache.h"
 #include "zuri_distributor/package_cache_loader.h"
@@ -237,12 +237,12 @@ run_zuri_build(int argc, const char *argv[])
     auto settingsConfig = toolConfig.mapAt("settings").toMap();
     lyric_build::TaskSettings taskSettings(settingsConfig);
 
-    //
+    // construct and configure the import store
     auto importsConfig = toolConfig.mapAt("imports").toMap();
     auto importStore = std::make_shared<ImportStore>(importsConfig);
     TU_RETURN_IF_NOT_OK (importStore->configure());
 
-    //
+    // construct and configure the target store
     auto targetsConfig = toolConfig.mapAt("targets").toMap();
     auto targetStore = std::make_shared<TargetStore>(targetsConfig);
     TU_RETURN_IF_NOT_OK (targetStore->configure());
@@ -250,13 +250,6 @@ run_zuri_build(int argc, const char *argv[])
     //
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RETURN (buildGraph, BuildGraph::create(targetStore, importStore));
-
-    // set builder options
-    lyric_build::BuilderOptions builderOptions;
-    builderOptions.buildRoot = buildRoot;
-    if (jobParallelism != 0) {
-        builderOptions.numThreads = jobParallelism;
-    }
 
     // verify there is at least one target and all targets are defined
     if (targets.empty())
@@ -275,18 +268,45 @@ run_zuri_build(int argc, const char *argv[])
     TU_ASSIGN_OR_RETURN (importPackageCache, zuri_distributor::PackageCache::openOrCreate(
         buildRoot, "imports"));
 
+    // construct and configure the import resolver
+    auto resolverConfig = toolConfig.mapAt("resolvers").toMap();
+    auto importResolver = std::make_shared<ImportResolver>(resolverConfig, importPackageCache);
+    TU_RETURN_IF_NOT_OK (importResolver->configure());
+
+    lyric_build::BuilderOptions builderOptions;
+
+    // set build root for builder
+    builderOptions.buildRoot = buildRoot;
+
+    // set builder parallelism
+    if (jobParallelism != 0) {
+        builderOptions.numThreads = jobParallelism;
+    }
+
     // create the shortcut resolver
     auto shortcutResolver = std::make_shared<lyric_importer::ShortcutResolver>();
+    builderOptions.shortcutResolver = shortcutResolver;
 
-    // create the dependency resolver
-    ImportInstaller importInstaller({}, importPackageCache);
+    // resolve and install package and requirement imports
     for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); ++it) {
+        const auto &importName = it->first;
         const auto &importEntry = it->second;
+        tempo_utils::UrlOrigin importOrigin;
         switch (importEntry.type) {
-            case ImportEntryType::Requirement:
-            default:
+            case ImportEntryType::Target:
+                // ignore target imports
                 break;
+            case ImportEntryType::Requirement:
+                TU_RETURN_IF_NOT_OK (importResolver->addRequirement(
+                    importEntry.packageId, importEntry.packageRequirements));
+                break;
+            case ImportEntryType::Package:
+            default:
+                return tempo_command::CommandStatus::forCondition(
+                    tempo_command::CommandCondition::kInvalidConfiguration,
+                    "invalid import type for '{}'", importName);
         }
+        TU_RETURN_IF_NOT_OK (shortcutResolver->insertShortcut(importName, importOrigin));
     }
 
     // create task registry and register build task domains
@@ -304,8 +324,6 @@ run_zuri_build(int argc, const char *argv[])
     loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(targetPackageCache));
     loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(importPackageCache));
     builderOptions.fallbackLoader = std::make_shared<lyric_runtime::ChainLoader>();
-
-    //
 
     // construct the builder based on workspace config and config overrides
     lyric_build::LyricBuilder builder(workspaceRoot, taskSettings, builderOptions);

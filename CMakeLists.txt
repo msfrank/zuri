@@ -129,6 +129,9 @@ find_package(libedit REQUIRED)
 # find required Flatbuffers dependency
 find_package(flatbuffers REQUIRED)
 
+# find required Antlr dependency
+find_package(antlr REQUIRED)
+
 # find required Openssl dependency
 find_package(openssl REQUIRED)
 
@@ -144,8 +147,11 @@ find_package(icu REQUIRED)
 # find required Rocksdb dependency
 find_package(rocksdb REQUIRED)
 
-# find required Rocksdb dependency
+# find required Sqlite dependency
 find_package(sqlite REQUIRED)
+
+# find java build tool dependency for antlr
+find_package(Java REQUIRED)
 
 # find required google test dependency
 find_package(gtest REQUIRED)
@@ -174,6 +180,15 @@ include(GoogleTest)
 # define path to flatc
 set(FLATC ${FLATBUFFERS_FLATC})
 message(STATUS "flatc command is ${FLATC}")
+
+# define path to antlr tool
+set(ANTLR
+    ${Java_JAVA_EXECUTABLE}
+    -Xmx500M
+    -cp ${ANTLR_TOOL_JAR}
+    org.antlr.v4.Tool
+)
+message(STATUS "antlr command is ${ANTLR}")
 
 #######################################################################
 #

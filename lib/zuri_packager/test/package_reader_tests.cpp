@@ -43,10 +43,12 @@ TEST_F(PackageReader, OpenPackageFile)
 
     auto reader = openReaderResult.getResult();
     ASSERT_TRUE (reader->isValid());
-    ASSERT_EQ (13, reader->getFileSize(path));
-    auto fileContents = reader->getFileContents(path);
-    ASSERT_FALSE (fileContents.isEmpty());
-    std::string contents((const char *) fileContents.getData(), fileContents.getSize());
+    auto readContentsResult = reader->readFileContents(path);
+    ASSERT_THAT (readContentsResult, tempo_test::IsResult());
+    auto slice = readContentsResult.getResult();
+    ASSERT_EQ (13, slice.getSize());
+    ASSERT_FALSE (slice.isEmpty());
+    std::string contents((const char *) slice.getData(), slice.getSize());
     ASSERT_EQ ("hello, world!", contents);
 }
 
@@ -72,9 +74,11 @@ TEST_F(PackageReader, ReadPackageBytes)
 
     auto reader = createReaderResult.getResult();
     ASSERT_TRUE (reader->isValid());
-    ASSERT_EQ (13, reader->getFileSize(path));
-    auto fileContents = reader->getFileContents(path);
-    ASSERT_FALSE (fileContents.isEmpty());
-    std::string contents((const char *) fileContents.getData(), fileContents.getSize());
+    auto readContentsResult = reader->readFileContents(path);
+    ASSERT_THAT (readContentsResult, tempo_test::IsResult());
+    auto slice = readContentsResult.getResult();
+    ASSERT_EQ (13, slice.getSize());
+    ASSERT_FALSE (slice.isEmpty());
+    std::string contents((const char *) slice.getData(), slice.getSize());
     ASSERT_EQ ("hello, world!", contents);
 }

@@ -3,6 +3,8 @@
 
 #include <lyric_build/build_types.h>
 
+#include "zuri_packager/package_requirement.h"
+
 enum class ImportEntryType {
     Invalid,
     Target,
@@ -13,7 +15,8 @@ enum class ImportEntryType {
 struct ImportEntry {
     ImportEntryType type;
     std::string targetName;
-    std::string requirementSpec;
+    zuri_packager::PackageId packageId;
+    zuri_packager::RequirementsList packageRequirements;
     tempo_utils::Url packageUrl;
 };
 

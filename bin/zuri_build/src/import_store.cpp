@@ -5,6 +5,10 @@
 #include <tempo_config/parse_config.h>
 #include <zuri_build/import_store.h>
 
+#include "zuri_packager/package_requirement.h"
+#include "zuri_packager/packaging_conversions.h"
+#include "zuri_packager/requirement_parser.h"
+
 ImportStore::ImportStore(const tempo_config::ConfigMap &importsConfig)
     : m_importsConfig(importsConfig)
 {
@@ -20,9 +24,12 @@ public:
     }
 
     static tempo_utils::Status parseRequirement(const tempo_config::ConfigMap &map, ImportEntry &importEntry) {
-        tempo_config::StringParser requirementSpecParser;
+        zuri_packager::PackageIdParser packageIdParser;
         TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-            importEntry.requirementSpec, requirementSpecParser, map, "requirementSpec"));
+            importEntry.packageId, packageIdParser, map, "packageId"));
+        zuri_packager::RequirementsListParser requirementsListParser;
+        TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
+            importEntry.packageRequirements, requirementsListParser, map, "packageRequirements"));
         return {};
     }
 

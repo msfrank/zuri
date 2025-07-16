@@ -6,6 +6,8 @@
 #include <zuri_packager/internal/manifest_reader.h>
 #include <zuri_packager/package_reader.h>
 
+#include "zuri_packager/packaging_conversions.h"
+
 zuri_packager::PackageReader::PackageReader(
     tu_uint8 version,
     tu_uint8 flags,
@@ -63,6 +65,20 @@ zuri_packager::PackageReader::readPackageSpecifier() const
 
     return PackageSpecifier::fromString(absl::StrCat(
         packageName, "-", packageVersion, "@", packageDomain));
+}
+
+tempo_utils::Result<zuri_packager::RequirementsMap>
+zuri_packager::PackageReader::readRequirementsMap() const
+{
+    tempo_config::ConfigMap packageConfig;
+    TU_ASSIGN_OR_RETURN (packageConfig, readPackageConfig());
+
+    RequirementsMapParser requirementsMapParser(RequirementsMap{});
+    RequirementsMap requirementsMap;
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(requirementsMap, requirementsMapParser,
+        packageConfig, "requirements"));
+
+    return requirementsMap;
 }
 
 tempo_utils::Result<tempo_config::ConfigMap>

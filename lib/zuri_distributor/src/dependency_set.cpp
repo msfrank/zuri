@@ -1,5 +1,6 @@
 
 #include <absl/container/flat_hash_map.h>
+#include <absl/container/btree_set.h>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/topological_sort.hpp>
@@ -8,60 +9,69 @@
 #include <zuri_distributor/dependency_set.h>
 #include <zuri_distributor/distributor_result.h>
 
-struct vertex_package_id_t {
+struct PackageMajor {
+    zuri_packager::PackageId id;
+    tu_uint32 major;
+
+    bool operator==(const PackageMajor &other) const {
+        return id == other.id && major == other.major;
+    }
+    bool operator<(const PackageMajor &other) const {
+        auto idcmp = id.compare(other.id);
+        if (idcmp != 0)
+            return idcmp < 0;
+        return major < other.major;
+    }
+    static PackageMajor fromSpecifier(const zuri_packager::PackageSpecifier &specifier) {
+        PackageMajor packageMajor;
+        packageMajor.id = specifier.getPackageId();
+        packageMajor.major = specifier.getMajorVersion();
+        return packageMajor;
+    }
+
+    template <typename H>
+    friend H AbslHashValue(H h, const PackageMajor &major) {
+        return H::combine(std::move(h), major.id, major.major);
+    }
+};
+
+struct vertex_package_major_t {
     typedef boost::vertex_property_tag kind;
 };
 
 // collection of vertex properties
-typedef boost::property<vertex_package_id_t, zuri_packager::PackageId
-    > DependencyGraphVertexProperties;
+typedef boost::property<vertex_package_major_t, PackageMajor
+    > VertexProperties;
 
 // concrete graph type
 typedef boost::adjacency_list<
     boost::vecS,                    // edge list type
     boost::vecS,                    // vertex list type
     boost::bidirectionalS,          // directed type
-    DependencyGraphVertexProperties>
+    VertexProperties>
         DependencyGraphImpl;
 
-typedef boost::graph_traits<DependencyGraphImpl>::vertex_descriptor DependencyGraphVertex;
-typedef boost::graph_traits<DependencyGraphImpl>::edge_descriptor DependencyGraphEdge;
+typedef boost::graph_traits<DependencyGraphImpl>::vertex_descriptor Vertex;
+typedef boost::graph_traits<DependencyGraphImpl>::edge_descriptor Edge;
 typedef boost::graph_traits<DependencyGraphImpl>::adjacency_iterator AdjacencyIterator;
 
-struct PackageEntry {
-    zuri_packager::PackageId id;
-    boost::icl::split_interval_map<
-        zuri_packager::PackageVersion,
-        std::set<DependencyGraphVertex>
-    > versions;
-    DependencyGraphVertex vertex;
+struct MajorVersionEntry {
+    PackageMajor major;
+    zuri_packager::PackageVersion minimum;
+    Vertex vertex;
 };
 
 struct zuri_distributor::DependencySet::Priv {
-    zuri_packager::PackageId rootId;
+    //zuri_packager::PackageId rootId;
+    Vertex rootVertex;
+    absl::flat_hash_map<PackageMajor,std::unique_ptr<MajorVersionEntry>> majors;
     DependencyGraphImpl graph;
-    absl::flat_hash_map<zuri_packager::PackageId,PackageEntry> packages;
-    DependencyGraphVertex rootVertex;
 };
 
 zuri_distributor::DependencySet::DependencySet()
-{
-}
-
-zuri_distributor::DependencySet::DependencySet(const zuri_packager::PackageId &rootId)
     : m_priv(std::make_shared<Priv>())
 {
-    m_priv->rootId = rootId;
-
     m_priv->rootVertex = boost::add_vertex(m_priv->graph);
-    auto package_id = get(vertex_package_id_t(), m_priv->graph);
-    boost::put(package_id, m_priv->rootVertex, rootId);
-
-    PackageEntry packageEntry;
-    packageEntry.id = rootId;
-    packageEntry.vertex = m_priv->rootVertex;
-
-    m_priv->packages[rootId] = std::move(packageEntry);
 }
 
 zuri_distributor::DependencySet::DependencySet(const DependencySet &other)
@@ -69,10 +79,55 @@ zuri_distributor::DependencySet::DependencySet(const DependencySet &other)
 {
 }
 
-bool
-zuri_distributor::DependencySet::isValid() const
+MajorVersionEntry *
+get_or_add_major_version(
+    const zuri_packager::PackageSpecifier &specifier,
+    std::shared_ptr<zuri_distributor::DependencySet::Priv> priv)
 {
-    return m_priv != nullptr;
+    const auto major = PackageMajor::fromSpecifier(specifier);
+
+    // check whether package major already exists in majors
+    auto entry = priv->majors.find(major);
+
+    if (entry != priv->majors.cend())
+        return entry->second.get();
+
+    // if package major does not exist then create a new entry and return pointer
+    auto majorVersionEntry = std::make_unique<MajorVersionEntry>();
+    majorVersionEntry->major = major;
+    majorVersionEntry->vertex = boost::add_vertex(priv->graph);
+    auto *mvPtr = majorVersionEntry.get();
+    priv->majors[major] = std::move(majorVersionEntry);
+
+    // tag vertex with specifier
+    auto package_major = get(vertex_package_major_t(), priv->graph);
+    boost::put(package_major, mvPtr->vertex, major);
+
+    return mvPtr;
+}
+
+tempo_utils::Status
+add_dependency_edge(
+    Vertex targetVertex,
+    MajorVersionEntry *mvPtr,
+    const zuri_packager::PackageSpecifier &specifier,
+    std::shared_ptr<zuri_distributor::DependencySet::Priv> &priv)
+{
+    auto dependencyVertex = mvPtr->vertex;
+
+    // define an edge from the target vertex to the major version vertex
+    auto ret = boost::add_edge(targetVertex, dependencyVertex, priv->graph);
+    if (!ret.second)
+        return zuri_distributor::DistributorStatus::forCondition(
+            zuri_distributor::DistributorCondition::kDistributorInvariant,
+            "dependency was already declared");
+
+    auto packageVersion = specifier.getPackageVersion();
+    if (mvPtr->minimum < packageVersion) {
+        mvPtr->minimum = packageVersion;
+    }
+
+    return {};
 }
 
 /**
@@ -82,9 +137,11 @@ zuri_distributor::DependencySet::isValid() const
  * @return
  */
 tempo_utils::Status
-zuri_distributor::DependencySet::addDependency(const zuri_packager::PackageDependency &dependency)
+zuri_distributor::DependencySet::addDirectDependency(const zuri_packager::PackageSpecifier &dependency)
 {
-    return addDependency(m_priv->rootId, dependency);
+    auto *mvPtr = get_or_add_major_version(dependency, m_priv);
+    TU_RETURN_IF_NOT_OK (add_dependency_edge(m_priv->rootVertex, mvPtr, dependency, m_priv));
+    return {};
 }
 
 /**
@@ -94,63 +151,48 @@ zuri_distributor::DependencySet::addDependency(const zuri_packager::PackageDepen
  * @param targetDependency
  * @return
  */
-tempo_utils::Status
-zuri_distributor::DependencySet::addDependency(
-    const zuri_packager::PackageId &targetId,
-    const zuri_packager::PackageDependency &targetDependency)
+tempo_utils::Result<bool>
+zuri_distributor::DependencySet::addTransitiveDependency(
+    const zuri_packager::PackageSpecifier &target,
+    const zuri_packager::PackageSpecifier &dependency)
 {
-    if (!isValid())
+    TU_ASSERT (target.isValid());
+
+    // target major version must exist in the graph
+    const auto targetMajor = PackageMajor::fromSpecifier(target);
+    auto entry = m_priv->majors.find(targetMajor);
+    if (entry == m_priv->majors.cend())
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-            "invalid dependency set");
+            "missing package target {}", target.toString());
+    auto *targetMvPtr = entry->second.get();
 
-    // target package must exist in the graph
-    auto targetIt = m_priv->packages.find(targetId);
-    if (targetIt == m_priv->packages.cend())
-        return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-            "missing package target {}", targetId.toString());
-    auto &targetEntry = targetIt->second;
-    auto targetVertex = targetEntry.vertex;
+    // if dependency exists with a higher minimum version then return false
+    auto *depMvPtr = get_or_add_major_version(dependency, m_priv);
+    if (depMvPtr->minimum >= dependency.getPackageVersion())
+        return false;
 
-    TU_LOG_VV << "target " << targetId.toString() << " has vertex " << (int) targetVertex;
+    // create edge from target mv to dependency mv
+    TU_RETURN_IF_NOT_OK (add_dependency_edge(targetMvPtr->vertex, depMvPtr, dependency, m_priv));
 
-    auto dependencyId = targetDependency.getPackageId();
-    auto dependencyIt = m_priv->packages.find(dependencyId);
+    // return true to indicate a new minimum version was selected
+    return true;
+}
 
-    // if dependency is not present in the graph then add it
-    if (dependencyIt == m_priv->packages.cend()) {
-        PackageEntry packageEntry;
-        packageEntry.id = dependencyId;
-
-        packageEntry.vertex = boost::add_vertex(m_priv->graph);
-        auto package_id = get(vertex_package_id_t(), m_priv->graph);
-        boost::put(package_id, packageEntry.vertex, dependencyId);
-
-        TU_LOG_VV << "added vertex " << (int) packageEntry.vertex << " for dependency " << dependencyId.toString();
-
-        auto ret = m_priv->packages.insert_or_assign(dependencyId, std::move(packageEntry));
-        dependencyIt = ret.first;
-    }
-    auto &dependencyEntry = dependencyIt->second;
-
-    // define an edge from the target package to the dependency
-    auto ret = boost::add_edge(targetVertex, dependencyEntry.vertex, m_priv->graph);
-    if (!ret.second)
-        return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-            "dependency was already declared");
-
-    TU_LOG_VV << "added edge from " << (int) targetVertex << " to " << (int) dependencyEntry.vertex;
-
-    // add requirements to the package
-    for (auto it = targetDependency.requirementsBegin(); it != targetDependency.requirementsEnd(); ++it) {
-        const auto &req = *it;
-        auto versionInterval = req->getInterval();
-        auto interval = boost::icl::interval<zuri_packager::PackageVersion>::right_open(
-            versionInterval.closedLowerBound, versionInterval.openUpperBound);
-        std::set<DependencyGraphVertex> vertexSet{targetVertex};
-        dependencyEntry.versions += std::make_pair(interval, vertexSet);
-    }
-
-    return {};
+/**
+ *
+ * @param specifier
+ * @return
+ */
+bool
+zuri_distributor::DependencySet::satisfiesDependency(const zuri_packager::PackageSpecifier &specifier) const
+{
+    TU_ASSERT (specifier.isValid());
+    const auto packageMajor = PackageMajor::fromSpecifier(specifier);
+    auto entry = m_priv->majors.find(packageMajor);
+    if (entry == m_priv->majors.cend())
+        return false;
+    const auto &mv = entry->second;
+    return mv->minimum >= specifier.getPackageVersion();
 }
 
 /**
@@ -159,48 +201,35 @@ zuri_distributor::DependencySet::addDependency(
  *
  * @return
  */
-tempo_utils::Result<std::vector<zuri_distributor::ResolvedPackage>>
+tempo_utils::Result<std::vector<zuri_packager::PackageSpecifier>>
 zuri_distributor::DependencySet::calculateResolutionOrder() const
 {
-    if (!isValid())
-        return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-            "invalid dependency set");
+    std::vector<zuri_packager::PackageSpecifier> dependencyResolutionOrder;
 
-    std::vector<ResolvedPackage> dependencyResolutionOrder;
-
-    std::vector<DependencyGraphVertex> topologicalOrder;
+    std::vector<Vertex> topologicalOrder;
     boost::topological_sort(m_priv->graph, std::back_insert_iterator(topologicalOrder),
         boost::vertex_index_map(boost::identity_property_map()));
 
     for (auto v : topologicalOrder) {
-        auto numTargets = boost::in_degree(v, m_priv->graph);
+        if (v == m_priv->rootVertex)
+            continue;
 
-        auto package_id = get(vertex_package_id_t(), m_priv->graph);
-        const zuri_packager::PackageId id = boost::get(package_id, v);
+        auto package_major = get(vertex_package_major_t(), m_priv->graph);
+        const auto major = boost::get(package_major, v);
+        const auto &mv = m_priv->majors.at(major);
+        zuri_packager::PackageSpecifier selection(major.id, mv->minimum);
 
-        TU_LOG_VV << "found package " << id.toString() << " with " << (int) numTargets << " target in-edges";
+        TU_LOG_INFO << "selected package " << selection.toString();
 
         AdjacencyIterator it, end;
         for (boost::tie(it, end) = boost::adjacent_vertices(v, m_priv->graph); it != end; ++it) {
-            auto tgt = *it;
-            auto targetId = boost::get(package_id, tgt);
-            TU_LOG_VV << "  depends on " << targetId.toString();
+            auto target = *it;
+            auto targetMajor = boost::get(package_major, target);
+            TU_LOG_INFO << "  depends on " << targetMajor.id.toString() << ":" << targetMajor.major;
         }
 
-        std::vector<zuri_packager::VersionInterval> validIntervals;
-        const auto &packageEntry = m_priv->packages.at(id);
-        for (const auto &entry : packageEntry.versions) {
-            if (entry.second.size() < numTargets)
-                continue;
-            zuri_packager::VersionInterval interval(entry.first.lower(), entry.first.upper());
-            validIntervals.push_back(std::move(interval));
-        }
-
-        ResolvedPackage resolved(id, std::move(validIntervals));
-        dependencyResolutionOrder.push_back(std::move(resolved));
+        dependencyResolutionOrder.push_back(std::move(selection));
     }
-
-    dependencyResolutionOrder.pop_back();
 
     return dependencyResolutionOrder;
 }

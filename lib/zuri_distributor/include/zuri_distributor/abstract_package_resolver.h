@@ -9,12 +9,20 @@
 
 namespace zuri_distributor {
 
+    struct PackageVersionDescriptor {
+        zuri_packager::PackageId id;
+        zuri_packager::PackageVersion version;
+        absl::flat_hash_set<zuri_packager::PackageSpecifier> dependencies;
+        tempo_utils::Url url;
+    };
+
     class AbstractPackageResolver {
     public:
         virtual ~AbstractPackageResolver() = default;
 
-        virtual tempo_utils::Result<DependencySet> resolveDependencySet(
-            absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::RequirementsList> &dependencies) = 0;
+        virtual tempo_utils::Result<PackageVersionDescriptor> describePackageVersion(
+            const zuri_packager::PackageId &packageId,
+            const zuri_packager::PackageVersion &packageVersion) = 0;
     };
 }
 
