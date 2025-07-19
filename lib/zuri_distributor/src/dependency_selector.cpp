@@ -1,6 +1,8 @@
 
 #include <zuri_distributor/dependency_selector.h>
 
+#include "zuri_distributor/distributor_result.h"
+
 zuri_distributor::DependencySelector::DependencySelector(std::shared_ptr<AbstractPackageResolver> resolver)
     : m_resolver(std::move(resolver))
 {
@@ -8,7 +10,9 @@ zuri_distributor::DependencySelector::DependencySelector(std::shared_ptr<Abstrac
 }
 
 tempo_utils::Status
-zuri_distributor::DependencySelector::addDirectDependency(const zuri_packager::PackageSpecifier &dependency)
+zuri_distributor::DependencySelector::addDirectDependency(
+    const zuri_packager::PackageSpecifier &dependency,
+    std::string_view shortcut)
 {
     TU_RETURN_IF_NOT_OK (m_dependencies.addDirectDependency(dependency));
 
@@ -22,6 +26,8 @@ zuri_distributor::DependencySelector::addDirectDependency(const zuri_packager::P
         pendingSelection.target = dependency;
         m_pending.push(std::move(pendingSelection));
     }
+
+    m_descriptors[dependency] = std::move(packageVersionDescriptor);
 
     return {};
 }
@@ -51,14 +57,35 @@ zuri_distributor::DependencySelector::resolveTransitiveDependencies()
             next.target = target;
             m_pending.push(std::move(next));
         }
+
+        m_descriptors[target] = std::move(packageVersionDescriptor);
     }
     return {};
 }
 
-tempo_utils::Result<std::vector<zuri_packager::PackageSpecifier>>
+tempo_utils::Result<std::vector<zuri_distributor::Selection>>
 zuri_distributor::DependencySelector::calculateDependencyOrder()
 {
     TU_RETURN_IF_NOT_OK (resolveTransitiveDependencies());
-    return m_dependencies.calculateResolutionOrder();
+
+    std::vector<Dependency> resolutionOrder;
+    TU_ASSIGN_OR_RETURN (resolutionOrder, m_dependencies.calculateResolutionOrder());
+
+    std::vector<Selection> dependencyOrder;
+    for (const auto &dependency : resolutionOrder) {
+        auto entry = m_descriptors.find(dependency.specifier);
+        if (entry == m_descriptors.cend())
+            return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
+                "missing package version descriptor for {}", dependency.specifier.toString());
+        const auto &descriptor = entry->second;
+
+        Selection selection;
+        selection.specifier = dependency.specifier;
+        selection.url = descriptor.url;
+        selection.shortcut = dependency.shortcut;
+        dependencyOrder.push_back(std::move(selection));
+    }
+
+    return dependencyOrder;
 }
 

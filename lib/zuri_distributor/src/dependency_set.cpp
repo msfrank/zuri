@@ -59,6 +59,7 @@ struct MajorVersionEntry {
     PackageMajor major;
     zuri_packager::PackageVersion minimum;
     Vertex vertex;
+    std::string shortcut;
 };
 
 struct zuri_distributor::DependencySet::Priv {
@@ -137,9 +138,17 @@ add_dependency_edge(
  * @return
  */
 tempo_utils::Status
-zuri_distributor::DependencySet::addDirectDependency(const zuri_packager::PackageSpecifier &dependency)
+zuri_distributor::DependencySet::addDirectDependency(
+    const zuri_packager::PackageSpecifier &dependency,
+    std::string_view shortcut)
 {
     auto *mvPtr = get_or_add_major_version(dependency, m_priv);
+    if (!shortcut.empty()) {
+        if (!mvPtr->shortcut.empty() && mvPtr->shortcut != shortcut)
+            return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
+                "shortcut already defined for {}", dependency.toString());
+        mvPtr->shortcut = shortcut;
+    }
     TU_RETURN_IF_NOT_OK (add_dependency_edge(m_priv->rootVertex, mvPtr, dependency, m_priv));
     return {};
 }
@@ -201,10 +210,10 @@ zuri_distributor::DependencySet::satisfiesDependency(const zuri_packager::Packag
  *
  * @return
  */
-tempo_utils::Result<std::vector<zuri_packager::PackageSpecifier>>
+tempo_utils::Result<std::vector<zuri_distributor::Dependency>>
 zuri_distributor::DependencySet::calculateResolutionOrder() const
 {
-    std::vector<zuri_packager::PackageSpecifier> dependencyResolutionOrder;
+    std::vector<Dependency> dependencyResolutionOrder;
 
     std::vector<Vertex> topologicalOrder;
     boost::topological_sort(m_priv->graph, std::back_insert_iterator(topologicalOrder),
@@ -217,9 +226,12 @@ zuri_distributor::DependencySet::calculateResolutionOrder() const
         auto package_major = get(vertex_package_major_t(), m_priv->graph);
         const auto major = boost::get(package_major, v);
         const auto &mv = m_priv->majors.at(major);
-        zuri_packager::PackageSpecifier selection(major.id, mv->minimum);
 
-        TU_LOG_INFO << "selected package " << selection.toString();
+        Dependency dependency;
+        dependency.specifier = zuri_packager::PackageSpecifier(major.id, mv->minimum);
+        dependency.shortcut = mv->shortcut;
+
+        TU_LOG_INFO << "selected package " << dependency.specifier.toString();
 
         AdjacencyIterator it, end;
         for (boost::tie(it, end) = boost::adjacent_vertices(v, m_priv->graph); it != end; ++it) {
@@ -228,7 +240,7 @@ zuri_distributor::DependencySet::calculateResolutionOrder() const
             TU_LOG_INFO << "  depends on " << targetMajor.id.toString() << ":" << targetMajor.major;
         }
 
-        dependencyResolutionOrder.push_back(std::move(selection));
+        dependencyResolutionOrder.push_back(std::move(dependency));
     }
 
     return dependencyResolutionOrder;

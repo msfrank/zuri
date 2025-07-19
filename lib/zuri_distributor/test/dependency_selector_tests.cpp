@@ -2,12 +2,11 @@
 #include <gmock/gmock.h>
 
 #include <tempo_test/tempo_test.h>
+#include <zuri_distributor/abstract_package_resolver.h>
+#include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/dependency_set.h>
+#include <zuri_distributor/static_package_resolver.h>
 #include <zuri_test/zuri_tester.h>
-
-#include "zuri_distributor/abstract_package_resolver.h"
-#include "zuri_distributor/dependency_selector.h"
-#include "zuri_distributor/static_package_resolver.h"
 
 class DependencySelector : public ::testing::Test {
 protected:
@@ -84,8 +83,13 @@ TEST_F(DependencySelector, AddSingleDirectDependency)
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
     auto dependencyOrder = dependencyOrderResult.getResult();
 
-    ASSERT_EQ (1, dependencyOrder.size());
-    ASSERT_EQ (g1_1_0, dependencyOrder.at(0));
+    std::vector<zuri_packager::PackageSpecifier> specifierOrder;
+    for (const auto &selection : dependencyOrder) {
+        specifierOrder.push_back(selection.specifier);
+    }
+
+    ASSERT_EQ (1, specifierOrder.size());
+    ASSERT_EQ (g1_1_0, specifierOrder.at(0));
 }
 
 TEST_F(DependencySelector, AddSingleDirectDependencyWithTransitiveDependencies)
@@ -98,10 +102,15 @@ TEST_F(DependencySelector, AddSingleDirectDependencyWithTransitiveDependencies)
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
     auto dependencyOrder = dependencyOrderResult.getResult();
 
-    ASSERT_EQ (3, dependencyOrder.size());
-    ASSERT_EQ (g1_1_0, dependencyOrder.at(0));
-    ASSERT_EQ (f1_1_0, dependencyOrder.at(1));
-    ASSERT_EQ (c1_3_0, dependencyOrder.at(2));
+    std::vector<zuri_packager::PackageSpecifier> specifierOrder;
+    for (const auto &selection : dependencyOrder) {
+        specifierOrder.push_back(selection.specifier);
+    }
+
+    ASSERT_EQ (3, specifierOrder.size());
+    ASSERT_EQ (g1_1_0, specifierOrder.at(0));
+    ASSERT_EQ (f1_1_0, specifierOrder.at(1));
+    ASSERT_EQ (c1_3_0, specifierOrder.at(2));
 }
 
 TEST_F(DependencySelector, AddMultipleDirectDependencies)
@@ -116,8 +125,13 @@ TEST_F(DependencySelector, AddMultipleDirectDependencies)
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
     auto dependencyOrder = dependencyOrderResult.getResult();
 
-    ASSERT_EQ (3, dependencyOrder.size());
-    ASSERT_THAT (dependencyOrder, testing::UnorderedElementsAre(c1_1_0, e1_2_0, g1_1_0));
+    std::vector<zuri_packager::PackageSpecifier> specifierOrder;
+    for (const auto &selection : dependencyOrder) {
+        specifierOrder.push_back(selection.specifier);
+    }
+
+    ASSERT_EQ (3, specifierOrder.size());
+    ASSERT_THAT (specifierOrder, testing::UnorderedElementsAre(c1_1_0, e1_2_0, g1_1_0));
 }
 
 TEST_F(DependencySelector, AddMultipleDirectDependenciesWithTransitiveDependencies)
@@ -131,8 +145,13 @@ TEST_F(DependencySelector, AddMultipleDirectDependenciesWithTransitiveDependenci
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
     auto dependencyOrder = dependencyOrderResult.getResult();
 
-    ASSERT_EQ (6, dependencyOrder.size());
-    ASSERT_THAT (dependencyOrder, testing::UnorderedElementsAre(
+    std::vector<zuri_packager::PackageSpecifier> specifierOrder;
+    for (const auto &selection : dependencyOrder) {
+        specifierOrder.push_back(selection.specifier);
+    }
+
+    ASSERT_EQ (6, specifierOrder.size());
+    ASSERT_THAT (specifierOrder, testing::UnorderedElementsAre(
         b1_1_0, d1_1_0, e1_1_0, c1_3_0, f1_1_0, g1_1_0));
 }
 
@@ -147,7 +166,12 @@ TEST_F(DependencySelector, AddMultipleDirectDependenciesWithMinimumSelection)
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
     auto dependencyOrder = dependencyOrderResult.getResult();
 
-    ASSERT_EQ (4, dependencyOrder.size());
-    ASSERT_THAT (dependencyOrder, testing::UnorderedElementsAre(
+    std::vector<zuri_packager::PackageSpecifier> specifierOrder;
+    for (const auto &selection : dependencyOrder) {
+        specifierOrder.push_back(selection.specifier);
+    }
+
+    ASSERT_EQ (4, specifierOrder.size());
+    ASSERT_THAT (specifierOrder, testing::UnorderedElementsAre(
         b1_1_0, c1_2_0, d1_4_0, e1_2_0));
 }

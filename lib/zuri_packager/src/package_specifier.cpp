@@ -185,32 +185,49 @@ zuri_packager::PackageSpecifier::toString() const
         getPackageDomain());
 }
 
-std::filesystem::path
-zuri_packager::PackageSpecifier::toFilesystemPath(const std::filesystem::path &base) const
+inline std::string
+specifier_to_basename(const zuri_packager::PackageSpecifier &specifier)
 {
-    if (!isValid())
-        return {};
-
-    std::vector<std::string> hostParts = absl::StrSplit(getPackageDomain(), ".");
+    std::vector<std::string> hostParts = absl::StrSplit(specifier.getPackageDomain(), ".");
     std::reverse(hostParts.begin(), hostParts.end());
     auto basename = absl::StrCat(
         absl::StrJoin(hostParts, "."),
         "_",
-        getPackageName(),
+        specifier.getPackageName(),
         "-",
-        getMajorVersion(),
+        specifier.getMajorVersion(),
         ".",
-        getMinorVersion(),
+        specifier.getMinorVersion(),
         ".",
-        getPatchVersion());
+        specifier.getPatchVersion());
+    return basename;
+}
 
+std::filesystem::path
+zuri_packager::PackageSpecifier::toPackagePath(const std::filesystem::path &base) const
+{
+    if (!isValid())
+        return {};
+
+    auto basename = specifier_to_basename(*this);
     auto path = base / basename;
     path += kPackageFileDotSuffix;
     return path;
 }
 
-tempo_utils::Url
-zuri_packager::PackageSpecifier::toUrl() const
+std::filesystem::path
+zuri_packager::PackageSpecifier::toDirectoryPath(const std::filesystem::path &base) const
+{
+    if (!isValid())
+        return {};
+
+    auto basename = specifier_to_basename(*this);
+    auto path = base / basename;
+    return path;
+}
+
+tempo_utils::UrlOrigin
+zuri_packager::PackageSpecifier::toUrlOrigin() const
 {
     if (!isValid())
         return {};
@@ -222,7 +239,7 @@ zuri_packager::PackageSpecifier::toUrl() const
         getMinorVersion(),
         ".",
         getPatchVersion());
-    return tempo_utils::Url::fromOrigin(
+    return tempo_utils::UrlOrigin::fromString(
         absl::StrCat("dev.zuri.pkg://", username, "@", getPackageDomain()));
 }
 

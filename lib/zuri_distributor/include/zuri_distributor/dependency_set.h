@@ -9,19 +9,26 @@
 
 namespace zuri_distributor {
 
+    struct Dependency {
+        zuri_packager::PackageSpecifier specifier;
+        std::string shortcut;
+    };
+
     class DependencySet {
     public:
         DependencySet();
         DependencySet(const DependencySet &other);
 
-        tempo_utils::Status addDirectDependency(const zuri_packager::PackageSpecifier &dependency);
+        tempo_utils::Status addDirectDependency(
+            const zuri_packager::PackageSpecifier &dependency,
+            std::string_view shortcut = {});
         tempo_utils::Result<bool> addTransitiveDependency(
             const zuri_packager::PackageSpecifier &target,
             const zuri_packager::PackageSpecifier &dependency);
 
         bool satisfiesDependency(const zuri_packager::PackageSpecifier &specifier) const;
 
-        tempo_utils::Result<std::vector<zuri_packager::PackageSpecifier>> calculateResolutionOrder() const;
+        tempo_utils::Result<std::vector<Dependency>> calculateResolutionOrder() const;
 
         struct Priv;
 

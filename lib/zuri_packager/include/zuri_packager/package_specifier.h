@@ -49,8 +49,9 @@ namespace zuri_packager {
         bool operator>(const PackageSpecifier &other) const;
 
         std::string toString() const;
-        std::filesystem::path toFilesystemPath(const std::filesystem::path &base = {}) const;
-        tempo_utils::Url toUrl() const;
+        std::filesystem::path toPackagePath(const std::filesystem::path &base = {}) const;
+        std::filesystem::path toDirectoryPath(const std::filesystem::path &base = {}) const;
+        tempo_utils::UrlOrigin toUrlOrigin() const;
 
         static PackageSpecifier fromString(const std::string &s);
         static PackageSpecifier fromAuthority(const tempo_utils::UrlAuthority &authority);

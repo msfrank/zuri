@@ -381,7 +381,7 @@ zuri_packager::PackageWriter::writePackage()
         mode = tempo_utils::FileAppenderMode::CREATE_OR_OVERWRITE;
     }
 
-    auto packagePath = m_specifier.toFilesystemPath(m_options.installRoot);
+    auto packagePath = m_specifier.toPackagePath(m_options.installRoot);
     tempo_utils::FileAppender appender(packagePath, mode);
     TU_RETURN_IF_NOT_OK (appender.getStatus());
 

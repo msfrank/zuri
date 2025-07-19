@@ -18,8 +18,7 @@ TEST(DependencySet, AddSingleDirectDependency)
     auto resolutionOrder = resolutionOrderResult.getResult();
 
     ASSERT_EQ (1, resolutionOrder.size());
-    auto res1 = resolutionOrder.at(0);
-    ASSERT_EQ (bar, res1);
+    ASSERT_EQ (bar, resolutionOrder.at(0).specifier);
 }
 
 // TEST(DependencySet, AddMultipleExactDependencies)

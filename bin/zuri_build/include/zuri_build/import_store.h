@@ -15,8 +15,7 @@ enum class ImportEntryType {
 struct ImportEntry {
     ImportEntryType type;
     std::string targetName;
-    zuri_packager::PackageId packageId;
-    zuri_packager::RequirementsList packageRequirements;
+    zuri_packager::PackageSpecifier requirementSpecifier;
     tempo_utils::Url packageUrl;
 };
 

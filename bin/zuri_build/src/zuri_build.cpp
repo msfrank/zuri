@@ -291,14 +291,12 @@ run_zuri_build(int argc, const char *argv[])
     for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); ++it) {
         const auto &importName = it->first;
         const auto &importEntry = it->second;
-        tempo_utils::UrlOrigin importOrigin;
         switch (importEntry.type) {
             case ImportEntryType::Target:
                 // ignore target imports
                 break;
             case ImportEntryType::Requirement:
-                TU_RETURN_IF_NOT_OK (importResolver->addRequirement(
-                    importEntry.packageId, importEntry.packageRequirements));
+                TU_RETURN_IF_NOT_OK (importResolver->addRequirement(importEntry.requirementSpecifier, importName));
                 break;
             case ImportEntryType::Package:
             default:
@@ -306,8 +304,9 @@ run_zuri_build(int argc, const char *argv[])
                     tempo_command::CommandCondition::kInvalidConfiguration,
                     "invalid import type for '{}'", importName);
         }
-        TU_RETURN_IF_NOT_OK (shortcutResolver->insertShortcut(importName, importOrigin));
     }
+
+    TU_RETURN_IF_NOT_OK (importResolver->resolveImports(shortcutResolver));
 
     // create task registry and register build task domains
     auto taskRegistry = std::make_shared<lyric_build::TaskRegistry>();

@@ -24,12 +24,9 @@ public:
     }
 
     static tempo_utils::Status parseRequirement(const tempo_config::ConfigMap &map, ImportEntry &importEntry) {
-        zuri_packager::PackageIdParser packageIdParser;
+        zuri_packager::PackageSpecifierParser requirementSpecifierParser;
         TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-            importEntry.packageId, packageIdParser, map, "packageId"));
-        zuri_packager::RequirementsListParser requirementsListParser;
-        TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-            importEntry.packageRequirements, requirementsListParser, map, "packageRequirements"));
+            importEntry.requirementSpecifier, requirementSpecifierParser, map, "requirementSpecifier"));
         return {};
     }
 

@@ -112,7 +112,7 @@ zuri_packager::PackageExtractor::extractPackage()
             "extractor is not configured");
 
     //
-    auto templateName = m_specifier.toFilesystemPath();
+    auto templateName = m_specifier.toDirectoryPath();
     templateName.replace_extension(".XXXXXXXX");
     auto workingRoot = !m_options.workingRoot.empty()? m_options.workingRoot : std::filesystem::current_path();
 
@@ -127,7 +127,7 @@ zuri_packager::PackageExtractor::extractPackage()
     TU_RETURN_IF_NOT_OK (extractRoot(rootEntry));
 
     auto destinationRoot = !m_options.destinationRoot.empty()? m_options.destinationRoot : std::filesystem::current_path();
-    auto destinationPath = m_specifier.toFilesystemPath(destinationRoot);
+    auto destinationPath = m_specifier.toDirectoryPath(destinationRoot);
     std::filesystem::rename(m_workdirPath, destinationPath);
 
     return destinationPath;

@@ -11,7 +11,7 @@ BuildGraph::BuildGraph(
     absl::flat_hash_map<std::string,BuildGraphVertex> targetsMap,
     absl::flat_hash_map<std::string,BuildGraphVertex> importsMap,
     absl::flat_hash_set<tempo_utils::Url> requestedPackages,
-    absl::flat_hash_set<std::string> requestedRequirements)
+    absl::flat_hash_set<zuri_packager::PackageSpecifier> requestedRequirements)
     : m_targetStore(std::move(targetStore)),
       m_importStore(std::move(importStore)),
       m_buildGraph(std::move(buildGraph)),
@@ -37,7 +37,7 @@ BuildGraph::create(
     absl::flat_hash_map<std::string,BuildGraphVertex> targetsMap;
     absl::flat_hash_map<std::string,BuildGraphVertex> importsMap;
     absl::flat_hash_set<tempo_utils::Url> requestedPackages;
-    absl::flat_hash_set<std::string> requestedRequirements;
+    absl::flat_hash_set<zuri_packager::PackageSpecifier> requestedRequirements;
 
     // construct map of target name to dependency index
     for (auto it = targetStore->targetsBegin(); it != targetStore->targetsEnd(); it++) {
@@ -62,7 +62,7 @@ BuildGraph::create(
                 break;
             }
             case ImportEntryType::Requirement: {
-                requestedRequirements.insert(importEntry.requirementSpec);
+                requestedRequirements.insert(importEntry.requirementSpecifier);
                 break;
             }
             case ImportEntryType::Package: {

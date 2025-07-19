@@ -49,7 +49,7 @@ private:
     absl::flat_hash_map<std::string,BuildGraphVertex> m_targetsMap;
     absl::flat_hash_map<std::string,BuildGraphVertex> m_importsMap;
     absl::flat_hash_set<tempo_utils::Url> m_requestedPackages;
-    absl::flat_hash_set<std::string> m_requestedRequirements;
+    absl::flat_hash_set<zuri_packager::PackageSpecifier> m_requestedRequirements;
 
     BuildGraph(
         std::shared_ptr<TargetStore> targetStore,
@@ -58,7 +58,7 @@ private:
         absl::flat_hash_map<std::string,BuildGraphVertex> targetsMap,
         absl::flat_hash_map<std::string,BuildGraphVertex> importsMap,
         absl::flat_hash_set<tempo_utils::Url> requestedPackages,
-        absl::flat_hash_set<std::string> requestedRequirements);
+        absl::flat_hash_set<zuri_packager::PackageSpecifier> requestedRequirements);
 
     friend class TargetCycleDetector;
 };

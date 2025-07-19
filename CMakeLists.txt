@@ -132,6 +132,9 @@ find_package(flatbuffers REQUIRED)
 # find required Antlr dependency
 find_package(antlr REQUIRED)
 
+# find required Curl dependency
+find_package(CURL REQUIRED)
+
 # find required Openssl dependency
 find_package(openssl REQUIRED)
 

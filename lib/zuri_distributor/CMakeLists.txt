@@ -13,6 +13,7 @@ set(ZURI_DISTRIBUTOR_INCLUDES
     include/zuri_distributor/package_cache.h
     include/zuri_distributor/package_cache_loader.h
     include/zuri_distributor/package_cache_database.h
+    include/zuri_distributor/package_fetcher.h
     include/zuri_distributor/static_package_resolver.h
 )
 set_target_properties(zuri_distributor PROPERTIES PUBLIC_HEADER "${ZURI_DISTRIBUTOR_INCLUDES}")
@@ -24,6 +25,7 @@ target_sources(zuri_distributor PRIVATE
     src/package_cache.cpp
     src/package_cache_loader.cpp
     src/package_cache_database.cpp
+    src/package_fetcher.cpp
     src/static_package_resolver.cpp
     )
 
@@ -60,6 +62,7 @@ target_link_libraries(zuri_distributor
     sqlite::sqlite
     PRIVATE
     Boost::headers
+    CURL::libcurl_shared
     )
 
 # install targets

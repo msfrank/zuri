@@ -32,6 +32,7 @@ class Zuri(ConanFile):
         'antlr/4.9.3@timbre',
         'boost/1.88.0@timbre',
         'cppterminal/20231011.1@timbre',
+        'curl/8.5.0@timbre',
         'fmt/9.1.0@timbre',
         'flatbuffers/23.5.26@timbre',
         'gtest/1.14.0@timbre',

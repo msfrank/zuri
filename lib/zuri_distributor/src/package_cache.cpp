@@ -16,7 +16,7 @@ zuri_distributor::PackageCache::containsPackage(const zuri_packager::PackageSpec
 {
     if (!specifier.isValid())
         return false;
-    auto packagePath = specifier.toFilesystemPath(m_cacheDirectory);
+    auto packagePath = specifier.toDirectoryPath(m_cacheDirectory);
     return std::filesystem::is_directory(packagePath);
 }
 
@@ -27,7 +27,7 @@ zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageSpeci
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "invalid package specifier");
 
-    auto packagePath = specifier.toFilesystemPath(m_cacheDirectory);
+    auto packagePath = specifier.toDirectoryPath(m_cacheDirectory);
     if (!std::filesystem::is_directory(packagePath))
         return Option<std::filesystem::path>();
 
@@ -82,7 +82,7 @@ zuri_distributor::PackageCache::installPackage(std::shared_ptr<zuri_packager::Pa
 tempo_utils::Status
 zuri_distributor::PackageCache::removePackage(const zuri_packager::PackageSpecifier &specifier)
 {
-    auto absolutePath = specifier.toFilesystemPath(m_cacheDirectory);
+    auto absolutePath = specifier.toDirectoryPath(m_cacheDirectory);
     if (!std::filesystem::is_directory(absolutePath))
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "missing package {}", absolutePath.string());
