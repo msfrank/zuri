@@ -53,8 +53,7 @@ ImportResolver::resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver>
     TU_ASSIGN_OR_RETURN (dependencyOrder, m_selector->calculateDependencyOrder());
 
     // create and configure fetcher
-    zuri_distributor::PackageFetcherOptions options;
-    zuri_distributor::PackageFetcher fetcher(m_resolver, options);
+    zuri_distributor::PackageFetcher fetcher;
     TU_RETURN_IF_NOT_OK (fetcher.configure());
 
     // add each missing dependency to fetcher

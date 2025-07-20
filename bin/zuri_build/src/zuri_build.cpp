@@ -288,13 +288,23 @@ run_zuri_build(int argc, const char *argv[])
     builderOptions.shortcutResolver = shortcutResolver;
 
     // resolve and install package and requirement imports
+    absl::flat_hash_map<std::string,std::string> targetShortcuts;
     for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); ++it) {
         const auto &importName = it->first;
         const auto &importEntry = it->second;
         switch (importEntry.type) {
-            case ImportEntryType::Target:
-                // ignore target imports
+            case ImportEntryType::Target: {
+                if (!targetStore->hasTarget(importEntry.targetName))
+                    return tempo_command::CommandStatus::forCondition(
+                        tempo_command::CommandCondition::kInvalidConfiguration,
+                        "missing target '{}' for import '{}'", importEntry.targetName, importName);
+                if (targetShortcuts.contains(importEntry.targetName))
+                    return tempo_command::CommandStatus::forCondition(
+                        tempo_command::CommandCondition::kInvalidConfiguration,
+                        "target '{}' is referenced from multiple imports", importEntry.targetName);
+                targetShortcuts[importEntry.targetName] = importName;
                 break;
+            }
             case ImportEntryType::Requirement:
                 TU_RETURN_IF_NOT_OK (importResolver->addRequirement(importEntry.requirementSpecifier, importName));
                 break;
@@ -329,9 +339,9 @@ run_zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK (builder.configure());
 
     // build each target (and its dependencies) in the order specified on the command line
+    TargetBuilder targetBuilder(buildGraph, &builder, shortcutResolver, targetPackageCache, installRoot);
     for (const auto &target : targets) {
-        TargetBuilder targetBuilder(buildGraph, &builder, targetPackageCache, installRoot);
-        TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target));
+        TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target, targetShortcuts));
     }
 
     return {};

@@ -84,3 +84,38 @@ TEST_F (PackageFetcher, FetchPackageFromFileUrl)
     std::string_view content((const char *) span.data(), span.size());
     ASSERT_EQ ("foo@foocorp", content);
 }
+
+TEST_F (PackageFetcher, FetchMultiplePackagesFromFileUrl) {
+    zuri_distributor::PackageFetcherOptions options;
+    options.downloadRoot = downloadDir->getAbsolutePath();
+
+    zuri_distributor::PackageFetcher fetcher(options);
+    ASSERT_THAT (fetcher.configure(), tempo_test::IsOk());
+    ASSERT_THAT (fetcher.addPackage(fooSpecifier, fooUrl), tempo_test::IsOk());
+    ASSERT_THAT (fetcher.addPackage(barSpecifier, barUrl), tempo_test::IsOk());
+    ASSERT_THAT (fetcher.addPackage(bazSpecifier, bazUrl), tempo_test::IsOk());
+    ASSERT_THAT (fetcher.fetchPackages(), tempo_test::IsOk());
+
+    ASSERT_EQ (3, fetcher.numResults());
+    ASSERT_TRUE (fetcher.hasResult(fooSpecifier));
+    ASSERT_TRUE (fetcher.hasResult(barSpecifier));
+    ASSERT_TRUE (fetcher.hasResult(bazSpecifier));
+
+    auto fooResult = fetcher.getResult(fooSpecifier);
+    tempo_utils::FileReader fooReader(fooResult.path);
+    auto fooSpan = fooReader.getBytes()->getSpan();
+    std::string_view fooContent((const char *) fooSpan.data(), fooSpan.size());
+    ASSERT_EQ ("foo@foocorp", fooContent);
+
+    auto barResult = fetcher.getResult(barSpecifier);
+    tempo_utils::FileReader barReader(barResult.path);
+    auto barSpan = barReader.getBytes()->getSpan();
+    std::string_view barContent((const char *) barSpan.data(), barSpan.size());
+    ASSERT_EQ ("bar@foocorp", barContent);
+
+    auto bazResult = fetcher.getResult(bazSpecifier);
+    tempo_utils::FileReader bazReader(bazResult.path);
+    auto bazSpan = bazReader.getBytes()->getSpan();
+    std::string_view bazContent((const char *) bazSpan.data(), bazSpan.size());
+    ASSERT_EQ ("baz@foocorp", bazContent);
+}

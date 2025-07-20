@@ -6,10 +6,12 @@
 TargetBuilder::TargetBuilder(
     std::shared_ptr<BuildGraph> buildGraph,
     lyric_build::LyricBuilder *builder,
+    std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver,
     std::shared_ptr<zuri_distributor::PackageCache> targetPackageCache,
     const std::filesystem::path &installRoot)
     : m_buildGraph(std::move(buildGraph)),
       m_builder(builder),
+      m_shortcutResolver(std::move(shortcutResolver)),
       m_targetPackageCache(std::move(targetPackageCache)),
       m_installRoot(installRoot)
 {
@@ -20,16 +22,20 @@ TargetBuilder::TargetBuilder(
 }
 
 tempo_utils::Result<std::filesystem::path>
-TargetBuilder::buildTarget(const std::string &targetName)
+TargetBuilder::buildTarget(
+    const std::string &targetName,
+    const absl::flat_hash_map<std::string,std::string> &targetShortcuts)
 {
     std::vector<std::string> targetBuildOrder;
     TU_ASSIGN_OR_RETURN (targetBuildOrder, m_buildGraph->calculateBuildOrder(targetName));
 
-    std::filesystem::path targetPath;
+    std::filesystem::path currTargetPath;
     std::filesystem::path prevTargetPath;
+    std::string prevTargetName;
 
     auto targetStore = m_buildGraph->getTargetStore();
-    for (const auto &currTarget : targetBuildOrder) {
+
+    for (const auto &currTargetName : targetBuildOrder) {
 
         // if target dependency exists then install it in the target package cache
         if (!prevTargetPath.empty()) {
@@ -37,30 +43,43 @@ TargetBuilder::buildTarget(const std::string &targetName)
             TU_ASSIGN_OR_RETURN (packageReader, zuri_packager::PackageReader::open(prevTargetPath));
             zuri_packager::PackageSpecifier specifier;
             TU_ASSIGN_OR_RETURN (specifier, packageReader->readPackageSpecifier());
+
+            // if target exists in package cache then remove it first
             if (m_targetPackageCache->containsPackage(specifier)) {
                 TU_RETURN_IF_NOT_OK (m_targetPackageCache->removePackage(specifier));
             }
             TU_RETURN_IF_STATUS (m_targetPackageCache->installPackage(packageReader));
+
+            //
+            auto entry = targetShortcuts.find(prevTargetName);
+            if (entry != targetShortcuts.cend()) {
+                const auto &shortcutName = entry->second;
+                if (!m_shortcutResolver->hasShortcut(shortcutName)) {
+                    auto origin = specifier.toUrlOrigin();
+                    TU_RETURN_IF_NOT_OK (m_shortcutResolver->insertShortcut(shortcutName, origin));
+                }
+            }
         }
 
-        const auto &currEntry = targetStore->getTarget(currTarget);
+        const auto &currEntry = targetStore->getTarget(currTargetName);
         switch (currEntry.type) {
             case TargetEntryType::Program: {
-                TU_ASSIGN_OR_RETURN (targetPath, buildProgramTarget(currTarget, currEntry));
+                TU_ASSIGN_OR_RETURN (currTargetPath, buildProgramTarget(currTargetName, currEntry));
                 break;
             }
             case TargetEntryType::Library: {
-                TU_ASSIGN_OR_RETURN (targetPath, buildLibraryTarget(currTarget, currEntry));
+                TU_ASSIGN_OR_RETURN (currTargetPath, buildLibraryTarget(currTargetName, currEntry));
                 break;
             }
             default:
                 return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kConfigInvariant,
-                    "invalid type for build target {}", currTarget);
+                    "invalid type for build target {}", currTargetName);
         }
-        prevTargetPath = targetPath;
+        prevTargetPath = currTargetPath;
+        prevTargetName = currTargetName;
     }
 
-    return targetPath;
+    return currTargetPath;
 }
 
 tempo_utils::Result<std::filesystem::path>

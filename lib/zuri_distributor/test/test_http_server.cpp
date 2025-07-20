@@ -13,91 +13,89 @@
 
 #include <tempo_utils/log_message.h>
 
+#include "test_http_server.h"
+
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-#include "test_http_server.h"
 
 TestHttpServer::TestHttpServer(
     std::string_view address,
     unsigned short port,
-    const std::filesystem::path &contentRoot)
+    const std::filesystem::path &contentRoot,
+    int concurrencyHint)
 {
-    m_address = net::ip::make_address(address);
+    m_address = boost::asio::ip::make_address(address);
     m_port = port;
-    m_contentRoot = std::make_shared<std::filesystem::path>(contentRoot);
+    m_contentRoot = contentRoot;
+    m_concurrencyHint = concurrencyHint;
 }
 
-template <class Body, class Allocator>
-http::message_generator
-handle_request(beast::string_view doc_root, http::request<Body, http::basic_fields<Allocator>>&& req)
+boost::asio::ip::address
+TestHttpServer::getAddress() const
 {
-    // Make sure we can handle the method
-    if( req.method() != http::verb::get &&
-        req.method() != http::verb::head)
-        return bad_request("Unknown HTTP-method");
+    return m_address;
+}
 
-    // Request path must be absolute and not contain "..".
-    if( req.target().empty() ||
-        req.target()[0] != '/' ||
-        req.target().find("..") != beast::string_view::npos)
-        return bad_request("Illegal request-target");
+unsigned short
+TestHttpServer::getPort() const
+{
+    return m_port;
+}
 
-    // Build the path to the requested file
-    std::string path = path_cat(doc_root, req.target());
-    if(req.target().back() == '/')
-        path.append("index.html");
+std::filesystem::path
+TestHttpServer::getContentRoot() const
+{
+    return m_contentRoot;
+}
 
-    // Attempt to open the file
-    beast::error_code ec;
-    http::file_body::value_type body;
-    body.open(path.c_str(), beast::file_mode::scan, ec);
+int
+TestHttpServer::getConcurrencyHint() const
+{
+    return m_concurrencyHint;
+}
 
-    // Handle the case where the file doesn't exist
-    if(ec == beast::errc::no_such_file_or_directory)
-        return not_found(req.target());
-
-    // Handle an unknown error
-    if(ec)
-        return server_error(ec.message());
-
-    // Cache the size since we need it after the move
-    auto const size = body.size();
-
-    // Respond to HEAD request
-    if(req.method() == http::verb::head)
-    {
-        http::response<http::empty_body> res{http::status::ok, req.version()};
-        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(http::field::content_type, mime_type(path));
-        res.content_length(size);
-        res.keep_alive(req.keep_alive());
-        return res;
+tempo_utils::Result<bool>
+TestHttpServer::error(
+    tcp::socket &socket,
+    const http::request<http::string_body> &req,
+    http::status status,
+    std::string_view message) const
+{
+    http::response<http::string_body> rsp{status, req.version()};
+    rsp.keep_alive(req.keep_alive());
+    rsp.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+    if (!message.empty()) {
+        rsp.set(http::field::content_type, "text/plain");
+        rsp.body() = message;
     }
+    rsp.prepare_payload();
 
-    return res;
+    http::message_generator msg(std::move(rsp));
+
+    // Send the response
+    beast::error_code ec;
+    beast::write(socket, std::move(msg), ec);
+    return req.keep_alive();
 }
 
 tempo_utils::Result<bool>
 TestHttpServer::handleGET(tcp::socket &socket, const http::request<http::string_body> &req) const
 {
-    auto path = *m_contentRoot / std::string(req.target());
+    auto path = m_contentRoot / std::string(req.target());
     auto keep_alive = req.keep_alive();
 
     // Attempt to open the file
     beast::error_code ec;
     http::file_body::value_type body;
+
     body.open(path.c_str(), beast::file_mode::scan, ec);
-
-    // Handle the case where the file doesn't exist
-    if(ec == beast::errc::no_such_file_or_directory)
-        return not_found(req.target());
-
-    // Handle an unknown error
+    if (ec == beast::errc::no_such_file_or_directory)
+        return error(socket, req, http::status::not_found, "file not found");
     if(ec)
-        return server_error(ec.message());
+        return error(socket, req, http::status::internal_server_error, ec.message());
 
     auto const size = body.size();
 
@@ -111,11 +109,10 @@ TestHttpServer::handleGET(tcp::socket &socket, const http::request<http::string_
     rsp.content_length(size);
     rsp.keep_alive(keep_alive);
 
-    // Send the response
-    beast::error_code ec;
-    beast::write(socket, std::move(rsp), ec);
-    TU_LOG_FATAL_IF(ec) << "failed to write response: " << ec.message();
+    http::message_generator msg(std::move(rsp));
 
+    // Send the response
+    beast::write(socket, std::move(msg), ec);
     return keep_alive;
 }
 
@@ -173,14 +170,15 @@ handle_session(tcp::socket &socket, std::shared_ptr<const TestHttpServer> server
 }
 
 void
-TestHttpServer::run()
+run_acceptor(
+    boost::asio::io_context &ioc,
+    boost::asio::ip::tcp::endpoint endpoint,
+    std::shared_ptr<const TestHttpServer> server)
 {
-    // The io_context is required for all I/O
-    net::io_context ioc{1};
-
     // The acceptor receives incoming connections
-    tcp::acceptor acceptor{ioc, {m_address, m_port}};
-    for (;;)
+    tcp::acceptor acceptor{ioc, endpoint};
+
+    while (!ioc.stopped())
     {
         // This will receive the new connection
         tcp::socket socket{ioc};
@@ -189,16 +187,55 @@ TestHttpServer::run()
         acceptor.accept(socket);
 
         // Launch the session, transferring ownership of the socket
-        std::thread t{std::bind(&handle_session, std::move(socket), shared_from_this())};
+        std::thread t{std::bind(&handle_session, std::move(socket), server)};
         t.detach();
     }
+}
+
+Listener::Listener(std::shared_ptr<const TestHttpServer> server)
+    : m_ioc(server->getConcurrencyHint())
+{
+    m_ioc.run();
+    m_endpoint = boost::asio::ip::tcp::endpoint(server->getAddress(), server->getPort());
+    m_server = std::move(server);
+    m_thread = std::thread{std::bind(&run_acceptor, std::ref(m_ioc), m_endpoint, m_server)};
+}
+
+tempo_utils::Status
+Listener::stop()
+{
+    m_ioc.stop();
+    m_thread.join();
+    return {};
+}
+
+tempo_utils::Status
+TestHttpServer::start()
+{
+    if (m_listener)
+        return tempo_utils::GenericStatus::forCondition(
+            tempo_utils::GenericCondition::kInternalViolation, "server is already started");
+
+    m_listener = std::make_shared<Listener>(shared_from_this());
+    return {};
+}
+
+tempo_utils::Status TestHttpServer::stop()
+{
+    if (!m_listener)
+        return {};
+
+    auto listener = std::move(m_listener);
+    return listener->stop();
 }
 
 std::shared_ptr<TestHttpServer>
 TestHttpServer::create(
     std::string_view address,
     unsigned short port,
-    const std::filesystem::path &contentRoot)
+    const std::filesystem::path &contentRoot,
+    int concurrencyHint)
 {
-    return std::shared_ptr<TestHttpServer>(new TestHttpServer(address, port, contentRoot));
+    auto *ptr = new TestHttpServer(address, port, contentRoot, concurrencyHint);
+    return std::shared_ptr<TestHttpServer>(ptr);
 }

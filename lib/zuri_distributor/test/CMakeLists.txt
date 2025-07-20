@@ -14,7 +14,7 @@ set(TEST_CASES
 
 # define test suite driver
 
-add_executable(zuri_distributor_testsuite ${TEST_CASES})
+add_executable(zuri_distributor_testsuite ${TEST_CASES} test_http_server.cpp test_http_server.h)
 target_include_directories(zuri_distributor_testsuite PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
     ${CMAKE_CURRENT_BINARY_DIR}/../src
@@ -29,7 +29,7 @@ gtest_discover_tests(zuri_distributor_testsuite DISCOVERY_TIMEOUT 30)
 
 # define test suite static library
 
-add_library(ZuriDistributorTestSuite OBJECT ${TEST_CASES})
+add_library(ZuriDistributorTestSuite OBJECT ${TEST_CASES} test_http_server.cpp test_http_server.h)
 target_include_directories(ZuriDistributorTestSuite PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
     ${CMAKE_CURRENT_BINARY_DIR}/../src
