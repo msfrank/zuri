@@ -29,7 +29,7 @@ protected:
     zuri_packager::PackageSpecifier g1_1_0 = {"g", "foo", 1, 1, 0};
 
     void SetUp() override {
-        absl::btree_map<zuri_packager::PackageSpecifier,zuri_distributor::PackageVersionDescriptor> versions;
+        absl::btree_map<zuri_packager::PackageSpecifier,zuri_distributor::PackageDescriptor> versions;
         /*
          *            <A1.0>
          *               |`-----------------.

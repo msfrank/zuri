@@ -12,17 +12,24 @@ namespace zuri_distributor {
     class StaticPackageResolver : public AbstractPackageResolver {
     public:
         static tempo_utils::Result<std::shared_ptr<StaticPackageResolver>> create(
-            const absl::btree_map<zuri_packager::PackageSpecifier,PackageVersionDescriptor> &versions);
+            const absl::btree_map<zuri_packager::PackageSpecifier,PackageDescriptor> &packages);
 
-        tempo_utils::Result<PackageVersionDescriptor> describePackageVersion(
+        tempo_utils::Result<RepositoryDescriptor> getRepository(std::string_view packageDomain) override;
+
+        tempo_utils::Result<CollectionDescriptor> getCollection(
+            const zuri_packager::PackageId &packageId) override;
+
+        tempo_utils::Result<PackageDescriptor> getPackage(
             const zuri_packager::PackageId &packageId,
             const zuri_packager::PackageVersion &packageVersion) override;
 
     private:
-        absl::btree_map<zuri_packager::PackageSpecifier,PackageVersionDescriptor> m_versions;
+        RepositoryDescriptor m_repository;
+        absl::btree_map<zuri_packager::PackageId,CollectionDescriptor> m_collections;
+        absl::btree_map<zuri_packager::PackageSpecifier,PackageDescriptor> m_packages;
 
-        explicit StaticPackageResolver(
-            const absl::btree_map<zuri_packager::PackageSpecifier,PackageVersionDescriptor> &versions);
+        StaticPackageResolver(
+            const absl::btree_map<zuri_packager::PackageSpecifier,PackageDescriptor> &packages);
     };
 }
 

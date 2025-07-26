@@ -21,6 +21,18 @@ namespace zuri_packager {
         Option<PackageId> m_default;
     };
 
+    class PackageVersionParser : public tempo_config::AbstractConverter<PackageVersion> {
+    public:
+        PackageVersionParser();
+        explicit PackageVersionParser(const PackageVersion &versionDefault);
+        tempo_utils::Status convertValue(
+            const tempo_config::ConfigNode &node,
+            PackageVersion &version) const override;
+
+    private:
+        Option<PackageVersion> m_default;
+    };
+
     class PackageSpecifierParser : public tempo_config::AbstractConverter<PackageSpecifier> {
     public:
         PackageSpecifierParser();

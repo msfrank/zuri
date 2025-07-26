@@ -10,6 +10,7 @@ set(ZURI_DISTRIBUTOR_INCLUDES
     include/zuri_distributor/dependency_selector.h
     include/zuri_distributor/dependency_set.h
     include/zuri_distributor/distributor_result.h
+    include/zuri_distributor/http_package_resolver.h
     include/zuri_distributor/package_cache.h
     include/zuri_distributor/package_cache_loader.h
     include/zuri_distributor/package_cache_database.h
@@ -22,6 +23,7 @@ target_sources(zuri_distributor PRIVATE
     src/dependency_selector.cpp
     src/dependency_set.cpp
     src/distributor_result.cpp
+    src/http_package_resolver.cpp
     src/package_cache.cpp
     src/package_cache_loader.cpp
     src/package_cache_database.cpp

@@ -40,6 +40,37 @@ zuri_packager::PackageIdParser::convertValue(
     return {};
 }
 
+zuri_packager::PackageVersionParser::PackageVersionParser()
+{
+}
+
+zuri_packager::PackageVersionParser::PackageVersionParser(const PackageVersion &versionDefault)
+    : m_default(versionDefault)
+{
+}
+
+tempo_utils::Status
+zuri_packager::PackageVersionParser::convertValue(
+    const tempo_config::ConfigNode &node,
+    PackageVersion &version) const
+{
+    if (node.isNil() && !m_default.isEmpty()) {
+        version = m_default.getValue();
+        return {};
+    }
+    if (node.getNodeType() != tempo_config::ConfigNodeType::kValue)
+        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType);
+
+    auto value = node.toValue().getValue();
+    auto v = PackageVersion::fromString(value);
+    if (!v.isValid())
+        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kParseError,
+            "invalid package version");
+    version = v;
+
+    return {};
+}
+
 zuri_packager::PackageSpecifierParser::PackageSpecifierParser()
 {
 }

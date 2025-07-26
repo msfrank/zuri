@@ -16,18 +16,18 @@ zuri_distributor::DependencySelector::addDirectDependency(
 {
     TU_RETURN_IF_NOT_OK (m_dependencies.addDirectDependency(dependency));
 
-    PackageVersionDescriptor packageVersionDescriptor;
-    TU_ASSIGN_OR_RETURN (packageVersionDescriptor, m_resolver->describePackageVersion(
+    PackageDescriptor packageDescriptor;
+    TU_ASSIGN_OR_RETURN (packageDescriptor, m_resolver->getPackage(
         dependency.getPackageId(), dependency.getPackageVersion()));
 
-    for (const auto &requested : packageVersionDescriptor.dependencies) {
+    for (const auto &requested : packageDescriptor.dependencies) {
         PendingSelection pendingSelection;
         pendingSelection.requested = requested;
         pendingSelection.target = dependency;
         m_pending.push(std::move(pendingSelection));
     }
 
-    m_descriptors[dependency] = std::move(packageVersionDescriptor);
+    m_descriptors[dependency] = std::move(packageDescriptor);
 
     return {};
 }
@@ -47,18 +47,18 @@ zuri_distributor::DependencySelector::resolveTransitiveDependencies()
 
         auto target = curr.requested;
 
-        PackageVersionDescriptor packageVersionDescriptor;
-        TU_ASSIGN_OR_RETURN (packageVersionDescriptor, m_resolver->describePackageVersion(
+        PackageDescriptor packageDescriptor;
+        TU_ASSIGN_OR_RETURN (packageDescriptor, m_resolver->getPackage(
             target.getPackageId(), target.getPackageVersion()));
 
-        for (const auto &requested : packageVersionDescriptor.dependencies) {
+        for (const auto &requested : packageDescriptor.dependencies) {
             PendingSelection next;
             next.requested = requested;
             next.target = target;
             m_pending.push(std::move(next));
         }
 
-        m_descriptors[target] = std::move(packageVersionDescriptor);
+        m_descriptors[target] = std::move(packageDescriptor);
     }
     return {};
 }

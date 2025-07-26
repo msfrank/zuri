@@ -26,7 +26,7 @@ namespace zuri_distributor {
     private:
         std::shared_ptr<AbstractPackageResolver> m_resolver;
         DependencySet m_dependencies;
-        absl::flat_hash_map<zuri_packager::PackageSpecifier,PackageVersionDescriptor> m_descriptors;
+        absl::flat_hash_map<zuri_packager::PackageSpecifier,PackageDescriptor> m_descriptors;
 
         struct PendingSelection {
             zuri_packager::PackageSpecifier requested;
