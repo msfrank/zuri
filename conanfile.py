@@ -44,6 +44,7 @@ class Zuri(ConanFile):
         'CMakeLists.txt',
         'bin/*',
         'cmake/*',
+        'lib/*',
         'meta/*'
         'pkg/*',
         'share/*',

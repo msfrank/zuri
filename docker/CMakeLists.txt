@@ -99,6 +99,7 @@ add_custom_target(build_docker_image
       --platform ${PLATFORM_ID}
       --build-arg base_image=${DOCKER_BASE_IMAGE}
       --build-arg tempo_image=${DOCKER_TEMPO_IMAGE}
+      --build-arg lyric_image=${DOCKER_LYRIC_IMAGE}
       --build-arg is_debug_build=$<BOOL:${IS_DEBUG_BUILD}>
       -o ${DOCKER_OUTPUT}
       -t "${DOCKER_REGISTRY}${PLATFORM_IMAGE_NAME}"

@@ -70,7 +70,7 @@ jobs:
             -DDISABLE_LOCAL_BUILD=True \
             -DDOCKER_BASE_IMAGE=${{ inputs.base_image }} \
             -DDOCKER_TEMPO_IMAGE=${{ inputs.tempo_image }} \
-            -DDOCKER_LYRIC_IMAGE=${{ inputs.tempo_image }} \
+            -DDOCKER_LYRIC_IMAGE=${{ inputs.lyric_image }} \
             -DDOCKER_REGISTRY=localhost:5000/ \
             -DDOCKER_PLATFORM_ID=${{inputs.platform_id}}
 
