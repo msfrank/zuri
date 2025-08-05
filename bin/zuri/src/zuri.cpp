@@ -175,28 +175,21 @@ run_zuri(int argc, const char *argv[])
     TU_LOG_V << "using distribution root " << distributionRoot;
 
     tempo_config::ConfigMap toolConfig;
-    tempo_config::ConfigMap vendorConfig;
 
     // load tool config and vendor config
     if (!workspaceRoot.empty()) {
-        auto loadConfigResult = load_workspace_config(workspaceRoot, distributionRoot);
-        if (loadConfigResult.isStatus())
-            return loadConfigResult.getStatus();
-        auto config = loadConfigResult.getResult();
-        toolConfig = config->getToolConfig();
-        vendorConfig = config->getVendorConfig();
+        std::shared_ptr<tempo_config::WorkspaceConfig> workspaceConfig;
+        TU_ASSIGN_OR_RETURN (workspaceConfig, load_workspace_config(workspaceRoot, distributionRoot));
+        toolConfig = workspaceConfig->getToolConfig();
     } else {
-        auto loadConfigResult = load_program_config(distributionRoot);
-        if (loadConfigResult.isStatus())
-            return loadConfigResult.getStatus();
-        auto config = loadConfigResult.getResult();
-        toolConfig = config->getToolConfig();
-        vendorConfig = config->getVendorConfig();
+        std::shared_ptr<tempo_config::ProgramConfig> programConfig;
+        TU_ASSIGN_OR_RETURN (programConfig, load_program_config(distributionRoot));
+        toolConfig = programConfig->getToolConfig();
     }
 
-    // construct the build config store
-    auto buildNode = toolConfig.mapAt("build");
-    lyric_build::ConfigStore configStore(buildNode.toMap(), vendorConfig);
+    // construct the builder task settings
+    auto settingsConfig = toolConfig.mapAt("settings").toMap();
+    lyric_build::TaskSettings taskSettings(settingsConfig);
 
     // construct the fragment store
     auto fragmentStore = std::make_shared<FragmentStore>();
@@ -205,10 +198,10 @@ run_zuri(int argc, const char *argv[])
     std::unique_ptr<EphemeralSession> ephemeralSession;
     if (!sessionIdString.empty()) {
         ephemeralSession = std::make_unique<EphemeralSession>(
-            sessionIdString, configStore, fragmentStore);
+            sessionIdString, taskSettings, fragmentStore);
     } else {
         ephemeralSession = std::make_unique<EphemeralSession>(
-            tempo_utils::UUID::randomUUID().toString(), configStore, fragmentStore);
+            tempo_utils::UUID::randomUUID().toString(), taskSettings, fragmentStore);
     }
 
     // configure the session

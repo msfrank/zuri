@@ -10,12 +10,12 @@
 
 EphemeralSession::EphemeralSession(
     const std::string &sessionId,
-    const lyric_build::ConfigStore &configStore,
+    const lyric_build::TaskSettings &taskSettings,
     std::shared_ptr<FragmentStore> fragmentStore,
     const lyric_parser::ParserOptions &parserOptions)
     : m_sessionId(sessionId),
-      m_configStore(configStore),
-      m_fragmentStore(fragmentStore),
+      m_taskSettings(taskSettings),
+      m_fragmentStore(std::move(fragmentStore)),
       m_parserOptions(parserOptions)
 {
     TU_ASSERT (!m_sessionId.empty());
@@ -38,31 +38,24 @@ EphemeralSession::configure()
     // initialize the parser
     m_parser = std::make_unique<lyric_parser::LyricParser>(m_parserOptions);
 
+    // construct the loader chain
+    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
+    loaderChain.push_back(m_fragmentStore);
+    std::shared_ptr<lyric_runtime::AbstractLoader> loader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
+
     // construct the builder used to compile fragments
     lyric_build::BuilderOptions builderOptions;
     builderOptions.cacheMode = lyric_build::CacheMode::InMemory;
-    builderOptions.fallbackLoader = m_fragmentStore;
+    builderOptions.fallbackLoader = loader;
     builderOptions.virtualFilesystem = m_fragmentStore;
-    m_builder = std::make_unique<lyric_build::LyricBuilder>(m_configStore, builderOptions);
+    m_builder = std::make_unique<lyric_build::LyricBuilder>(
+        std::filesystem::current_path(), m_taskSettings, builderOptions);
 
     // initialize the builder
-    auto status = m_builder->configure();
-    if (!status.isOk())
-        return status;
+    TU_RETURN_IF_NOT_OK (m_builder->configure());
 
     lyric_runtime::InterpreterStateOptions options;
-
-    auto preludeLocationString = m_configStore.getGlobalNode("preludeLocation").toValue().getValue();
-    if (!preludeLocationString.empty()) {
-        options.preludeLocation = lyric_common::ModuleLocation::fromString(preludeLocationString);
-    }
-
-    // construct the loader chain
-    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
-    loaderChain.push_back(m_builder->getBootstrapLoader());
-    loaderChain.push_back(m_fragmentStore);
-    loaderChain.push_back(m_builder->getPackageLoader());
-    options.loader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
+    options.loader = loader;
 
     // construct the interpreter state
     TU_ASSIGN_OR_RETURN(m_state, lyric_runtime::InterpreterState::create(options));
@@ -85,9 +78,7 @@ EphemeralSession::parseLine(const char *data, size_t size)
 
     // parse the fragment to determine if the code is complete and syntactically correct
     auto recorder = tempo_tracing::TraceRecorder::create();
-    auto parseResult = m_parser->parseModule(m_fragment, {}, recorder);
-    if (parseResult.isStatus())
-        return parseResult.getStatus();
+    TU_RETURN_IF_STATUS (m_parser->parseModule(m_fragment, {}, recorder));
 
     // return the complete fragment and reset the internal string
     auto fragment = m_fragment;
@@ -116,13 +107,11 @@ EphemeralSession::compileFragment(const std::string &fragment)
             })
         }
     };
+    lyric_build::TaskSettings overrides({}, {}, taskOverrides);
 
     // compile the code fragment into an object
-    auto buildResult = m_builder->computeTargets({target},
-        {}, {}, taskOverrides);
-    if (buildResult.isStatus())
-        return buildResult.getStatus();
-    auto targetComputationSet = buildResult.getResult();
+    lyric_build::TargetComputationSet targetComputationSet;
+    TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTargets({target}, overrides));
     auto targetComputation = targetComputationSet.getTarget(target);
     auto targetState = targetComputation.getState();
 
@@ -140,11 +129,9 @@ EphemeralSession::compileFragment(const std::string &fragment)
     lyric_build::ArtifactId moduleArtifact(generation, targetState.getHash(), fragmentUrl);
 
     // read the object from the build cache
-    auto loadContentResult = cache->loadContentFollowingLinks(moduleArtifact);
-    if (loadContentResult.isStatus())
-        return loadContentResult.getStatus();
-
-    lyric_object::LyricObject object(loadContentResult.getResult());
+    std::shared_ptr<const tempo_utils::ImmutableBytes> content;
+    TU_ASSIGN_OR_RETURN (content, cache->loadContentFollowingLinks(moduleArtifact));
+    lyric_object::LyricObject object(content);
     if (!object.isValid())
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandInvariant,
             "failed to load fragment object");

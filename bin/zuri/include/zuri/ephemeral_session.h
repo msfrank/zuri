@@ -18,7 +18,7 @@ class EphemeralSession {
 public:
     EphemeralSession(
         const std::string &sessionId,
-        const lyric_build::ConfigStore &configStore,
+        const lyric_build::TaskSettings &taskSettings,
         std::shared_ptr<FragmentStore> fragmentStore,
         const lyric_parser::ParserOptions &parserOptions = {});
 
@@ -32,7 +32,7 @@ public:
 
 private:
     std::string m_sessionId;
-    lyric_build::ConfigStore m_configStore;
+    lyric_build::TaskSettings m_taskSettings;
     std::shared_ptr<FragmentStore> m_fragmentStore;
     lyric_parser::ParserOptions m_parserOptions;
     std::unique_ptr<lyric_parser::LyricParser> m_parser;

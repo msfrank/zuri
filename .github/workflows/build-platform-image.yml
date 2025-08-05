@@ -1,0 +1,107 @@
+name: build-platform-image.yml
+on:
+  workflow_call:
+    inputs:
+      build_type:
+        required: true
+        type: string
+      build_runner:
+        required: true
+        type: string
+      platform_id:
+        required: true
+        type: string
+      base_image:
+        required: true
+        type: string
+      tempo_image:
+        required: true
+        type: string
+      lyric_image:
+        required: true
+        type: string
+      image_tag:
+        default: "latest"
+        required: false
+        type: string
+
+    outputs:
+      platform_image_path:
+        value: ${{ jobs.build-platform-image.outputs.platform_image_path }}
+      pkgcache_image_path:
+        value: ${{ jobs.build-platform-image.outputs.pkgcache_image_path }}
+
+jobs:
+  build-platform-image:
+    name: Build platform image and pkgcache image
+    runs-on: ${{ inputs.build_runner }}
+
+    outputs:
+      platform_image_path: ${{ steps.push-platform-image-to-ghcr.outputs.platform_image_path }}
+      pkgcache_image_path: ${{ steps.push-pkgcache-image-to-ghcr.outputs.pkgcache_image_path }}
+
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Configure zuri build system
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+            -DENABLE_DOCKER_BUILD=True \
+            -DDISABLE_LOCAL_BUILD=True \
+            -DDOCKER_BASE_IMAGE=${{ inputs.base_image }} \
+            -DDOCKER_TEMPO_IMAGE=${{ inputs.tempo_image }} \
+            -DDOCKER_LYRIC_IMAGE=${{ inputs.tempo_image }} \
+            -DDOCKER_REGISTRY=localhost:5000/ \
+            -DDOCKER_PLATFORM_ID=${{inputs.platform_id}}
+
+      - name: Build zuri platform image
+        run: cmake --build build -t build_docker_image
+
+      - name: Push zuri platform image to GHCR
+        id: push-platform-image-to-ghcr
+        env:
+          PLATFORM_IMAGE_BASE: ghcr.io/msfrank/zuri/${{ inputs.platform_id }}
+          BUILD_TYPE: ${{ inputs.build_type }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          PLATFORM_IMAGE_PATH="$PLATFORM_IMAGE_BASE/${BUILD_TYPE,,}:$IMAGE_TAG"
+          docker buildx imagetools create \
+            --tag $PLATFORM_IMAGE_PATH \
+            localhost:5000/zuri-current-build
+          echo "platform_image_path=\"$PLATFORM_IMAGE_PATH\"" >> $GITHUB_OUTPUT
+
+      - name: Build zuri pkgcache image
+        run: cmake --build build -t build_docker_pkgcache_image
+
+      - name: Push zuri pkgcache image to GHCR
+        id: push-pkgcache-image-to-ghcr
+        env:
+          PKGCACHE_IMAGE_BASE: ghcr.io/msfrank/zuri/pkgcache/${{ inputs.platform_id }}
+          BUILD_TYPE: ${{ inputs.build_type }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          PKGCACHE_IMAGE_PATH="$PKGCACHE_IMAGE_BASE/${BUILD_TYPE,,}:$IMAGE_TAG"
+          docker buildx imagetools create \
+            --tag $PKGCACHE_IMAGE_PATH \
+            localhost:5000/zuri-pkgcache-current-build
+          echo "pkgcache_image_path=\"$PKGCACHE_IMAGE_PATH\"" >> $GITHUB_OUTPUT

@@ -15,7 +15,7 @@ get_directory_property(ZURI_STD_TIME_PLUGIN_FILEPATH DIRECTORY plugin/time PLUGI
 # create the workspace config file used to build package
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/workspace.config.in ${CMAKE_CURRENT_BINARY_DIR}/workspace.config @ONLY)
 
-set(ZURI_STD_PACKAGE_PATH ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${FULL_VERSION}.zpk)
+set(ZURI_STD_PACKAGE_PATH ${CMAKE_CURRENT_BINARY_DIR}/dev.zuri_std-${PROJECT_VERSION}.zpk)
 
 # build the std package
 add_custom_command (

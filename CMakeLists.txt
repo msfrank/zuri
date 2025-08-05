@@ -1,12 +1,54 @@
 cmake_minimum_required(VERSION 3.27)
 
-project(zuri)
+# read project metadata
+file(READ ${CMAKE_SOURCE_DIR}/meta/version ZURI_PROJECT_VERSION)
+string(STRIP ${ZURI_PROJECT_VERSION} ZURI_PROJECT_VERSION)
+file(READ ${CMAKE_SOURCE_DIR}/meta/url ZURI_PROJECT_URL)
+string(STRIP ${ZURI_PROJECT_URL} ZURI_PROJECT_URL)
+file(READ ${CMAKE_SOURCE_DIR}/meta/description ZURI_PROJECT_DESCRIPTION)
+string(STRIP ${ZURI_PROJECT_DESCRIPTION} ZURI_PROJECT_DESCRIPTION)
+file(READ ${CMAKE_SOURCE_DIR}/meta/license ZURI_PROJECT_LICENSE)
+string(STRIP ${ZURI_PROJECT_LICENSE} ZURI_PROJECT_LICENSE)
 
+# declare the project
+project(zuri
+    VERSION ${ZURI_PROJECT_VERSION}
+    HOMEPAGE_URL ${ZURI_PROJECT_URL}
+    DESCRIPTION ${ZURI_PROJECT_DESCRIPTION}
+)
+
+# if build type was not explicitly defined then default to Debug
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "build type not specified so defaulting to Debug" FORCE)
+endif()
+
+# define IS_DEBUG_BUILD boolean to make it easier to check whether we are in debug mode
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     set(IS_DEBUG_BUILD ON)
 else()
     set(IS_DEBUG_BUILD OFF)
 endif()
+
+
+#######################################################################
+#
+# enable/disable build targets
+#
+#######################################################################
+
+option(DISABLE_LOCAL_BUILD "Disable local build" FALSE)
+option(ENABLE_DOCKER_BUILD "Enable docker build" FALSE)
+
+# if docker build is enabled then add targets from docker directory
+if (ENABLE_DOCKER_BUILD)
+    add_subdirectory(docker)
+endif()
+
+# if local build is disabled then don't process any further targets
+if (DISABLE_LOCAL_BUILD)
+    return()
+endif()
+
 
 #######################################################################
 #
@@ -19,17 +61,18 @@ set(RUNTIME_DISTRIBUTION_ROOT "${CMAKE_INSTALL_PREFIX}"
     "The runtime distribution root directory. Defaults to CMAKE_INSTALL_PREFIX.")
 message(STATUS "runtime distribution root is ${RUNTIME_DISTRIBUTION_ROOT}")
 
-option(USE_SANITIZER "Enable sanitizer library" OFF)
+option(ENABLE_SANITIZER "Enable sanitizer library." OFF)
 
 set(SANITIZER ""
     CACHE STRING
-    "one of 'address', 'thread', 'memory', 'ub', or 'leak'")
+    "The sanitizer to use. Must be one of 'address', 'thread', 'memory', 'ub', or 'leak'.")
 
 set(SANITIZER_IGNORELIST ""
     CACHE PATH
-    "Instruct sanitizer to ignore symbols specified in ignorelist")
+    "Instruct sanitizer to ignore symbols specified in ignorelist.")
 
-option(USE_PROFILER "Enable gperftools profiler" OFF)
+option(ENABLE_PROFILER "Enable gperftools profiler." OFF)
+
 
 #######################################################################
 #
@@ -47,7 +90,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Werror -Wno-deprecated-declar
 set (OPTIMIZATION_LEVEL "")
 
 # enable one of the sanitizer libraries if specified
-if (USE_SANITIZER)
+if (ENABLE_SANITIZER)
     if ("${SANITIZER}" STREQUAL "address")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
         set (OPTIMIZATION_LEVEL "-O1")
@@ -81,7 +124,7 @@ if (USE_SANITIZER)
     endif (SANITIZER)
 else()
     message(STATUS "sanitizer not enabled")
-endif (USE_SANITIZER)
+endif (ENABLE_SANITIZER)
 
 #
 if (NOT OPTIMIZATION_LEVEL)
@@ -101,6 +144,7 @@ else()
     set(BIN_RPATH "$ORIGIN/../lib")
     set(LIB_RPATH "$ORIGIN/")
 endif()
+
 
 #######################################################################
 #
@@ -161,18 +205,19 @@ find_package(gtest REQUIRED)
 
 # link to gperftools profiler library if specified
 set (PROFILER_LIBRARIES "")
-if (${USE_PROFILER})
+if (${ENABLE_PROFILER})
     set (PROFILER_LIBRARIES "-lprofiler")
     message(STATUS "enabling gperftools profiler")
 else()
     message(STATUS "gperftools profiler not enabled")
-endif(${USE_PROFILER})
+endif(${ENABLE_PROFILER})
 
 # include needed CMake features
 include(CMakePackageConfigHelpers)
 include(CTest)
 include(GNUInstallDirs)
 include(GoogleTest)
+
 
 #######################################################################
 #
@@ -193,6 +238,7 @@ set(ANTLR
 )
 message(STATUS "antlr command is ${ANTLR}")
 
+
 #######################################################################
 #
 # define build constants
@@ -202,20 +248,7 @@ message(STATUS "antlr command is ${ANTLR}")
 set(FULL_PLATFORM "${CMAKE_SYSTEM_NAME}.${CMAKE_SYSTEM_VERSION}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "full platform is ${FULL_PLATFORM}")
 
-# define individual version components and version string
-string(REGEX REPLACE "([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1"
-    MAJOR_VERSION
-    "${ZURI_PACKAGE_VERSION}")
-string(REGEX REPLACE "[0-9]+\\.([0-9]+)\\.[0-9]+" "\\1"
-    MINOR_VERSION
-    "${ZURI_PACKAGE_VERSION}")
-string(REGEX REPLACE "[0-9]+\\.[0-9]+\\.([0-9]+)" "\\1"
-    PATCH_VERSION
-    "${ZURI_PACKAGE_VERSION}")
-set(FULL_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
-message(STATUS "version is ${FULL_VERSION}")
-
-#
+# platform id is formed from<system name/os>-<processor/arch>
 set(ZURI_PLATFORM_ID                        "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
 # zuri package group
@@ -223,19 +256,19 @@ set(ZURI_PACKAGE_GROUP                      "dev.zuri")
 
 # zuri std package
 set(ZURI_STD_PACKAGE_NAME                   "std")
-set(ZURI_STD_PACKAGE_VERSION                "${FULL_VERSION}")
+set(ZURI_STD_PACKAGE_VERSION                "${PROJECT_VERSION}")
 set(ZURI_STD_PACKAGE_ID                     "${ZURI_PACKAGE_GROUP}_${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}")
 set(ZURI_STD_PACKAGE_AUTHORITY              "${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}@zuri.dev")
 set(ZURI_STD_PACKAGE_URL                    "dev.zuri.pkg://${ZURI_STD_PACKAGE_AUTHORITY}")
 
 # special directory names
-set(ZURI_PACKAGES_DIR_NAME                  "zuri-packages-${MAJOR_VERSION}")
+set(ZURI_PACKAGES_DIR_NAME                  "zuri-packages-${PROJECT_VERSION_MAJOR}")
 
 # install paths
 set(PACKAGES_DIR_PREFIX                     "${CMAKE_INSTALL_LIBDIR}/${ZURI_PACKAGES_DIR_NAME}")
-set(DOC_DIR_PREFIX                          "${CMAKE_INSTALL_DATAROOTDIR}/doc/zuri-${FULL_VERSION}")
-set(CONFIG_DIR_PREFIX                       "${CMAKE_INSTALL_DATAROOTDIR}/zuri-${FULL_VERSION}/config")
-set(VENDOR_CONFIG_DIR_PREFIX                "${CMAKE_INSTALL_DATAROOTDIR}/zuri-${FULL_VERSION}/vendor-config")
+set(DOC_DIR_PREFIX                          "${CMAKE_INSTALL_DATAROOTDIR}/doc/zuri-${PROJECT_VERSION}")
+set(CONFIG_DIR_PREFIX                       "${CMAKE_INSTALL_DATAROOTDIR}/zuri-${PROJECT_VERSION}/config")
+set(VENDOR_CONFIG_DIR_PREFIX                "${CMAKE_INSTALL_DATAROOTDIR}/zuri-${PROJECT_VERSION}/vendor-config")
 
 # build paths
 set(ZURI_BUILD_OUTPUT_ROOT                  "${CMAKE_BINARY_DIR}/output")
@@ -258,6 +291,7 @@ set(TESTER_CONFIG_PATH                      "${CMAKE_BINARY_DIR}/zuri_std/tester
 # empty cpp file is used for targets which don't have any source files
 set(EMPTY_CPP "${CMAKE_BINARY_DIR}/empty.cpp")
 
+
 #######################################################################
 #
 # add library targets from subdirectories
@@ -268,6 +302,7 @@ add_subdirectory(bin)
 add_subdirectory(lib)
 add_subdirectory(pkg)
 add_subdirectory(share)
+
 
 #######################################################################
 #
@@ -284,13 +319,13 @@ add_executable(zuri_testsuite ${EMPTY_CPP})
 target_link_libraries(zuri_testsuite
     PUBLIC gtest::gtest
     PRIVATE
-    ZuriStdCollectionsTestSuite
-    ZuriStdLogTestSuite
-    ZuriStdSystemTestSuite
-    ZuriStdTextTestSuite
-    ZuriStdTimeTestSuite
+    ZuriBuildTestSuite
+    ZuriDistributorTestSuite
+    ZuriPackagerTestSuite
+    ZuriStdPackageTestSuite
 )
 gtest_discover_tests(zuri_testsuite)
+
 
 #######################################################################
 #
@@ -310,7 +345,7 @@ configure_package_config_file(
     )
 
 write_basic_package_version_file(zuri-config-version.cmake
-    VERSION "${FULL_VERSION}"
+    VERSION "${PROJECT_VERSION}"
     COMPATIBILITY SameMajorVersion
     )
 

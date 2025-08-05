@@ -10,22 +10,20 @@ class FragmentStore : public lyric_build::AbstractFilesystem, public lyric_runti
 public:
     FragmentStore();
 
-    Option<bool> containsResource(const tempo_utils::Url &url) override;
-    tempo_utils::Result<Option<lyric_build::Resource>> fetchResource(const tempo_utils::Url &url) override;
+    bool containsResource(const tempo_utils::UrlPath &urlPath) override;
+    tempo_utils::Result<Option<lyric_build::Resource>> fetchResource(const tempo_utils::UrlPath &urlPath) override;
     tempo_utils::Result<std::shared_ptr<const tempo_utils::ImmutableBytes>> loadResource(
         std::string_view resourceId) override;
     tempo_utils::Result<lyric_build::ResourceList> listResources(
-        const tempo_utils::Url &resourceRoot,
+        const tempo_utils::UrlPath &resourceRoot,
         lyric_build::ResourceMatcherFunc matcherFunc,
         const std::string &token) override;
     tempo_utils::Result<lyric_build::ResourceList> listResourcesRecursively(
-        const tempo_utils::Url &resourceRoot,
+        const tempo_utils::UrlPath &resourceRoot,
         lyric_build::ResourceMatcherFunc matcherFunc,
         const std::string &token) override;
 
     tempo_utils::Result<bool> hasModule(
-        const lyric_common::ModuleLocation &location) const override;
-    tempo_utils::Result<Option<lyric_common::ModuleLocation>> resolveModule(
         const lyric_common::ModuleLocation &location) const override;
     tempo_utils::Result<Option<lyric_object::LyricObject>> loadModule(
         const lyric_common::ModuleLocation &location) override;
@@ -42,7 +40,7 @@ public:
         const lyric_object::LyricObject &object);
 
 private:
-    absl::flat_hash_map<tempo_utils::Url,lyric_build::Resource> m_meta;
+    absl::flat_hash_map<tempo_utils::UrlPath,lyric_build::Resource> m_meta;
     absl::flat_hash_map<
         std::string,
         std::shared_ptr<const tempo_utils::ImmutableBytes>> m_content;

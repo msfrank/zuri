@@ -130,7 +130,7 @@ ReadEvalPrintLoop::configure()
 
     m_state = ReadEvalPrintState::Ready;
 
-    return tempo_utils::Status();
+    return {};
 }
 
 InputMode
@@ -251,7 +251,7 @@ ReadEvalPrintLoop::run()
     }
 
     // cleanup and exit
-    return tempo_command::CommandStatus::ok();
+    return {};
 }
 
 void

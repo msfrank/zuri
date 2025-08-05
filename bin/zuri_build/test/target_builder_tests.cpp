@@ -2,7 +2,7 @@
 #include <gmock/gmock.h>
 
 #include <lyric_test/lyric_tester.h>
-#include <tempo_config/config_serde.h>
+#include <tempo_config/config_utils.h>
 #include <tempo_test/result_matchers.h>
 #include <tempo_test/status_matchers.h>
 #include <tempo_utils/tempdir_maker.h>
@@ -15,6 +15,7 @@
 class TargetBuilderTests : public ::testing::Test {
 protected:
     std::unique_ptr<tempo_utils::TempdirMaker> installRoot;
+
     void SetUp() override {
         installRoot = std::make_unique<tempo_utils::TempdirMaker>("install.XXXXXXXX");
         TU_RAISE_IF_NOT_OK (installRoot->getStatus());
@@ -60,10 +61,16 @@ TEST_F(TargetBuilderTests, BuildLibrary)
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
 
+    auto tempdir = installRoot->getTempdir();
+
     auto *testRunner = tester.getRunner();
     auto *builder = testRunner->getBuilder();
-    TargetBuilder targetBuilder(buildGraph, builder, installRoot->getTempdir());
+    auto shortcutResolver = std::make_shared<lyric_importer::ShortcutResolver>();
+    std::shared_ptr<zuri_distributor::PackageCache> packageCache;
+    TU_ASSIGN_OR_RAISE (packageCache, zuri_distributor::PackageCache::openOrCreate(tempdir, "pkgcache"));
 
-    auto buildTargetResult = targetBuilder.buildTarget("lib1");
+    TargetBuilder targetBuilder(buildGraph, builder, shortcutResolver, packageCache, installRoot->getTempdir());
+
+    auto buildTargetResult = targetBuilder.buildTarget("lib1", {});
     ASSERT_THAT (buildTargetResult, tempo_test::IsResult());
 }

@@ -7,9 +7,7 @@
 #include <tempo_config/enum_conversions.h>
 #include <tempo_config/parse_config.h>
 #include <zuri_build/target_store.h>
-
-#include "zuri_packager/packaging_conversions.h"
-#include "zuri_packager/zuri_manifest.h"
+#include <zuri_packager/packaging_conversions.h>
 
 TargetStore::TargetStore(const tempo_config::ConfigMap &targetsConfig)
     : m_targetsConfig(targetsConfig)

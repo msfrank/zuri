@@ -10,36 +10,34 @@ FragmentStore::FragmentStore()
 {
 }
 
-Option<bool>
-FragmentStore::containsResource(const tempo_utils::Url &url)
+bool
+FragmentStore::containsResource(const tempo_utils::UrlPath &urlPath)
 {
-    if (url.schemeView() != "x.fragment")
-        return Option<bool>();
-    return Option(m_meta.contains(url));
+    return m_meta.contains(urlPath);
 }
 
 tempo_utils::Result<Option<lyric_build::Resource>>
-FragmentStore::fetchResource(const tempo_utils::Url &url)
+FragmentStore::fetchResource(const tempo_utils::UrlPath &urlPath)
 {
-    if (url.schemeView() != "x.fragment")
-        return Option<lyric_build::Resource>();
-    if (!m_meta.contains(url))
-        return Option<lyric_build::Resource>();
-    return Option(m_meta.at(url));
+    auto entry = m_meta.find(urlPath);
+    if (entry != m_meta.cend())
+        return Option(entry->second);
+    return {};
 }
 
 tempo_utils::Result<std::shared_ptr<const tempo_utils::ImmutableBytes>>
 FragmentStore::loadResource(std::string_view resourceId)
 {
-    if (!m_content.contains(resourceId))
+    auto entry = m_content.find(resourceId);
+    if (entry == m_content.cend())
         return tempo_utils::GenericStatus::forCondition(
             tempo_utils::GenericCondition::kInternalViolation, "missing resource {}", resourceId);
-    return m_content.at(resourceId);
+    return entry->second;
 }
 
 tempo_utils::Result<lyric_build::ResourceList>
 FragmentStore::listResources(
-   const tempo_utils::Url &resourceRoot,
+   const tempo_utils::UrlPath &resourceRoot,
    lyric_build::ResourceMatcherFunc matcherFunc,
    const std::string &token)
 {
@@ -49,7 +47,7 @@ FragmentStore::listResources(
 
 tempo_utils::Result<lyric_build::ResourceList>
 FragmentStore::listResourcesRecursively(
-    const tempo_utils::Url &resourceRoot,
+    const tempo_utils::UrlPath &resourceRoot,
     lyric_build::ResourceMatcherFunc matcherFunc,
     const std::string &token)
 {
@@ -63,24 +61,16 @@ FragmentStore::hasModule(const lyric_common::ModuleLocation &location) const
     auto url = location.toUrl();
     if (url.schemeView() != "x.fragment")
         return false;
-    return m_meta.contains(url);
-}
-
-tempo_utils::Result<Option<lyric_common::ModuleLocation>>
-FragmentStore::resolveModule(const lyric_common::ModuleLocation &location) const
-{
-    auto url = location.toUrl();
-    if (url.schemeView() != "x.fragment")
-        return Option<lyric_common::ModuleLocation>();
-    return Option(location);
+    return m_meta.contains(url.toPath());
 }
 
 tempo_utils::Result<Option<lyric_object::LyricObject>>
 FragmentStore::loadModule(const lyric_common::ModuleLocation &location)
 {
-    if (!m_objects.contains(location))
-        return Option<lyric_object::LyricObject>();
-    return Option(m_objects.at(location));
+    auto entry = m_objects.find(location);
+    if (entry != m_objects.cend())
+        return Option(entry->second);
+    return {};
 }
 
 tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>>
@@ -88,7 +78,7 @@ FragmentStore::loadPlugin(
     const lyric_common::ModuleLocation &location,
     const lyric_object::PluginSpecifier &specifier)
 {
-    return Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>();
+    return {};
 }
 
 std::string
@@ -101,7 +91,7 @@ FragmentStore::insertFragment(
     resource.id = tempo_utils::UUID::randomUUID().toString();
     resource.entityTag = tempo_security::Sha256Hash::hash(fragment);
     resource.lastModifiedMillis = lastModifiedMillis;
-    m_meta[fragmentUrl] = resource;
+    m_meta[fragmentUrl.toPath()] = resource;
 
     m_content[resource.id] = tempo_utils::MemoryBytes::copy(fragment);
 

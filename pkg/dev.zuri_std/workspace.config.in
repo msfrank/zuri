@@ -50,7 +50,7 @@
         "targets": {
             "dev.zuri_std": {
                 "type": "Library",
-                "specifier": "std-@FULL_VERSION@@zuri.dev",
+                "specifier": "std-@PROJECT_VERSION@@zuri.dev",
                 "libraryModules": [
                     "/collections",
                     "/log",

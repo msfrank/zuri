@@ -3,7 +3,6 @@
 #ifndef ZURI_LOAD_CONFIG_H
 #define ZURI_LOAD_CONFIG_H
 
-#include <lyric_build/config_store.h>
 #include <tempo_config/program_config.h>
 #include <tempo_config/workspace_config.h>
 
