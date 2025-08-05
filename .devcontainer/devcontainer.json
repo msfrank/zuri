@@ -1,0 +1,9 @@
+{
+  "name": "Zuri",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "jrandomhacker",
+  "containerUser": "jrandomhacker",
+  "postCreateCommand": "conan install . && cmake --preset conan-debug"
+}

@@ -2,6 +2,7 @@
 #define ZURI_PACKAGER_PACKAGE_EXTRACTOR_H
 
 #include <filesystem>
+#include <queue>
 
 #include <tempo_utils/result.h>
 
