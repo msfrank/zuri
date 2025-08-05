@@ -1,7 +1,5 @@
 
 #include <absl/container/flat_hash_map.h>
-#include <unicode/umachine.h>
-#include <unicode/ustring.h>
 
 #include <zuri_packager/generated/manifest.h>
 #include <zuri_packager/manifest_attr.h>
