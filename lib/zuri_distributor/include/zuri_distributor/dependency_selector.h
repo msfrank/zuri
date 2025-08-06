@@ -1,6 +1,8 @@
 #ifndef ZURI_DISTRIBUTOR_DEPENDENCY_SELECTOR_H
 #define ZURI_DISTRIBUTOR_DEPENDENCY_SELECTOR_H
 
+#include <queue>
+
 #include "abstract_package_resolver.h"
 #include "dependency_set.h"
 
