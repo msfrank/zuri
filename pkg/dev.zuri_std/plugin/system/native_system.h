@@ -5,15 +5,17 @@
 
 #include <boost/predef.h>
 
-#include <lyric_runtime/native_interface.h>
-
-#if defined(TARGET_OS_LINUX) || defined(TARGET_OS_MAC)
+#if defined(BOOST_OS_LINUX) || defined(BOOST_OS_MACOS)
 
 extern "C" const lyric_runtime::NativeInterface *native_init();
 
-#elif defined(TARGET_OS_WINDOWS)
+#elif defined(BOOST_OS_WINDOWS)
 
 __declspec(dllexport) const lyric_runtime::NativeInterface *native_init();
+
+#else
+
+#error "unsupported operating system"
 
 #endif
 
