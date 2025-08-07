@@ -10,71 +10,38 @@
 
 EphemeralSession::EphemeralSession(
     const std::string &sessionId,
-    const lyric_build::TaskSettings &taskSettings,
+    std::unique_ptr<lyric_parser::LyricParser> &&parser,
+    std::unique_ptr<lyric_build::LyricBuilder> &&builder,
     std::shared_ptr<FragmentStore> fragmentStore,
-    const lyric_parser::ParserOptions &parserOptions)
+    std::shared_ptr<lyric_runtime::InterpreterState> interpreterState)
     : m_sessionId(sessionId),
-      m_taskSettings(taskSettings),
+      m_parser(std::move(parser)),
+      m_builder(std::move(builder)),
       m_fragmentStore(std::move(fragmentStore)),
-      m_parserOptions(parserOptions)
+      m_interpreterState(std::move(interpreterState))
 {
     TU_ASSERT (!m_sessionId.empty());
+    TU_ASSERT (m_parser != nullptr);
+    TU_ASSERT (m_builder != nullptr);
     TU_ASSERT (m_fragmentStore != nullptr);
+    TU_ASSERT (m_interpreterState != nullptr);
 }
 
-std::string
-EphemeralSession::getSessionId() const
+std::string_view
+EphemeralSession::sessionId() const
 {
     return m_sessionId;
 }
 
-tempo_utils::Status
-EphemeralSession::configure()
-{
-    if (m_state != nullptr)
-        return tempo_utils::GenericStatus::forCondition(
-            tempo_utils::GenericCondition::kInternalViolation, "invalid session state");
-
-    // initialize the parser
-    m_parser = std::make_unique<lyric_parser::LyricParser>(m_parserOptions);
-
-    // construct the loader chain
-    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
-    loaderChain.push_back(m_fragmentStore);
-    std::shared_ptr<lyric_runtime::AbstractLoader> loader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
-
-    // construct the builder used to compile fragments
-    lyric_build::BuilderOptions builderOptions;
-    builderOptions.cacheMode = lyric_build::CacheMode::InMemory;
-    builderOptions.fallbackLoader = loader;
-    builderOptions.virtualFilesystem = m_fragmentStore;
-    m_builder = std::make_unique<lyric_build::LyricBuilder>(
-        std::filesystem::current_path(), m_taskSettings, builderOptions);
-
-    // initialize the builder
-    TU_RETURN_IF_NOT_OK (m_builder->configure());
-
-    lyric_runtime::InterpreterStateOptions options;
-    options.loader = loader;
-
-    // construct the interpreter state
-    TU_ASSIGN_OR_RETURN(m_state, lyric_runtime::InterpreterState::create(options));
-
-    // configuration was completed successfully
-    return {};
-}
-
 tempo_utils::Result<std::string>
-EphemeralSession::parseLine(const char *data, size_t size)
+EphemeralSession::parseLine(std::string_view line)
 {
-    std::string_view s(data, size);
-
     // if the line contains only whitespace, then don't bother parsing
-    if (s.find_first_not_of(" \r\n\t\f\v") == std::string::npos)
+    if (line.find_first_not_of(" \r\n\t\f\v") == std::string::npos)
         return lyric_parser::ParseStatus::forCondition(lyric_parser::ParseCondition::kIncompleteModule);
 
     // append line to the current code fragment
-    m_fragment.append(s);
+    m_fragment.append(line);
 
     // parse the fragment to determine if the code is complete and syntactically correct
     auto recorder = tempo_tracing::TraceRecorder::create();
@@ -87,7 +54,7 @@ EphemeralSession::parseLine(const char *data, size_t size)
 }
 
 tempo_utils::Result<lyric_common::ModuleLocation>
-EphemeralSession::compileFragment(const std::string &fragment)
+EphemeralSession::compileFragment(std::string_view fragment)
 {
     auto moduleName = tempo_utils::UUID::randomUUID().toString();
     std::filesystem::path modulePath(absl::StrCat("/", m_sessionId, "/", moduleName));
@@ -146,15 +113,11 @@ tempo_utils::Result<lyric_runtime::DataCell>
 EphemeralSession::executeFragment(const lyric_common::ModuleLocation &location)
 {
     // initialize the heap and interpreter state
-    auto initStatus = m_state->reload(location);
-    if (!initStatus.isOk())
-        return initStatus;
+    TU_RETURN_IF_NOT_OK (m_interpreterState->reload(location));
 
     // run the object
-    lyric_runtime::BytecodeInterpreter interp(m_state);
-    auto runInterpResult = interp.run();
-    if (runInterpResult.isStatus())
-        return runInterpResult.getStatus();
-    auto exit = runInterpResult.getResult();
+    lyric_runtime::BytecodeInterpreter interp(m_interpreterState);
+    lyric_runtime::InterpreterExit exit;
+    TU_ASSIGN_OR_RETURN (exit, interp.run());
     return exit.mainReturn;
 }

@@ -24,8 +24,8 @@ static const char *result_prompt        = "  --> ";
 //bool is_incomplete = false;
 //bool running = false;
 
-ReadEvalPrintLoop::ReadEvalPrintLoop(EphemeralSession *session)
-    : m_session(session),
+ReadEvalPrintLoop::ReadEvalPrintLoop(std::shared_ptr<EphemeralSession> session)
+    : m_session(std::move(session)),
       m_state(ReadEvalPrintState::Initial),
       m_editline(nullptr),
       m_history(nullptr),
@@ -209,7 +209,7 @@ ReadEvalPrintLoop::run()
         }
 
         // otherwise we are in insert mode, parse line as a code fragment
-        auto parseLineResult = m_session->parseLine(buffer, count);
+        auto parseLineResult = m_session->parseLine(std::string_view(buffer, count));
         if (parseLineResult.isStatus()) {
             lyric_parser::ParseStatus parseStatus;
             if (!parseLineResult.getStatus().convertTo(parseStatus))

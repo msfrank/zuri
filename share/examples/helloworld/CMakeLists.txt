@@ -9,7 +9,7 @@ configure_file(workspace.config.in ${CMAKE_CURRENT_BINARY_DIR}/workspace.config 
 
 add_custom_command (
     OUTPUT
-        ${CMAKE_CURRENT_BINARY_DIR}/install/examples_helloworld-${FULL_VERSION}.zpk
+        ${CMAKE_CURRENT_BINARY_DIR}/install/examples_helloworld-${PROJECT_VERSION}.zpk
     COMMAND
       zuri-build -v
         -W ${CMAKE_CURRENT_BINARY_DIR}
@@ -23,4 +23,4 @@ add_custom_command (
       ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
 )
 
-add_custom_target(examples-helloworld DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install/examples_helloworld-${FULL_VERSION}.zpk)
+add_custom_target(examples-helloworld DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install/examples_helloworld-${PROJECT_VERSION}.zpk)

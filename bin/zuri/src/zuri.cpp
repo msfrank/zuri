@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
+#include <lyric_runtime/chain_loader.h>
 #include <tempo_command/command_config.h>
 #include <tempo_command/command_help.h>
 #include <tempo_command/command_parser.h>
@@ -87,7 +88,7 @@ run_zuri(int argc, const char *argv[])
                     "Run the zuri shell",
                     {}, shellGroupings, optMappings, argMappings, shellDefaults);
             case tempo_command::CommandCondition::kVersionRequested:
-                tempo_command::display_version_and_exit(FULL_VERSION);
+                tempo_command::display_version_and_exit(PROJECT_VERSION);
             default:
                 return status;
         }
@@ -187,28 +188,48 @@ run_zuri(int argc, const char *argv[])
         toolConfig = programConfig->getToolConfig();
     }
 
+    // construct the fragment store
+    auto fragmentStore = std::make_shared<FragmentStore>();
+
+    // initialize the parser
+    lyric_parser::ParserOptions parserOptions;
+    auto parser = std::make_unique<lyric_parser::LyricParser>(parserOptions);
+
     // construct the builder task settings
     auto settingsConfig = toolConfig.mapAt("settings").toMap();
     lyric_build::TaskSettings taskSettings(settingsConfig);
 
-    // construct the fragment store
-    auto fragmentStore = std::make_shared<FragmentStore>();
+    // construct the loader chain used by the builder and interpreter
+    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
+    loaderChain.push_back(fragmentStore);
+    auto loader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
+
+    // construct the builder used to compile fragments
+    lyric_build::BuilderOptions builderOptions;
+    builderOptions.cacheMode = lyric_build::CacheMode::InMemory;
+    builderOptions.fallbackLoader = loader;
+    builderOptions.virtualFilesystem = fragmentStore;
+    auto builder = std::make_unique<lyric_build::LyricBuilder>(
+        std::filesystem::current_path(), taskSettings, builderOptions);
+
+    // initialize the builder
+    TU_RETURN_IF_NOT_OK (builder->configure());
+
+    // construct the interpreter state
+    lyric_runtime::InterpreterStateOptions options;
+    options.loader = loader;
+    std::shared_ptr<lyric_runtime::InterpreterState> interpreterState;
+    TU_ASSIGN_OR_RETURN(interpreterState, lyric_runtime::InterpreterState::create(options));
 
     // construct the session
-    std::unique_ptr<EphemeralSession> ephemeralSession;
-    if (!sessionIdString.empty()) {
-        ephemeralSession = std::make_unique<EphemeralSession>(
-            sessionIdString, taskSettings, fragmentStore);
-    } else {
-        ephemeralSession = std::make_unique<EphemeralSession>(
-            tempo_utils::UUID::randomUUID().toString(), taskSettings, fragmentStore);
+    if (sessionIdString.empty()) {
+        sessionIdString = tempo_utils::UUID::randomUUID().toString();
     }
-
-    // configure the session
-    TU_RETURN_IF_NOT_OK (ephemeralSession->configure());
+    auto ephemeralSession = std::make_shared<EphemeralSession>(sessionIdString,
+        std::move(parser), std::move(builder), fragmentStore, interpreterState);
 
     // construct and configure the repl
-    ReadEvalPrintLoop repl(ephemeralSession.get());
+    ReadEvalPrintLoop repl(ephemeralSession);
     TU_RETURN_IF_NOT_OK (repl.configure());
 
     // hand over control to the repl

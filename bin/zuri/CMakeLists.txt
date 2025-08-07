@@ -3,7 +3,8 @@
 set(CMAKE_AUTOMOC OFF)
 
 # build ZuriRuntime static archive
-add_library(ZuriRuntime OBJECT
+add_library(ZuriRuntime STATIC
+    include/zuri/abstract_session.h
     include/zuri/ephemeral_session.h
     src/ephemeral_session.cpp
     include/zuri/fragment_store.h
@@ -22,7 +23,7 @@ set(DISTRIBUTION_ROOT ${ZURI_BUILD_OUTPUT_ROOT})
 cmake_path(RELATIVE_PATH DISTRIBUTION_ROOT BASE_DIRECTORY ${ZURI_BUILD_BIN_DIR})
 
 target_compile_definitions(ZuriRuntime PRIVATE
-    "FULL_VERSION=\"${FULL_VERSION}\""
+    "PROJECT_VERSION=\"${PROJECT_VERSION}\""
     "DISTRIBUTION_ROOT=\"${DISTRIBUTION_ROOT}\""
     "CONFIG_DIR_PREFIX=\"${CONFIG_DIR_PREFIX}\""
     "VENDOR_CONFIG_DIR_PREFIX=\"${VENDOR_CONFIG_DIR_PREFIX}\""

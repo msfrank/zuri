@@ -115,7 +115,7 @@ run_zuri_build(int argc, const char *argv[])
                     "Build software for the Zuri ecosystem",
                     {}, groupings, optMappings, argMappings, defaults);
             case tempo_command::CommandCondition::kVersionRequested:
-                tempo_command::display_version_and_exit(FULL_VERSION);
+                tempo_command::display_version_and_exit(PROJECT_VERSION);
             default:
                 return status;
         }

@@ -31,11 +31,11 @@ public:
         const lyric_common::ModuleLocation &location,
         const lyric_object::PluginSpecifier &specifier) override;
 
-    std::string insertFragment(
+    virtual std::string insertFragment(
         const tempo_utils::Url &fragmentUrl,
         std::string_view fragment,
         tu_uint64 lastModifiedMillis);
-    void insertObject(
+    virtual void insertObject(
         const lyric_common::ModuleLocation &location,
         const lyric_object::LyricObject &object);
 

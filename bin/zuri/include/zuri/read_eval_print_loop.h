@@ -23,25 +23,25 @@ enum class InputMode {
 class ReadEvalPrintLoop {
 
 public:
-    explicit ReadEvalPrintLoop(EphemeralSession *session);
-    ~ReadEvalPrintLoop();
+    explicit ReadEvalPrintLoop(std::shared_ptr<EphemeralSession> session);
+    virtual ~ReadEvalPrintLoop();
 
-    ReadEvalPrintState getState() const;
+    virtual ReadEvalPrintState getState() const;
 
-    tempo_utils::Status configure();
+    virtual tempo_utils::Status configure();
 
-    InputMode getMode() const;
-    void setMode(InputMode mode);
+    virtual InputMode getMode() const;
+    virtual void setMode(InputMode mode);
 
-    bool isIncomplete() const;
-    void setIncomplete();
-    void clearIncomplete();
+    virtual bool isIncomplete() const;
+    virtual void setIncomplete();
+    virtual void clearIncomplete();
 
-    tempo_utils::Status run();
-    void stop();
+    virtual tempo_utils::Status run();
+    virtual void stop();
 
 private:
-    EphemeralSession *m_session;
+    std::shared_ptr<EphemeralSession> m_session;
 
     // state
     ReadEvalPrintState m_state;

@@ -3,7 +3,6 @@
 #ifndef ZURI_EPHEMERAL_SESSION_H
 #define ZURI_EPHEMERAL_SESSION_H
 
-#include <filesystem>
 #include <string>
 
 #include <lyric_build/lyric_builder.h>
@@ -11,33 +10,33 @@
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <lyric_runtime/interpreter_state.h>
 
+#include "abstract_session.h"
 #include "fragment_store.h"
 
-class EphemeralSession {
+class EphemeralSession : public AbstractSession {
 
 public:
     EphemeralSession(
         const std::string &sessionId,
-        const lyric_build::TaskSettings &taskSettings,
+        std::unique_ptr<lyric_parser::LyricParser> &&parser,
+        std::unique_ptr<lyric_build::LyricBuilder> &&builder,
         std::shared_ptr<FragmentStore> fragmentStore,
-        const lyric_parser::ParserOptions &parserOptions = {});
+        std::shared_ptr<lyric_runtime::InterpreterState> interpreterState);
 
-    std::string getSessionId() const;
+    std::string_view sessionId() const override;
 
-    tempo_utils::Status configure();
-
-    tempo_utils::Result<std::string> parseLine(const char *data, size_t size);
-    tempo_utils::Result<lyric_common::ModuleLocation> compileFragment(const std::string &fragment);
-    tempo_utils::Result<lyric_runtime::DataCell> executeFragment(const lyric_common::ModuleLocation &location);
+    tempo_utils::Result<std::string> parseLine(std::string_view line) override;
+    tempo_utils::Result<lyric_common::ModuleLocation> compileFragment(std::string_view fragment) override;
+    tempo_utils::Result<lyric_runtime::DataCell> executeFragment(
+        const lyric_common::ModuleLocation &location) override;
 
 private:
     std::string m_sessionId;
     lyric_build::TaskSettings m_taskSettings;
-    std::shared_ptr<FragmentStore> m_fragmentStore;
-    lyric_parser::ParserOptions m_parserOptions;
     std::unique_ptr<lyric_parser::LyricParser> m_parser;
     std::unique_ptr<lyric_build::LyricBuilder> m_builder;
-    std::shared_ptr<lyric_runtime::InterpreterState> m_state;
+    std::shared_ptr<FragmentStore> m_fragmentStore;
+    std::shared_ptr<lyric_runtime::InterpreterState> m_interpreterState;
     std::string m_fragment;
 };
 
