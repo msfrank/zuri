@@ -202,12 +202,12 @@ run_zuri(int argc, const char *argv[])
     // construct the loader chain used by the builder and interpreter
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
     loaderChain.push_back(fragmentStore);
-    auto loader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
+    auto applicationLoader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
 
     // construct the builder used to compile fragments
     lyric_build::BuilderOptions builderOptions;
     builderOptions.cacheMode = lyric_build::CacheMode::InMemory;
-    builderOptions.fallbackLoader = loader;
+    builderOptions.fallbackLoader = applicationLoader;
     builderOptions.virtualFilesystem = fragmentStore;
     auto builder = std::make_unique<lyric_build::LyricBuilder>(
         std::filesystem::current_path(), taskSettings, builderOptions);
@@ -216,10 +216,9 @@ run_zuri(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK (builder->configure());
 
     // construct the interpreter state
-    lyric_runtime::InterpreterStateOptions options;
-    options.loader = loader;
     std::shared_ptr<lyric_runtime::InterpreterState> interpreterState;
-    TU_ASSIGN_OR_RETURN(interpreterState, lyric_runtime::InterpreterState::create(options));
+    TU_ASSIGN_OR_RETURN(interpreterState, lyric_runtime::InterpreterState::create(
+        builder->getBootstrapLoader(), applicationLoader));
 
     // construct the session
     if (sessionIdString.empty()) {

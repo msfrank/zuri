@@ -15,9 +15,10 @@ public:
 
     virtual std::string_view sessionId() const = 0;
 
-    virtual tempo_utils::Result<std::string> parseLine(std::string_view line) = 0;
+    virtual tempo_utils::Result<tempo_utils::Url> parseLine(std::string_view line) = 0;
 
-    virtual tempo_utils::Result<lyric_common::ModuleLocation> compileFragment(std::string_view fragment) = 0;
+    virtual tempo_utils::Result<lyric_common::ModuleLocation> compileFragment(
+        const tempo_utils::Url &fragmentUrl) = 0;
 
     virtual tempo_utils::Result<lyric_runtime::DataCell> executeFragment(
         const lyric_common::ModuleLocation &location) = 0;

@@ -23,7 +23,7 @@ enum class InputMode {
 class ReadEvalPrintLoop {
 
 public:
-    explicit ReadEvalPrintLoop(std::shared_ptr<EphemeralSession> session);
+    explicit ReadEvalPrintLoop(std::shared_ptr<AbstractSession> session);
     virtual ~ReadEvalPrintLoop();
 
     virtual ReadEvalPrintState getState() const;
@@ -41,7 +41,7 @@ public:
     virtual void stop();
 
 private:
-    std::shared_ptr<EphemeralSession> m_session;
+    std::shared_ptr<AbstractSession> m_session;
 
     // state
     ReadEvalPrintState m_state;

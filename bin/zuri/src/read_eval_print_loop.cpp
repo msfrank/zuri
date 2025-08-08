@@ -24,7 +24,7 @@ static const char *result_prompt        = "  --> ";
 //bool is_incomplete = false;
 //bool running = false;
 
-ReadEvalPrintLoop::ReadEvalPrintLoop(std::shared_ptr<EphemeralSession> session)
+ReadEvalPrintLoop::ReadEvalPrintLoop(std::shared_ptr<AbstractSession> session)
     : m_session(std::move(session)),
       m_state(ReadEvalPrintState::Initial),
       m_editline(nullptr),
@@ -221,15 +221,15 @@ ReadEvalPrintLoop::run()
             }
             continue;
         }
+        auto fragmentUrl = parseLineResult.getResult();
 
         // store the complete code fragment in the history
-        auto fragment = parseLineResult.getResult();
-        HistEvent histEvent;
-        history(m_history, &histEvent, H_ENTER, fragment.c_str());
-        clearIncomplete();
+        // HistEvent histEvent;
+        // history(m_history, &histEvent, H_ENTER, fragment.c_str());
+        // clearIncomplete();
 
         // compile the code fragment
-        auto compileFragmentResult = m_session->compileFragment(fragment);
+        auto compileFragmentResult = m_session->compileFragment(fragmentUrl);
         if (compileFragmentResult.isStatus()) {
             auto compileStatus = compileFragmentResult.getStatus();
             std::cerr << "build error: " << compileStatus.getMessage() << std::endl;

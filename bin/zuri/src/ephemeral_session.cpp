@@ -4,6 +4,8 @@
 #include <lyric_runtime/chain_loader.h>
 #include <lyric_common/common_types.h>
 #include <tempo_command/command_result.h>
+#include <tempo_utils/date_time.h>
+#include <tempo_utils/file_utilities.h>
 #include <tempo_utils/uuid.h>
 
 #include <zuri/ephemeral_session.h>
@@ -33,7 +35,7 @@ EphemeralSession::sessionId() const
     return m_sessionId;
 }
 
-tempo_utils::Result<std::string>
+tempo_utils::Result<tempo_utils::Url>
 EphemeralSession::parseLine(std::string_view line)
 {
     // if the line contains only whitespace, then don't bother parsing
@@ -43,25 +45,26 @@ EphemeralSession::parseLine(std::string_view line)
     // append line to the current code fragment
     m_fragment.append(line);
 
+    auto moduleName = tempo_utils::generate_name("XXXXXXXX");
+    auto fragmentUrl = tempo_utils::Url::fromAbsolute("dev.zuri.session", m_sessionId,
+        absl::StrCat("/", moduleName, lyric_common::kSourceFileDotSuffix));
+
     // parse the fragment to determine if the code is complete and syntactically correct
     auto recorder = tempo_tracing::TraceRecorder::create();
-    TU_RETURN_IF_STATUS (m_parser->parseModule(m_fragment, {}, recorder));
+    TU_RETURN_IF_STATUS (m_parser->parseModule(m_fragment, fragmentUrl, recorder));
 
-    // return the complete fragment and reset the internal string
-    auto fragment = m_fragment;
+    // write the fragment to the fragment store
+    m_fragmentStore->insertFragment(fragmentUrl, m_fragment, tempo_utils::millis_since_epoch());
+
+    // insert the complete fragment and reset the internal string
     m_fragment.clear();
-    return fragment;
+
+    return fragmentUrl;
 }
 
 tempo_utils::Result<lyric_common::ModuleLocation>
-EphemeralSession::compileFragment(std::string_view fragment)
+EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
 {
-    auto moduleName = tempo_utils::UUID::randomUUID().toString();
-    std::filesystem::path modulePath(absl::StrCat("/", m_sessionId, "/", moduleName));
-    auto fragmentUrl = tempo_utils::Url::fromOrigin("x.fragment://", modulePath.string());
-
-    // write the fragment to the fragment store
-    m_fragmentStore->insertFragment(fragmentUrl, fragment, ToUnixMillis(absl::Now()));
     auto moduleLocation = lyric_common::ModuleLocation::fromUrl(fragmentUrl);
 
     // configure the build task
@@ -92,8 +95,10 @@ EphemeralSession::compileFragment(std::string_view fragment)
     auto cache = m_builder->getCache();
     lyric_build::TraceId moduleTrace(targetState.getHash(), target.getDomain(), target.getId());
     auto generation = cache->loadTrace(moduleTrace);
+    auto modulePath = moduleLocation.getPath().toFilesystemPath(std::filesystem::path("/"));
     modulePath.replace_extension(lyric_common::kObjectFileSuffix);
-    lyric_build::ArtifactId moduleArtifact(generation, targetState.getHash(), fragmentUrl);
+    lyric_build::ArtifactId moduleArtifact(generation, targetState.getHash(),
+        tempo_utils::UrlPath::fromString(modulePath.string()));
 
     // read the object from the build cache
     std::shared_ptr<const tempo_utils::ImmutableBytes> content;
@@ -113,7 +118,7 @@ tempo_utils::Result<lyric_runtime::DataCell>
 EphemeralSession::executeFragment(const lyric_common::ModuleLocation &location)
 {
     // initialize the heap and interpreter state
-    TU_RETURN_IF_NOT_OK (m_interpreterState->reload(location));
+    TU_RETURN_IF_NOT_OK (m_interpreterState->load(location));
 
     // run the object
     lyric_runtime::BytecodeInterpreter interp(m_interpreterState);

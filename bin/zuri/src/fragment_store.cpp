@@ -91,7 +91,9 @@ FragmentStore::insertFragment(
     resource.id = tempo_utils::UUID::randomUUID().toString();
     resource.entityTag = tempo_security::Sha256Hash::hash(fragment);
     resource.lastModifiedMillis = lastModifiedMillis;
-    m_meta[fragmentUrl.toPath()] = resource;
+
+    auto fragmentPath = fragmentUrl.toPath();
+    m_meta[fragmentPath] = resource;
 
     m_content[resource.id] = tempo_utils::MemoryBytes::copy(fragment);
 
@@ -100,8 +102,8 @@ FragmentStore::insertFragment(
 
 void
 FragmentStore::insertObject(
-    const lyric_common::ModuleLocation &assemblyLocation,
+    const lyric_common::ModuleLocation &location,
     const lyric_object::LyricObject &object)
 {
-    m_objects[assemblyLocation] = object;
+    m_objects[location] = object;
 }
