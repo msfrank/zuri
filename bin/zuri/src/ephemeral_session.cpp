@@ -66,18 +66,20 @@ tempo_utils::Result<lyric_common::ModuleLocation>
 EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
 {
     auto moduleLocation = lyric_common::ModuleLocation::fromUrl(fragmentUrl);
+    auto environmentModules = m_environmentModules.buildSeq();
 
     // configure the build task
     lyric_build::TaskId target("compile_module", fragmentUrl.toString());
-    absl::flat_hash_map<lyric_build::TaskId,tempo_config::ConfigMap> taskOverrides = {
-        { target, tempo_config::ConfigMap({
-            //{"envSymbolsPath", {}},
-            {"moduleLocation", tempo_config::ConfigValue(moduleLocation.toString())},
-            {"skipInstall", tempo_config::ConfigValue("true")},
-            })
-        }
-    };
-    lyric_build::TaskSettings overrides({}, {}, taskOverrides);
+    auto paramsBuilder = tempo_config::startMap()
+        .put("moduleLocation", tempo_config::valueNode(moduleLocation.toString()));
+    if (environmentModules.seqSize() > 0) {
+        paramsBuilder = paramsBuilder.put("environmentModules", environmentModules.toNode());
+    }
+
+    // define the target task overrides
+    lyric_build::TaskSettings overrides({}, {}, {
+        { target, paramsBuilder.buildMap() },
+    });
 
     // compile the code fragment into an object
     lyric_build::TargetComputationSet targetComputationSet;
@@ -108,7 +110,11 @@ EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandInvariant,
             "failed to load fragment object");
 
+    // add object to the fragment store
     m_fragmentStore->insertObject(moduleLocation, object);
+
+    // add location to list of environment modules
+    m_environmentModules = m_environmentModules.append(tempo_config::valueNode(moduleLocation.toString()));
 
     // construct module location based on the source path
     return moduleLocation;

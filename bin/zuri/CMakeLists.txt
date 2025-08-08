@@ -34,7 +34,7 @@ target_link_libraries(ZuriRuntime
     lyric::lyric_parser
     lyric::lyric_runtime
     tempo::tempo_command
-    cppterminal::cppterminal
+    #cpp-terminal::cpp-terminal
     libedit::libedit
     ${SANITIZER_LIBS}
     ${PROFILER_LIBS}

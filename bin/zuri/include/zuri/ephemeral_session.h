@@ -9,6 +9,7 @@
 #include <lyric_parser/lyric_parser.h>
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <lyric_runtime/interpreter_state.h>
+#include <tempo_config/config_builder.h>
 
 #include "abstract_session.h"
 #include "fragment_store.h"
@@ -39,6 +40,7 @@ private:
     std::shared_ptr<FragmentStore> m_fragmentStore;
     std::shared_ptr<lyric_runtime::InterpreterState> m_interpreterState;
     std::string m_fragment;
+    tempo_config::ConfigSeqBuilder m_environmentModules;
 };
 
 #endif // ZURI_EPHEMERAL_SESSION_H

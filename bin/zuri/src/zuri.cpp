@@ -13,7 +13,6 @@
 tempo_utils::Status
 run_zuri(int argc, const char *argv[])
 {
-
     tempo_config::PathParser workspaceRootParser(std::filesystem::path{});
     tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
     tempo_config::PathParser sessionRootParser(std::filesystem::path{});
@@ -110,8 +109,6 @@ run_zuri(int argc, const char *argv[])
     // configure logging
     tempo_utils::LoggingConfiguration logging = {
         tempo_utils::SeverityFilter::kDefault,
-        true,
-        false,
         false,
     };
 
@@ -140,7 +137,9 @@ run_zuri(int argc, const char *argv[])
             logging.severityFilter = tempo_utils::SeverityFilter::kErrorsOnly;
         }
     }
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(logging.colorizeOutput, colorizeOutputParser,
+
+    bool colorizeOutput;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(colorizeOutput, colorizeOutputParser,
         shellConfig, "colorizeOutput"));
 
     // initialize logging
