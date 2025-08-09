@@ -6,6 +6,7 @@
 #include <tempo_command/command_parser.h>
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
+#include <tempo_config/merge_map.h>
 #include <tempo_utils/uuid.h>
 #include <zuri/load_config.h>
 #include <zuri/read_eval_print_loop.h>
@@ -67,10 +68,8 @@ run_zuri(int argc, const char *argv[])
     };
 
     // parse argv array into a vector of tokens
-    auto tokenizeResult = tempo_command::tokenize_argv(argc - 1, &argv[1]);
-    if (tokenizeResult.isStatus())
-        display_status_and_exit(tokenizeResult.getStatus());
-    auto tokens = tokenizeResult.getResult();
+    tempo_command::TokenVector tokens;
+    TU_ASSIGN_OR_RETURN (tokens, tempo_command::tokenize_argv(argc - 1, &argv[1]));
 
     tempo_command::OptionsHash shellOptions;
     tempo_command::ArgumentVector shellArguments;
@@ -94,17 +93,13 @@ run_zuri(int argc, const char *argv[])
     }
 
     // initialize the shell config from defaults
-    tempo_command::CommandConfig shellConfig = command_config_from_defaults(shellDefaults);
+    tempo_command::CommandConfig commandConfig = command_config_from_defaults(shellDefaults);
 
     // convert options to config
-    status = tempo_command::convert_options(shellOptions, optMappings, shellConfig);
-    if (!status.isOk())
-        return status;
+    TU_RETURN_IF_NOT_OK (tempo_command::convert_options(shellOptions, optMappings, commandConfig));
 
     // convert arguments to config
-    status = tempo_command::convert_arguments(shellArguments, argMappings, shellConfig);
-    if (!status.isOk())
-        return status;
+    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(shellArguments, argMappings, commandConfig));
 
     // configure logging
     tempo_utils::LoggingConfiguration logging = {
@@ -114,15 +109,15 @@ run_zuri(int argc, const char *argv[])
 
     bool silent;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(silent, silentParser,
-        shellConfig, "silent"));
+        commandConfig, "silent"));
     if (silent) {
         logging.severityFilter = tempo_utils::SeverityFilter::kSilent;
     } else {
         int verbose, quiet;
         TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(verbose, verboseParser,
-            shellConfig, "verbose"));
+            commandConfig, "verbose"));
         TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(quiet, quietParser,
-            shellConfig, "quiet"));
+            commandConfig, "quiet"));
         if (verbose && quiet)
             return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
                 "cannot specify both -v and -q");
@@ -140,32 +135,32 @@ run_zuri(int argc, const char *argv[])
 
     bool colorizeOutput;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(colorizeOutput, colorizeOutputParser,
-        shellConfig, "colorizeOutput"));
+        commandConfig, "colorizeOutput"));
 
     // initialize logging
     tempo_utils::init_logging(logging);
 
-    TU_LOG_INFO << "shell config:\n" << tempo_command::command_config_to_string(shellConfig);
+    TU_LOG_INFO << "shell config:\n" << tempo_command::command_config_to_string(commandConfig);
 
     // determine the workspace root
     std::filesystem::path workspaceRoot;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceRoot, workspaceRootParser,
-        shellConfig, "workspaceRoot"));
+        commandConfig, "workspaceRoot"));
 
     // determine the session root
     std::filesystem::path sessionRoot;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionRoot, sessionRootParser,
-        shellConfig, "sessionRoot"));
+        commandConfig, "sessionRoot"));
 
     // determine the distribution root
     std::filesystem::path distributionRoot;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(distributionRoot, distributionRootParser,
-        shellConfig, "distributionRoot"));
+        commandConfig, "distributionRoot"));
 
     // determine the session id
     std::string sessionIdString;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionIdString, sessionIdParser,
-        shellConfig, "sessionId"));
+        commandConfig, "sessionId"));
 
     // if distribution root is relative, then make it absolute
     if (distributionRoot.is_relative()) {
@@ -174,18 +169,21 @@ run_zuri(int argc, const char *argv[])
     }
     TU_LOG_V << "using distribution root " << distributionRoot;
 
-    tempo_config::ConfigMap toolConfig;
+    tempo_config::ConfigMap toolMap;
 
     // load tool config and vendor config
     if (!workspaceRoot.empty()) {
         std::shared_ptr<tempo_config::WorkspaceConfig> workspaceConfig;
         TU_ASSIGN_OR_RETURN (workspaceConfig, load_workspace_config(workspaceRoot, distributionRoot));
-        toolConfig = workspaceConfig->getToolConfig();
+        toolMap = workspaceConfig->getToolConfig();
     } else {
         std::shared_ptr<tempo_config::ProgramConfig> programConfig;
         TU_ASSIGN_OR_RETURN (programConfig, load_program_config(distributionRoot));
-        toolConfig = programConfig->getToolConfig();
+        toolMap = programConfig->getToolConfig();
     }
+
+    // merge the tool config with the command config overrides
+    auto mergedMap = tempo_config::merge_map(toolMap, tempo_config::ConfigMap(commandConfig));
 
     // construct the fragment store
     auto fragmentStore = std::make_shared<FragmentStore>();
@@ -195,7 +193,7 @@ run_zuri(int argc, const char *argv[])
     auto parser = std::make_unique<lyric_parser::LyricParser>(parserOptions);
 
     // construct the builder task settings
-    auto settingsConfig = toolConfig.mapAt("settings").toMap();
+    auto settingsConfig = toolMap.mapAt("settings").toMap();
     lyric_build::TaskSettings taskSettings(settingsConfig);
 
     // construct the loader chain used by the builder and interpreter

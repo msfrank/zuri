@@ -27,6 +27,7 @@ add_custom_command (
         --workspace-config-file ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
         -B ${CMAKE_CURRENT_BINARY_DIR}
         -I ${CMAKE_CURRENT_BINARY_DIR}
+        --distribution-root ${ZURI_BUILD_OUTPUT_ROOT}
         "dev.zuri_std"
     WORKING_DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}

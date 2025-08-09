@@ -52,7 +52,7 @@ CollectModulesTask::configure(
         m_collectTargets.insert(std::move(provideModuleKey));
     }
 
-    TU_LOG_INFO << "collect targets:" << m_collectTargets;
+    TU_LOG_V << "collect targets:" << m_collectTargets;
 
     return {};
 }

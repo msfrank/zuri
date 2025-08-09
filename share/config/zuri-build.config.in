@@ -1,17 +1,7 @@
 {
-    "global": {
-        "jobParallelism": -1,
-        "builderWaitTimeoutInMillis": 1000,
-        "cacheMode": "InMemory",
-        "sourceBaseUrl": "/src",
-        "preludeLocation": "@LYRIC_BOOTSTRAP_PRELUDE_LOCATION@",
-        "packageDirectoryPathList": [ "@ZURI_RUNTIME_PACKAGES_DIR@" ],
-        "packageMap": {
-            "std": "@ZURI_STD_PACKAGE_AUTHORITY@"
-        }
-    },
-    "domains": {
-    },
-    "tasks": {
-    }
+    "jobParallelism": -1,
+    "waitTimeout": "1s",
+    "cacheMode": "InMemory",
+    "bootstrapDirectory": "@LYRIC_RUNTIME_BOOTSTRAP_DIR@",
+    "settings": {}
 }

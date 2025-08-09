@@ -10,6 +10,10 @@
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
+#include <tempo_config/enum_conversions.h>
+#include <tempo_config/merge_map.h>
+#include <tempo_config/parse_config.h>
+#include <tempo_config/time_conversions.h>
 #include <zuri_build/build_graph.h>
 #include <zuri_build/collect_modules_task.h>
 #include <zuri_build/import_store.h>
@@ -95,10 +99,8 @@ run_zuri_build(int argc, const char *argv[])
     };
 
     // parse argv array into a vector of tokens
-    auto tokenizeResult = tempo_command::tokenize_argv(argc - 1, &argv[1]);
-    if (tokenizeResult.isStatus())
-        display_status_and_exit(tokenizeResult.getStatus());
-    auto tokens = tokenizeResult.getResult();
+    tempo_command::TokenVector tokens;
+    TU_ASSIGN_OR_RETURN (tokens, tempo_command::tokenize_argv(argc - 1, &argv[1]));
 
     tempo_command::OptionsHash options;
     tempo_command::ArgumentVector arguments;
@@ -125,14 +127,13 @@ run_zuri_build(int argc, const char *argv[])
     tempo_command::CommandConfig commandConfig = command_config_from_defaults(defaults);
 
     // convert option to config
-    status = tempo_command::convert_options(options, optMappings, commandConfig);
-    if (!status.isOk())
-        return status;
+    TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
 
     // convert arguments to config
-    status = tempo_command::convert_arguments(arguments, argMappings, commandConfig);
-    if (!status.isOk())
-        return status;
+    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(arguments, argMappings, commandConfig));
+
+    // construct command map
+    tempo_config::ConfigMap commandMap(commandConfig);
 
     // configure logging
     tempo_utils::LoggingConfiguration logging = {
@@ -200,11 +201,6 @@ run_zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(distributionRoot, distributionRootParser,
         commandConfig, "distributionRoot"));
 
-    // determine the job parallelism
-    int jobParallelism;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(jobParallelism, jobParallelismParser,
-        commandConfig, "jobParallelism"));
-
     // determine the list of targets
     std::vector<std::string> targets;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(targets, targetsParser,
@@ -215,6 +211,7 @@ run_zuri_build(int argc, const char *argv[])
         auto executableDir = std::filesystem::path(argv[0]).parent_path();
         distributionRoot = executableDir / distributionRoot;
     }
+
     TU_LOG_V << "using distribution root " << distributionRoot;
 
     // load the workspace config
@@ -231,20 +228,22 @@ run_zuri_build(int argc, const char *argv[])
         buildRoot = workspaceRoot / "build";
     }
 
-    auto toolConfig = config->getToolConfig();
+    // get the tool config and merge it with the command config overrides
+    auto toolMap = config->getToolConfig();
+    auto mergedMap = tempo_config::merge_map(toolMap, tempo_config::ConfigMap(commandConfig));
 
     // construct the config store from the workspace
-    auto settingsConfig = toolConfig.mapAt("settings").toMap();
-    lyric_build::TaskSettings taskSettings(settingsConfig);
+    auto settingsMap = toolMap.mapAt("settings").toMap();
+    lyric_build::TaskSettings taskSettings(settingsMap);
 
     // construct and configure the import store
-    auto importsConfig = toolConfig.mapAt("imports").toMap();
-    auto importStore = std::make_shared<ImportStore>(importsConfig);
+    auto importsMap = toolMap.mapAt("imports").toMap();
+    auto importStore = std::make_shared<ImportStore>(importsMap);
     TU_RETURN_IF_NOT_OK (importStore->configure());
 
     // construct and configure the target store
-    auto targetsConfig = toolConfig.mapAt("targets").toMap();
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig);
+    auto targetsMap = toolMap.mapAt("targets").toMap();
+    auto targetStore = std::make_shared<TargetStore>(targetsMap);
     TU_RETURN_IF_NOT_OK (targetStore->configure());
 
     //
@@ -269,8 +268,8 @@ run_zuri_build(int argc, const char *argv[])
         buildRoot, "imports"));
 
     // construct and configure the import resolver
-    auto resolverConfig = toolConfig.mapAt("resolvers").toMap();
-    auto importResolver = std::make_shared<ImportResolver>(resolverConfig, importPackageCache);
+    auto resolverMap = toolMap.mapAt("resolvers").toMap();
+    auto importResolver = std::make_shared<ImportResolver>(resolverMap, importPackageCache);
     TU_RETURN_IF_NOT_OK (importResolver->configure());
 
     lyric_build::BuilderOptions builderOptions;
@@ -278,10 +277,33 @@ run_zuri_build(int argc, const char *argv[])
     // set build root for builder
     builderOptions.buildRoot = buildRoot;
 
-    // set builder parallelism
+    // determine the job parallelism
+    int jobParallelism;
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(jobParallelism, jobParallelismParser,
+        mergedMap, "jobParallelism"));
     if (jobParallelism != 0) {
         builderOptions.numThreads = jobParallelism;
     }
+
+    // determine the cache mode
+    tempo_config::EnumTParser cacheModeParser({
+        {"Default", lyric_build::CacheMode::Default},
+        {"Persistent", lyric_build::CacheMode::Persistent},
+        {"InMemory", lyric_build::CacheMode::InMemory},
+        },
+        lyric_build::CacheMode::Default);
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(builderOptions.cacheMode, cacheModeParser,
+        mergedMap, "cacheMode"));
+
+    // set the wait timeout if it was provided
+    tempo_config::DurationParser waitTimeoutParser(absl::Duration{});
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(builderOptions.waitTimeout, waitTimeoutParser,
+        mergedMap, "waitTimeout"));
+
+    // set the bootstrap directory if it was provided
+    tempo_config::PathParser bootstrapDirectoryParser(std::filesystem::path{});
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(builderOptions.bootstrapDirectory, bootstrapDirectoryParser,
+        mergedMap, "bootstrapDirectory"));
 
     // create the shortcut resolver
     auto shortcutResolver = std::make_shared<lyric_importer::ShortcutResolver>();
