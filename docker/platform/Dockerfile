@@ -44,8 +44,8 @@ RUN conan create .
 RUN conan cache save "zuri/*:*" --file zuri_cache_save.tgz
 
 # remove zuri temporary files
-RUN conan cache clean --download --source --temp --backup-sources 'zuri/*'
+RUN conan cache clean --download --temp --backup-sources 'zuri/*'
 
 # if this is not a debug build then remove zuri build files
 ENV IS_DEBUG_BUILD=$is_debug_build
-RUN if test $IS_DEBUG_BUILD == 0; then conan cache clean --build 'zuri/*'; fi
+RUN if test $IS_DEBUG_BUILD == 0; then conan cache clean --source --build 'zuri/*'; fi
