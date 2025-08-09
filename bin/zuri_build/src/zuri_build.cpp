@@ -137,8 +137,6 @@ run_zuri_build(int argc, const char *argv[])
     // configure logging
     tempo_utils::LoggingConfiguration logging = {
         tempo_utils::SeverityFilter::kDefault,
-        true,
-        false,
         false,
     };
 
@@ -167,7 +165,9 @@ run_zuri_build(int argc, const char *argv[])
             logging.severityFilter = tempo_utils::SeverityFilter::kErrorsOnly;
         }
     }
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(logging.colorizeOutput, colorizeOutputParser,
+
+    bool colorizeOutput;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(colorizeOutput, colorizeOutputParser,
         commandConfig, "colorizeOutput"));
 
     // initialize logging

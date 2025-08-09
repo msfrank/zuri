@@ -22,7 +22,7 @@ add_custom_command (
     OUTPUT
         ${ZURI_STD_PACKAGE_PATH}
     COMMAND
-        zuri-build -vv
+        zuri-build -v
         -W ${CMAKE_CURRENT_SOURCE_DIR}
         --workspace-config-file ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
         -B ${CMAKE_CURRENT_BINARY_DIR}
