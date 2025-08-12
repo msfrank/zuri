@@ -8,6 +8,7 @@
 #include <tempo_utils/file_utilities.h>
 #include <tempo_utils/uuid.h>
 #include <zuri_run/ephemeral_session.h>
+#include <zuri_run/run_result.h>
 
 zuri_run::EphemeralSession::EphemeralSession(
     const std::string &sessionId,
@@ -89,7 +90,7 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
     if (targetState.getStatus() != lyric_build::TaskState::Status::COMPLETED) {
         auto diagnostics = targetComputationSet.getDiagnostics();
         diagnostics->printDiagnostics();
-        return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandInvariant,
+        return RunStatus::forCondition(RunCondition::kRunInvariant,
             "failed to compile fragment");
     }
 
@@ -106,8 +107,8 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
     TU_ASSIGN_OR_RETURN (content, cache->loadContentFollowingLinks(moduleArtifact));
     lyric_object::LyricObject object(content);
     if (!object.isValid())
-        return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandInvariant,
-            "failed to load fragment object");
+        return RunStatus::forCondition(RunCondition::kRunInvariant,
+            "fragment object {} is invalid", moduleArtifact.toString());
 
     // add object to the fragment store
     m_fragmentStore->insertObject(moduleLocation, object);

@@ -84,7 +84,7 @@ zuri_run::zuri_run(int argc, const char *argv[])
         switch (commandStatus.getCondition()) {
             case tempo_command::CommandCondition::kHelpRequested:
                 display_help_and_exit({"zuri-run"},
-                    "Run the zuri shell",
+                    "Run a Zuri program",
                     {}, shellGroupings, optMappings, argMappings, shellDefaults);
             case tempo_command::CommandCondition::kVersionRequested:
                 tempo_command::display_version_and_exit(PROJECT_VERSION);
@@ -230,5 +230,7 @@ zuri_run::zuri_run(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK (repl.configure());
 
     // hand over control to the repl
-    return repl.run();
+    TU_RETURN_IF_NOT_OK (repl.run());
+
+    return repl.cleanup();
 }

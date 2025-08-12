@@ -23,15 +23,11 @@ namespace zuri_run {
 
         virtual tempo_utils::Status configure();
 
-        virtual InputMode getMode() const;
-        virtual void setMode(InputMode mode);
-
-        virtual bool isIncomplete() const;
-        virtual void setIncomplete();
-        virtual void clearIncomplete();
+        virtual bool isComplete() const;
 
         virtual tempo_utils::Status run();
-        virtual void stop();
+
+        virtual tempo_utils::Status cleanup();
 
     private:
         std::shared_ptr<AbstractSession> m_session;
@@ -39,8 +35,7 @@ namespace zuri_run {
         // state
         EditLine *m_editline;
         History *m_history;
-        InputMode m_mode;
-        bool m_isIncomplete;
+        bool m_complete;
     };
 }
 

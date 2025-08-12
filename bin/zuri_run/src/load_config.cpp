@@ -61,7 +61,7 @@ zuri_run::load_workspace_config(
         return loadOverrideVendorConfigResult.getStatus();
 
     tempo_config::WorkspaceConfigOptions workspaceOptions;
-    workspaceOptions.toolLocator = {"zuri"};
+    workspaceOptions.toolLocator = {"zuri", "run"};
     workspaceOptions.overrideWorkspaceConfigMap = loadOverrideConfigResult.getResult();;
     workspaceOptions.overrideVendorConfigMap = loadOverrideVendorConfigResult.getResult();;
 
@@ -97,7 +97,7 @@ zuri_run::load_program_config(const std::filesystem::path &distributionRoot)
         return loadOverrideVendorConfigResult.getStatus();
 
     tempo_config::ProgramConfigOptions programOptions;
-    programOptions.toolLocator = {"zuri"};
+    programOptions.toolLocator = {"zuri", "run"};
     programOptions.overrideProgramConfigMap = loadOverrideConfigResult.getResult();
     programOptions.overrideVendorConfigMap = loadOverrideVendorConfigResult.getResult();;
 
