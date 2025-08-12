@@ -27,6 +27,18 @@ namespace zuri_distributor {
     public:
         /**
          *
+         * @param condition
+         * @param message
+         * @return
+         */
+        static DistributorStatus forCondition(
+            DistributorCondition condition,
+            std::string_view message)
+        {
+            return DistributorStatus(condition, message);
+        }
+        /**
+         *
          * @tparam Args
          * @param condition
          * @param messageFmt

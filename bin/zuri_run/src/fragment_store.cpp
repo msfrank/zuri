@@ -4,20 +4,20 @@
 #include <tempo_security/sha256_hash.h>
 #include <tempo_utils/memory_bytes.h>
 #include <tempo_utils/uuid.h>
-#include <zuri/fragment_store.h>
+#include <zuri_run/fragment_store.h>
 
-FragmentStore::FragmentStore()
+zuri_run::FragmentStore::FragmentStore()
 {
 }
 
 bool
-FragmentStore::containsResource(const tempo_utils::UrlPath &urlPath)
+zuri_run::FragmentStore::containsResource(const tempo_utils::UrlPath &urlPath)
 {
     return m_meta.contains(urlPath);
 }
 
 tempo_utils::Result<Option<lyric_build::Resource>>
-FragmentStore::fetchResource(const tempo_utils::UrlPath &urlPath)
+zuri_run::FragmentStore::fetchResource(const tempo_utils::UrlPath &urlPath)
 {
     auto entry = m_meta.find(urlPath);
     if (entry != m_meta.cend())
@@ -26,7 +26,7 @@ FragmentStore::fetchResource(const tempo_utils::UrlPath &urlPath)
 }
 
 tempo_utils::Result<std::shared_ptr<const tempo_utils::ImmutableBytes>>
-FragmentStore::loadResource(std::string_view resourceId)
+zuri_run::FragmentStore::loadResource(std::string_view resourceId)
 {
     auto entry = m_content.find(resourceId);
     if (entry == m_content.cend())
@@ -36,7 +36,7 @@ FragmentStore::loadResource(std::string_view resourceId)
 }
 
 tempo_utils::Result<lyric_build::ResourceList>
-FragmentStore::listResources(
+zuri_run::FragmentStore::listResources(
    const tempo_utils::UrlPath &resourceRoot,
    lyric_build::ResourceMatcherFunc matcherFunc,
    const std::string &token)
@@ -46,7 +46,7 @@ FragmentStore::listResources(
 }
 
 tempo_utils::Result<lyric_build::ResourceList>
-FragmentStore::listResourcesRecursively(
+zuri_run::FragmentStore::listResourcesRecursively(
     const tempo_utils::UrlPath &resourceRoot,
     lyric_build::ResourceMatcherFunc matcherFunc,
     const std::string &token)
@@ -56,7 +56,7 @@ FragmentStore::listResourcesRecursively(
 }
 
 tempo_utils::Result<bool>
-FragmentStore::hasModule(const lyric_common::ModuleLocation &location) const
+zuri_run::FragmentStore::hasModule(const lyric_common::ModuleLocation &location) const
 {
     auto url = location.toUrl();
     if (url.schemeView() != "x.fragment")
@@ -65,7 +65,7 @@ FragmentStore::hasModule(const lyric_common::ModuleLocation &location) const
 }
 
 tempo_utils::Result<Option<lyric_object::LyricObject>>
-FragmentStore::loadModule(const lyric_common::ModuleLocation &location)
+zuri_run::FragmentStore::loadModule(const lyric_common::ModuleLocation &location)
 {
     auto entry = m_objects.find(location);
     if (entry != m_objects.cend())
@@ -74,7 +74,7 @@ FragmentStore::loadModule(const lyric_common::ModuleLocation &location)
 }
 
 tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>>
-FragmentStore::loadPlugin(
+zuri_run::FragmentStore::loadPlugin(
     const lyric_common::ModuleLocation &location,
     const lyric_object::PluginSpecifier &specifier)
 {
@@ -82,7 +82,7 @@ FragmentStore::loadPlugin(
 }
 
 std::string
-FragmentStore::insertFragment(
+zuri_run::FragmentStore::insertFragment(
     const tempo_utils::Url &fragmentUrl,
     std::string_view fragment,
     tu_uint64 lastModifiedMillis)
@@ -101,7 +101,7 @@ FragmentStore::insertFragment(
 }
 
 void
-FragmentStore::insertObject(
+zuri_run::FragmentStore::insertObject(
     const lyric_common::ModuleLocation &location,
     const lyric_object::LyricObject &object)
 {

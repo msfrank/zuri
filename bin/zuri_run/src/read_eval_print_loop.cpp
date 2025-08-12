@@ -10,8 +10,9 @@
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <tempo_command/command_help.h>
 
-#include <zuri/ephemeral_session.h>
-#include <zuri/read_eval_print_loop.h>
+#include <zuri_run/ephemeral_session.h>
+#include <zuri_run/read_eval_print_loop.h>
+#include <zuri_run/run_result.h>
 
 static const char *editline_prog        = "zuri-shell";
 static const char *command_prompt       = "zuri: ";
@@ -19,14 +20,8 @@ static const char *insert_prompt        = "zuri> ";
 static const char *incomplete_prompt    = "  ... ";
 static const char *result_prompt        = "  --> ";
 
-//const char *current_prompt = insert_prompt;
-//bool is_command_mode = false;
-//bool is_incomplete = false;
-//bool running = false;
-
-ReadEvalPrintLoop::ReadEvalPrintLoop(std::shared_ptr<AbstractSession> session)
+zuri_run::ReadEvalPrintLoop::ReadEvalPrintLoop(std::shared_ptr<AbstractSession> session)
     : m_session(std::move(session)),
-      m_state(ReadEvalPrintState::Initial),
       m_editline(nullptr),
       m_history(nullptr),
       m_mode(InputMode::Insert),
@@ -35,16 +30,10 @@ ReadEvalPrintLoop::ReadEvalPrintLoop(std::shared_ptr<AbstractSession> session)
     TU_ASSERT (m_session != nullptr);
 }
 
-ReadEvalPrintLoop::~ReadEvalPrintLoop()
+zuri_run::ReadEvalPrintLoop::~ReadEvalPrintLoop()
 {
     history_end(m_history);
     el_end(m_editline);
-}
-
-ReadEvalPrintState
-ReadEvalPrintLoop::getState() const
-{
-    return m_state;
 }
 
 static const char *
@@ -53,14 +42,14 @@ prompt_func(EditLine *el)
     void *data = nullptr;
     if (el_get(el, EL_CLIENTDATA, &data) < 0)
         throw std::runtime_error("failed to retrieve client data");
-    auto *repl = (ReadEvalPrintLoop *) data;
+    auto *repl = (zuri_run::ReadEvalPrintLoop *) data;
 
     if (repl->isIncomplete())
         return incomplete_prompt;
     switch (repl->getMode()) {
-        case InputMode::Insert:
+        case zuri_run::InputMode::Insert:
             return insert_prompt;
-        case InputMode::Command:
+        case zuri_run::InputMode::Command:
             return command_prompt;
         default:
             return "???";
@@ -73,14 +62,14 @@ builtin_switch_mode(EditLine *el, int ch)
     void *data = nullptr;
     if (el_get(el, EL_CLIENTDATA, &data) < 0)
         throw std::runtime_error("failed to retrieve client data");
-    auto *repl = (ReadEvalPrintLoop *) data;
+    auto *repl = (zuri_run::ReadEvalPrintLoop *) data;
 
     switch (repl->getMode()) {
-        case InputMode::Insert:
-            repl->setMode(InputMode::Command);
+        case zuri_run::InputMode::Insert:
+            repl->setMode(zuri_run::InputMode::Command);
             break;
-        case InputMode::Command:
-            repl->setMode(InputMode::Insert);
+        case zuri_run::InputMode::Command:
+            repl->setMode(zuri_run::InputMode::Insert);
             break;
         default:
             break;
@@ -95,7 +84,7 @@ builtin_exit_shell(EditLine *el, int ch)
     void *data = nullptr;
     if (el_get(el, EL_CLIENTDATA, &data) < 0)
         throw std::runtime_error("failed to retrieve client data");
-    auto *repl = (ReadEvalPrintLoop *) data;
+    auto *repl = (zuri_run::ReadEvalPrintLoop *) data;
 
     repl->stop();
 
@@ -103,88 +92,76 @@ builtin_exit_shell(EditLine *el, int ch)
 }
 
 tempo_utils::Status
-ReadEvalPrintLoop::configure()
+zuri_run::ReadEvalPrintLoop::configure()
 {
-    if (m_state != ReadEvalPrintState::Initial)
-        return tempo_utils::GenericStatus::forCondition(
-            tempo_utils::GenericCondition::kInternalViolation, "invalid REPL state");
+    if (m_editline != nullptr)
+        return RunStatus::forCondition(RunCondition::kRunInvariant,
+            "repl is already configured");
 
     // initialize editline
-    m_editline = el_init(editline_prog, stdin, stdout, stderr);
-    el_set(m_editline, EL_CLIENTDATA, this);
-    el_set(m_editline, EL_PROMPT, &prompt_func);
-    el_set(m_editline, EL_EDITOR, "vi");
+    auto *edit = el_init(editline_prog, stdin, stdout, stderr);
+    el_set(edit, EL_CLIENTDATA, this);
+    el_set(edit, EL_PROMPT, &prompt_func);
+    el_set(edit, EL_EDITOR, "vi");
 
     // initialize history
-    m_history = history_init();
+    auto *hist = history_init();
     HistEvent hist_event;
-    history(m_history, &hist_event, H_SETSIZE, 1000);
-    el_set(m_editline, EL_HIST, history, m_history);
+    history(hist, &hist_event, H_SETSIZE, 1000);
+    el_set(edit, EL_HIST, history, hist);
 
     // add builtins
-    el_set(m_editline, EL_ADDFN, "lyric-switch-mode", "switch between command and insert mode", builtin_switch_mode);
-    el_set(m_editline, EL_ADDFN, "lyric-exit-shell", "exit the lyric shell", builtin_exit_shell);
+    el_set(edit, EL_ADDFN, "lyric-switch-mode", "switch between command and insert mode", builtin_switch_mode);
+    el_set(edit, EL_ADDFN, "lyric-exit-shell", "exit the lyric shell", builtin_exit_shell);
 
     // set bindings
-    el_set(m_editline, EL_BIND, "^A", "lyric-switch-mode", nullptr);
+    el_set(edit, EL_BIND, "^A", "lyric-switch-mode", nullptr);
 
-    m_state = ReadEvalPrintState::Ready;
+    m_editline = edit;
+    m_history = hist;
 
     return {};
 }
 
-InputMode
-ReadEvalPrintLoop::getMode() const
+zuri_run::InputMode
+zuri_run::ReadEvalPrintLoop::getMode() const
 {
     return m_mode;
 }
 
 void
-ReadEvalPrintLoop::setMode(InputMode mode)
+zuri_run::ReadEvalPrintLoop::setMode(InputMode mode)
 {
     m_mode = mode;
 }
 
 bool
-ReadEvalPrintLoop::isIncomplete() const
+zuri_run::ReadEvalPrintLoop::isIncomplete() const
 {
     return m_isIncomplete;
 }
 
 void
-ReadEvalPrintLoop::setIncomplete()
+zuri_run::ReadEvalPrintLoop::setIncomplete()
 {
     m_isIncomplete = true;
 }
 
 void
-ReadEvalPrintLoop::clearIncomplete()
+zuri_run::ReadEvalPrintLoop::clearIncomplete()
 {
     m_isIncomplete = false;
 }
 
 tempo_utils::Status
-ReadEvalPrintLoop::run()
+zuri_run::ReadEvalPrintLoop::run()
 {
-    if (m_state != ReadEvalPrintState::Ready)
-        return tempo_utils::GenericStatus::forCondition(
-            tempo_utils::GenericCondition::kInternalViolation, "invalid REPL state");
-
-    TU_LOG_V << "starting shell";
-
-    // set repl state to running
-    m_state = ReadEvalPrintState::Running;
-
     // loop forever until ctrl-D (EOF) or unrecoverable error
     for (;;) {
 
         // read the current line
         int count = 0;
         const char *buffer = el_gets(m_editline, &count);
-
-        // if user has signaled EOF then mark repl as finished
-        if (m_state == ReadEvalPrintState::Finished)
-            break;
 
         // if buffer length is 0 or gets returns nullptr then do nothing
         if (count == 0 || buffer == nullptr)
@@ -209,7 +186,8 @@ ReadEvalPrintLoop::run()
         }
 
         // otherwise we are in insert mode, parse line as a code fragment
-        auto parseLineResult = m_session->parseLine(std::string_view(buffer, count));
+        std::string line(buffer, count);
+        auto parseLineResult = m_session->parseLine(line);
         if (parseLineResult.isStatus()) {
             lyric_parser::ParseStatus parseStatus;
             if (!parseLineResult.getStatus().convertTo(parseStatus))
@@ -224,9 +202,9 @@ ReadEvalPrintLoop::run()
         auto fragmentUrl = parseLineResult.getResult();
 
         // store the complete code fragment in the history
-        // HistEvent histEvent;
-        // history(m_history, &histEvent, H_ENTER, fragment.c_str());
-        // clearIncomplete();
+        HistEvent histEvent;
+        history(m_history, &histEvent, H_ENTER, line.c_str());
+        clearIncomplete();
 
         // compile the code fragment
         auto compileFragmentResult = m_session->compileFragment(fragmentUrl);
@@ -255,9 +233,6 @@ ReadEvalPrintLoop::run()
 }
 
 void
-ReadEvalPrintLoop::stop()
+zuri_run::ReadEvalPrintLoop::stop()
 {
-    if (m_state == ReadEvalPrintState::Running) {
-        m_state = ReadEvalPrintState::Finished;
-    }
 }

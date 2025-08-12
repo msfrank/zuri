@@ -8,11 +8,12 @@
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/merge_map.h>
 #include <tempo_utils/uuid.h>
-#include <zuri/load_config.h>
-#include <zuri/read_eval_print_loop.h>
+#include <zuri_run/load_config.h>
+#include <zuri_run/read_eval_print_loop.h>
+#include <zuri_run/zuri_run.h>
 
 tempo_utils::Status
-run_zuri(int argc, const char *argv[])
+zuri_run::zuri_run(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::path{});
     tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
@@ -82,7 +83,7 @@ run_zuri(int argc, const char *argv[])
             return status;
         switch (commandStatus.getCondition()) {
             case tempo_command::CommandCondition::kHelpRequested:
-                display_help_and_exit({"zuri"},
+                display_help_and_exit({"zuri-run"},
                     "Run the zuri shell",
                     {}, shellGroupings, optMappings, argMappings, shellDefaults);
             case tempo_command::CommandCondition::kVersionRequested:
@@ -225,7 +226,7 @@ run_zuri(int argc, const char *argv[])
         std::move(parser), std::move(builder), fragmentStore, interpreterState);
 
     // construct and configure the repl
-    ReadEvalPrintLoop repl(ephemeralSession);
+    zuri_run::ReadEvalPrintLoop repl(ephemeralSession);
     TU_RETURN_IF_NOT_OK (repl.configure());
 
     // hand over control to the repl

@@ -164,9 +164,6 @@ find_package(absl REQUIRED)
 # find required Boost dependency
 find_package(Boost REQUIRED)
 
-# find required cppterminal dependency
-find_package(cpp-terminal REQUIRED)
-
 # find required libedit dependency
 find_package(libedit REQUIRED)
 

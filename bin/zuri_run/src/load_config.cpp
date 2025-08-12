@@ -2,12 +2,12 @@
 
 #include <tempo_config/parse_config.h>
 #include <tempo_utils/user_home.h>
-#include <zuri/load_config.h>
+#include <zuri_run/load_config.h>
 
 static tempo_utils::Result<tempo_config::ConfigMap>
 load_env_override_config()
 {
-    const auto *value = std::getenv(kEnvOverrideConfigName);
+    const auto *value = std::getenv(zuri_run::kEnvOverrideConfigName);
     if (value == nullptr)
         return tempo_config::ConfigMap();
     auto readConfigResult = tempo_config::read_config_string(value);
@@ -18,14 +18,14 @@ load_env_override_config()
 
     if (overrideNode.getNodeType() != tempo_config::ConfigNodeType::kMap)
         return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType,
-            "invalid type for environment variable {}; expected a map", kEnvOverrideConfigName);
+            "invalid type for environment variable {}; expected a map", zuri_run::kEnvOverrideConfigName);
     return overrideNode.toMap();
 }
 
 static tempo_utils::Result<tempo_config::ConfigMap>
 load_env_override_vendor_config()
 {
-    const auto *value = std::getenv(kEnvOverrideVendorConfigName);
+    const auto *value = std::getenv(zuri_run::kEnvOverrideVendorConfigName);
     if (value == nullptr)
         return tempo_config::ConfigMap();
     auto readConfigResult = tempo_config::read_config_string(value);
@@ -36,7 +36,7 @@ load_env_override_vendor_config()
 
     if (overrideNode.getNodeType() != tempo_config::ConfigNodeType::kMap)
         return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType,
-            "invalid type for environment variable {}; expected a map", kEnvOverrideVendorConfigName);
+            "invalid type for environment variable {}; expected a map", zuri_run::kEnvOverrideVendorConfigName);
     return overrideNode.toMap();
 }
 
@@ -46,7 +46,7 @@ load_env_override_vendor_config()
  * @return
  */
 tempo_utils::Result<std::shared_ptr<tempo_config::WorkspaceConfig>>
-load_workspace_config(
+zuri_run::load_workspace_config(
     const std::filesystem::path &searchPathStart,
     const std::filesystem::path &distributionRoot)
 {
@@ -84,7 +84,7 @@ load_workspace_config(
 }
 
 tempo_utils::Result<std::shared_ptr<tempo_config::ProgramConfig>>
-load_program_config(const std::filesystem::path &distributionRoot)
+zuri_run::load_program_config(const std::filesystem::path &distributionRoot)
 {
     // load override config if present
     auto loadOverrideConfigResult = load_env_override_config();

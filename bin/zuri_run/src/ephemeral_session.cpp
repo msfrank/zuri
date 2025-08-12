@@ -7,10 +7,9 @@
 #include <tempo_utils/date_time.h>
 #include <tempo_utils/file_utilities.h>
 #include <tempo_utils/uuid.h>
+#include <zuri_run/ephemeral_session.h>
 
-#include <zuri/ephemeral_session.h>
-
-EphemeralSession::EphemeralSession(
+zuri_run::EphemeralSession::EphemeralSession(
     const std::string &sessionId,
     std::unique_ptr<lyric_parser::LyricParser> &&parser,
     std::unique_ptr<lyric_build::LyricBuilder> &&builder,
@@ -30,13 +29,13 @@ EphemeralSession::EphemeralSession(
 }
 
 std::string_view
-EphemeralSession::sessionId() const
+zuri_run::EphemeralSession::sessionId() const
 {
     return m_sessionId;
 }
 
 tempo_utils::Result<tempo_utils::Url>
-EphemeralSession::parseLine(std::string_view line)
+zuri_run::EphemeralSession::parseLine(std::string_view line)
 {
     // if the line contains only whitespace, then don't bother parsing
     if (line.find_first_not_of(" \r\n\t\f\v") == std::string::npos)
@@ -63,7 +62,7 @@ EphemeralSession::parseLine(std::string_view line)
 }
 
 tempo_utils::Result<lyric_common::ModuleLocation>
-EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
+zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
 {
     auto moduleLocation = lyric_common::ModuleLocation::fromUrl(fragmentUrl);
     auto environmentModules = m_environmentModules.buildSeq();
@@ -121,7 +120,7 @@ EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
 }
 
 tempo_utils::Result<lyric_runtime::DataCell>
-EphemeralSession::executeFragment(const lyric_common::ModuleLocation &location)
+zuri_run::EphemeralSession::executeFragment(const lyric_common::ModuleLocation &location)
 {
     // initialize the heap and interpreter state
     TU_RETURN_IF_NOT_OK (m_interpreterState->load(location));

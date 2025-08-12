@@ -32,6 +32,18 @@ namespace zuri_packager {
     public:
         /**
          *
+         * @param condition
+         * @param message
+         * @return
+         */
+        static PackageStatus forCondition(
+            PackageCondition condition,
+            std::string_view message)
+        {
+            return PackageStatus(condition, message);
+        }
+        /**
+         *
          * @tparam Args
          * @param condition
          * @param messageFmt
