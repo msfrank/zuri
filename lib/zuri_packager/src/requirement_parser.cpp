@@ -3,7 +3,7 @@
 #include <tempo_tracing/enter_scope.h>
 #include <zuri_packager/internal/requirement_listener.h>
 #include <zuri_packager/internal/tracing_error_listener.h>
-#include <zuri_packager/package_result.h>
+#include <zuri_packager/packager_result.h>
 #include <zuri_packager/requirement_parser.h>
 
 #include <antlr4-runtime.h>
@@ -22,7 +22,7 @@ zuri_packager::RequirementParser::parseRequirement(
     std::shared_ptr<tempo_tracing::TraceRecorder> recorder) const
 {
     if (utf8.empty())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "empty requirement string");
 
     antlr4::ANTLRInputStream input(utf8.data(), (size_t) utf8.size());
@@ -66,7 +66,7 @@ zuri_packager::RequirementParser::parseRequirement(
     } catch (tempo_utils::StatusException &ex) {
         return ex.getStatus();
     } catch (antlr4::ParseCancellationException &ex) {
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant, ex.what());
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant, ex.what());
     }
 
     return listener.toRequirement();
@@ -78,7 +78,7 @@ zuri_packager::RequirementParser::parseRequirementsList(
     std::shared_ptr<tempo_tracing::TraceRecorder> recorder) const
 {
     if (utf8.empty())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "empty requirements string");
 
     antlr4::ANTLRInputStream input(utf8.data(), (size_t) utf8.size());
@@ -122,7 +122,7 @@ zuri_packager::RequirementParser::parseRequirementsList(
     } catch (tempo_utils::StatusException &ex) {
         return ex.getStatus();
     } catch (antlr4::ParseCancellationException &ex) {
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant, ex.what());
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant, ex.what());
     }
 
     return listener.toRequirementsList();

@@ -21,7 +21,7 @@ set(ZURI_PACKAGER_INCLUDES
     include/zuri_packager/package_extractor.h
     include/zuri_packager/package_reader.h
     include/zuri_packager/package_requirement.h
-    include/zuri_packager/package_result.h
+    include/zuri_packager/packager_result.h
     include/zuri_packager/package_specifier.h
     include/zuri_packager/package_types.h
     include/zuri_packager/package_writer.h
@@ -103,7 +103,7 @@ target_sources(zuri_packager PRIVATE
     src/package_extractor.cpp
     src/package_reader.cpp
     src/package_requirement.cpp
-    src/package_result.cpp
+    src/packager_result.cpp
     src/package_specifier.cpp
     src/package_types.cpp
     src/package_writer.cpp

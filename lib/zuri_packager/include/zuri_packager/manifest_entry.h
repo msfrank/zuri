@@ -35,14 +35,14 @@ namespace zuri_packager {
 
         bool hasAttr(const AttrId &attrId) const;
         AttrAddress getAttr(const AttrId &attrId) const;
-        PackageStatus putAttr(ManifestAttr *attr);
+        PackagerStatus putAttr(ManifestAttr *attr);
         absl::flat_hash_map<AttrId,AttrAddress>::const_iterator attrsBegin() const;
         absl::flat_hash_map<AttrId,AttrAddress>::const_iterator attrsEnd() const;
         int numAttrs() const;
 
         bool hasChild(std::string_view name) const;
         EntryAddress getChild(std::string_view name);
-        PackageStatus putChild(ManifestEntry *child);
+        PackagerStatus putChild(ManifestEntry *child);
         absl::flat_hash_map<std::string,EntryAddress>::const_iterator childrenBegin() const;
         absl::flat_hash_map<std::string,EntryAddress>::const_iterator childrenEnd() const;
         int numChildren() const;

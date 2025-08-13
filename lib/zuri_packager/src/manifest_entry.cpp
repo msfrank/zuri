@@ -106,15 +106,15 @@ zuri_packager::ManifestEntry::getAttr(const AttrId &attrId) const
     return {};
 }
 
-zuri_packager::PackageStatus
+zuri_packager::PackagerStatus
 zuri_packager::ManifestEntry::putAttr(ManifestAttr *attr)
 {
     TU_ASSERT (attr != nullptr);
 
     auto attrId = attr->getAttrId();
     if (m_attrs.contains(attrId)) {
-        return PackageStatus::forCondition(
-            PackageCondition::kPackageInvariant, "entry contains duplicate attr");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kPackagerInvariant, "entry contains duplicate attr");
     }
     m_attrs[attrId] = attr->getAddress();
     return {};
@@ -156,14 +156,14 @@ zuri_packager::ManifestEntry::getChild(std::string_view name)
     return {};
 }
 
-zuri_packager::PackageStatus
+zuri_packager::PackagerStatus
 zuri_packager::ManifestEntry::putChild(ManifestEntry *child)
 {
     TU_ASSERT (child != nullptr);
     auto name = child->getEntryName();
     if (name.empty())
-        return PackageStatus::forCondition(
-            PackageCondition::kPackageInvariant, "invalid entry name");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kPackagerInvariant, "invalid entry name");
     m_children[name] = child->getAddress();
     return {};
 }

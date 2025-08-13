@@ -22,7 +22,7 @@ tempo_utils::Status
 zuri_packager::PackageExtractor::configure()
 {
     if (m_specifier.isValid())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "extractor is already configured");
 
     TU_ASSIGN_OR_RETURN (m_specifier, m_reader->readPackageSpecifier());
@@ -34,7 +34,7 @@ tempo_utils::Status
 zuri_packager::PackageExtractor::extractRoot(const EntryWalker &root)
 {
     if (root.getEntryType() != EntryType::Package)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid root entry");
 
     m_pendingDirectories.push(root);
@@ -76,11 +76,11 @@ zuri_packager::PackageExtractor::extractChildren(const EntryWalker &parent)
                 break;
             }
             case EntryType::Link: {
-                return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+                return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                     "link entry type is unsupported");
             }
             default:
-                return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+                return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                     "invalid entry type");
         }
     }
@@ -108,7 +108,7 @@ tempo_utils::Result<std::filesystem::path>
 zuri_packager::PackageExtractor::extractPackage()
 {
     if (!m_specifier.isValid())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "extractor is not configured");
 
     //

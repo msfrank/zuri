@@ -21,11 +21,11 @@ tempo_utils::Status
 zuri_packager::PackageWriter::configure()
 {
     if (m_state == nullptr)
-        return PackageStatus::forCondition(
-            PackageCondition::kPackageInvariant, "writer is finished");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kPackagerInvariant, "writer is finished");
     if (m_packageEntry != nullptr)
-        return PackageStatus::forCondition(
-            PackageCondition::kPackageInvariant, "writer is already configured");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kPackagerInvariant, "writer is already configured");
 
     TU_ASSIGN_OR_RETURN (m_packageEntry, m_state->appendEntry(
         EntryType::Package, tempo_utils::UrlPath::fromString("/")));
@@ -79,13 +79,13 @@ tempo_utils::Result<zuri_packager::EntryAddress>
 zuri_packager::PackageWriter::makeDirectory(const tempo_utils::UrlPath &path, bool createIntermediate)
 {
     if (!path.isValid())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid path");
     if (m_state == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is finished");
     if (m_packageEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is not configured");
 
     // if path is empty then return the package entry
@@ -112,7 +112,7 @@ zuri_packager::PackageWriter::makeDirectory(const tempo_utils::UrlPath &path, bo
         address = entry->getChild(part);
         entry = m_state->getEntry(address.getAddress());
         if (entry->getEntryType() != EntryType::Directory)
-            return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                 "existing path entry is not a directory");
         i++;
     }
@@ -134,32 +134,32 @@ tempo_utils::Result<zuri_packager::EntryAddress>
 zuri_packager::PackageWriter::makeDirectory(EntryAddress parentDirectory, std::string_view name)
 {
     if (!parentDirectory.isValid())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid parent directory");
     if (name.empty())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid directory name");
     if (m_state == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is finished");
     if (m_packageEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is not configured");
 
     auto *parentEntry = m_state->getEntry(parentDirectory.getAddress());
     if (parentEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "missing parent entry");
     switch (parentEntry->getEntryType()) {
         case EntryType::Directory:
         case EntryType::Package:
             break;
         default:
-            return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                 "invalid parent entry");
     }
     if (parentEntry->hasChild(name))
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "directory already contains entry");
     auto path = parentEntry->getEntryPath().traverse(tempo_utils::UrlPathPart(name));
     auto appendEntryResult = m_state->appendEntry(EntryType::Directory, path);
@@ -179,32 +179,32 @@ zuri_packager::PackageWriter::putFile(
     std::shared_ptr<const tempo_utils::ImmutableBytes> bytes)
 {
     if (!parentDirectory.isValid())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid parent directory");
     if (name.empty())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid file name");
     if (m_state == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is finished");
     if (m_packageEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is not configured");
 
     auto *parentEntry = m_state->getEntry(parentDirectory.getAddress());
     if (parentEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "missing parent directory");
     switch (parentEntry->getEntryType()) {
         case EntryType::Directory:
         case EntryType::Package:
             break;
         default:
-            return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                 "invalid parent entry");
     }
     if (parentEntry->hasChild(name))
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "file already exists");
 
     auto path = parentEntry->getEntryPath().traverse(tempo_utils::UrlPathPart(name));
@@ -227,31 +227,31 @@ zuri_packager::PackageWriter::putFile(
     std::shared_ptr<const tempo_utils::ImmutableBytes> bytes)
 {
     if (!path.isValid())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid file path");
     if (m_state == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is finished");
     if (m_packageEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is not configured");
 
     tempo_utils::UrlPath parentPath = path.getInit();
     auto name = path.getLast().getPart();
     auto *parentEntry = m_state->getEntry(parentPath);
     if (parentEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "missing parent directory");
     switch (parentEntry->getEntryType()) {
         case EntryType::Directory:
         case EntryType::Package:
             break;
         default:
-            return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                 "invalid parent entry");
     }
     if (parentEntry->hasChild(name))
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "file already exists");
 
     auto appendEntryResult = m_state->appendEntry(EntryType::File, path);
@@ -271,26 +271,26 @@ tempo_utils::Result<zuri_packager::EntryAddress>
 zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, EntryAddress target)
 {
     if (!path.isValid())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid link path");
     if (!target.isValid())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "invalid link target");
     if (m_state == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is finished");
     if (m_packageEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is not configured");
 
     if (hasEntry(path))
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "link already exists");
 
     // verify target exists
     auto *targetEntry = m_state->getEntry(target.getAddress());
     if (targetEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "missing target entry");
 
     // verify that target doesn't exceed maximum link depth
@@ -298,11 +298,11 @@ zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, Ent
         int currDepth = 1;
         while (targetEntry->getEntryType() == EntryType::Link) {
             if (currDepth > m_options.maxLinkDepth)
-                return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+                return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                     "exeeded maximum link depth");
             targetEntry = m_state->getEntry(targetEntry->getEntryLink().getAddress());
             if (targetEntry == nullptr)
-                return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+                return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                     "missing target entry");
         }
     }
@@ -313,7 +313,7 @@ zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, Ent
         case EntryType::Directory:
             break;
         default:
-            return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                 "invalid link target");
     }
 
@@ -321,13 +321,13 @@ zuri_packager::PackageWriter::linkToTarget(const tempo_utils::UrlPath &path, Ent
     auto name = path.getLast().getPart();
     auto *parentEntry = m_state->getEntry(parentPath);
     if (parentEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "missing parent directory");
     if (parentEntry->getEntryType() != EntryType::Directory)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "parent entry must be directory");
     if (parentEntry->hasChild(name))
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "entry already exists");
 
     auto appendEntryResult = m_state->appendEntry(EntryType::Link, path);
@@ -358,10 +358,10 @@ tempo_utils::Result<std::filesystem::path>
 zuri_packager::PackageWriter::writePackage()
 {
     if (m_state == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is finished");
     if (m_packageEntry == nullptr)
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "writer is not configured");
 
     //
@@ -371,7 +371,7 @@ zuri_packager::PackageWriter::writePackage()
         auto configContent = tempo_utils::MemoryBytes::copy(s);
         auto path = tempo_utils::UrlPath::fromString("/package.config");
         if (hasEntry(path))
-            return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+            return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                 "/package.config already exists");
         TU_RETURN_IF_STATUS (putFile(path, configContent));
     }
@@ -397,7 +397,7 @@ zuri_packager::PackageWriter::writePackage()
             case EntryType::File:
                 break;
             default:
-                return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+                return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                     "unexpected file content for entry");
         }
         auto bytes = m_contents.at(path);
@@ -429,7 +429,7 @@ zuri_packager::PackageWriter::writePackage()
         if (entry->getEntryType() == EntryType::File) {
             auto path = entry->getEntryPath();
             if (!m_contents.contains(path))
-                return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+                return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
                     "file entry has no contents");
             auto content = m_contents.at(path);
             std::span<const tu_uint8> bytes(content->getData(), content->getSize());

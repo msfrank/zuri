@@ -1,7 +1,7 @@
 
 #include <zuri_packager/internal/requirement_listener.h>
 #include <zuri_packager/internal/tracing_error_listener.h>
-#include <zuri_packager/package_result.h>
+#include <zuri_packager/packager_result.h>
 
 zuri_packager::internal::TracingErrorListener::TracingErrorListener(RequirementListener *listener)
     : m_listener(listener)
@@ -49,6 +49,6 @@ zuri_packager::internal::TracingErrorListener::syntaxError(
     } catch(antlr4::RuntimeException &ex) {
         // if we encounter any other antlr exception then we exit parsing immediately
         throw tempo_utils::StatusException(
-            PackageStatus::forCondition(PackageCondition::kPackageInvariant, message));
+            PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant, message));
     }
 }

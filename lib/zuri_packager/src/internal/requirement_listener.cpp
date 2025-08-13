@@ -10,7 +10,7 @@
 #include <tempo_utils/log_message.h>
 #include <zuri_packager/internal/requirement_listener.h>
 
-#include "zuri_packager/package_result.h"
+#include "zuri_packager/packager_result.h"
 #include "zuri_packager/internal/version_spec.h"
 
 zuri_packager::internal::RequirementListener::RequirementListener(
@@ -178,7 +178,7 @@ tempo_utils::Result<std::shared_ptr<zuri_packager::AbstractPackageRequirement>>
 zuri_packager::internal::RequirementListener::toRequirement() const
 {
     if (m_requirements.empty())
-        return PackageStatus::forCondition(PackageCondition::kPackageInvariant,
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
             "missing requirement");
     return m_requirements.back();
 }

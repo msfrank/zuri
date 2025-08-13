@@ -5,8 +5,8 @@
 #include <tempo_utils/log_message.h>
 #include <zuri_packager/internal/manifest_reader.h>
 #include <zuri_packager/package_reader.h>
-
-#include "zuri_packager/packaging_conversions.h"
+#include <zuri_packager/packager_result.h>
+#include <zuri_packager/packaging_conversions.h>
 
 zuri_packager::PackageReader::PackageReader(
     tu_uint8 version,
@@ -103,13 +103,13 @@ get_file_entry_contents(
     const tempo_utils::Slice &contents)
 {
     if (walker.getEntryType() != zuri_packager::EntryType::File)
-        return zuri_packager::PackageStatus::forCondition(zuri_packager::PackageCondition::kInvalidManifest,
+        return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kInvalidManifest,
             "invalid entry type");
     if (contents.getSize() < walker.getFileOffset())
-        return zuri_packager::PackageStatus::forCondition(zuri_packager::PackageCondition::kInvalidManifest,
+        return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kInvalidManifest,
             "invalid file entry offset");
     if (contents.getSize() < walker.getFileOffset() + walker.getFileSize())
-        return zuri_packager::PackageStatus::forCondition(zuri_packager::PackageCondition::kInvalidManifest,
+        return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kInvalidManifest,
             "invalid file entry size");
     return contents.slice(walker.getFileOffset(), walker.getFileSize());
 }
@@ -119,7 +119,7 @@ zuri_packager::PackageReader::readFileContents(const tempo_utils::UrlPath &entry
 {
     auto manifest = m_manifest.getManifest();
     if (!manifest.hasEntry(entryPath))
-        return PackageStatus::forCondition(PackageCondition::kMissingEntry,
+        return PackagerStatus::forCondition(PackagerCondition::kMissingEntry,
             "missing entry {}", entryPath.toString());
 
     auto entry = manifest.getEntry(entryPath);
@@ -128,11 +128,11 @@ zuri_packager::PackageReader::readFileContents(const tempo_utils::UrlPath &entry
             return get_file_entry_contents(entry, m_contents);
         case EntryType::Link:
             if (!followSymlinks)
-                return PackageStatus::forCondition(PackageCondition::kInvalidManifest,
+                return PackagerStatus::forCondition(PackagerCondition::kInvalidManifest,
                     "invalid entry type");
             return get_file_entry_contents(entry.resolveLink(), m_contents);
         default:
-            return PackageStatus::forCondition(PackageCondition::kInvalidManifest,
+            return PackagerStatus::forCondition(PackagerCondition::kInvalidManifest,
                 "invalid entry type");
     }
 }
@@ -171,11 +171,11 @@ zuri_packager::PackageReader::create(std::shared_ptr<const tempo_utils::Immutabl
 
     // verify the package header
     if (mmapSize < 10)
-        return PackageStatus::forCondition(
-            PackageCondition::kInvalidHeader, "invalid header size");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kInvalidHeader, "invalid header size");
     if (strncmp((const char *) mmapData, zpk1::ManifestIdentifier(), 4) != 0)
-        return PackageStatus::forCondition(
-            PackageCondition::kInvalidHeader, "invalid package identifier");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kInvalidHeader, "invalid package identifier");
 
     mmapData += 4;                                                      // skip over identifier
     auto version = tempo_utils::read_u8_and_advance(mmapData);          // read version
@@ -185,19 +185,19 @@ zuri_packager::PackageReader::create(std::shared_ptr<const tempo_utils::Immutabl
 
     // verify the manifest
     if (mmapSize < manifestSize)
-        return PackageStatus::forCondition(
-            PackageCondition::kInvalidManifest, "invalid manifest size");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kInvalidManifest, "invalid manifest size");
     flatbuffers::Verifier verifier((const uint8_t *) mmapData, manifestSize);
     if (!zpk1::VerifyManifestBuffer(verifier))
-        return PackageStatus::forCondition(
-            PackageCondition::kInvalidManifest, "invalid package manifest");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kInvalidManifest, "invalid package manifest");
 
     // allocate the manifest
     tempo_utils::Slice manifestSlice(packageBytes, 10, manifestSize);
     ZuriManifest manifest(manifestSlice.toImmutableBytes());
     if (!manifest.isValid())
-        return PackageStatus::forCondition(
-            PackageCondition::kInvalidManifest, "invalid package manifest");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kInvalidManifest, "invalid package manifest");
 
     // create a slice which spans only the package contents
     tempo_utils::Slice contents(packageBytes, dataOffset, mmapSize - dataOffset);

@@ -74,7 +74,7 @@ tempo_utils::Status
 TargetWriter::addDependency(const zuri_packager::PackageDependency &dependency)
 {
     if (!dependency.isValid())
-        return zuri_packager::PackageStatus::forCondition(zuri_packager::PackageCondition::kPackageInvariant,
+        return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kPackagerInvariant,
             "invalid dependency");
     if (m_priv == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
@@ -82,7 +82,7 @@ TargetWriter::addDependency(const zuri_packager::PackageDependency &dependency)
 
     auto depId = absl::StrCat(dependency.getName(), "@", dependency.getDomain());
     if (m_priv->dependencies.contains(depId))
-        return zuri_packager::PackageStatus::forCondition(zuri_packager::PackageCondition::kPackageInvariant,
+        return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kPackagerInvariant,
             "dependency already exists for '{}'", depId);
     m_priv->dependencies[depId] = dependency;
 

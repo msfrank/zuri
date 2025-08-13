@@ -8,7 +8,6 @@
 
 #include "entry_walker.h"
 #include "package_reader.h"
-#include "package_result.h"
 #include "package_specifier.h"
 
 namespace zuri_packager {

@@ -12,7 +12,7 @@
 #include "manifest_attr_writer.h"
 #include "manifest_entry.h"
 #include "manifest_state.h"
-#include "package_result.h"
+#include "packager_result.h"
 #include "package_specifier.h"
 
 namespace zuri_packager {
@@ -102,19 +102,19 @@ namespace zuri_packager {
         tempo_utils::Status putPackageAttr(const tempo_schema::AttrSerde<T> &serde, const T &value)
         {
             if (m_state == nullptr)
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "writer is finished");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "writer is finished");
             if (m_packageEntry == nullptr)
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "writer is not configured");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "writer is not configured");
             ManifestAttrWriter writer(serde.getKey(), &m_state);
             auto result = serde.writeAttr(&writer, value);
             if (result.isStatus())
                 return result.getStatus();
             auto *attr = m_state->getAttr(result.getResult());
             if (attr == nullptr)
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "missing serialized attr");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "missing serialized attr");
             return m_packageEntry->putAttr(attr);
         };
         /**
@@ -131,18 +131,18 @@ namespace zuri_packager {
             const T &value)
         {
             if (!address.isValid())
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "invalid entry address");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "invalid entry address");
             if (m_state == nullptr)
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "writer is finished");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "writer is finished");
             if (m_packageEntry == nullptr)
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "writer is not configured");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "writer is not configured");
             auto *entry = m_state->getEntry(address.getAddress());
             if (entry == nullptr)
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "invalid entry address");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "invalid entry address");
 
             ManifestAttrWriter writer(serde.getKey(), &m_state);
             auto result = serde.writeAttr(&writer, value);
@@ -150,8 +150,8 @@ namespace zuri_packager {
                 return result.getStatus();
             auto *attr = m_state->getAttr(result.getResult());
             if (attr == nullptr)
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "missing serialized attr");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "missing serialized attr");
             return entry->putAttr(attr);
         };
     };

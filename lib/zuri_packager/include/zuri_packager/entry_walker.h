@@ -8,7 +8,7 @@
 #include <tempo_utils/integer_types.h>
 
 #include "manifest_attr_parser.h"
-#include "package_result.h"
+#include "packager_result.h"
 #include "package_types.h"
 
 namespace zuri_packager {
@@ -60,8 +60,8 @@ namespace zuri_packager {
         parseAttr(const AttrType &attr, SerdeType &value) const {
             auto index = findIndexForAttr(attr.getKey());
             if (index == kInvalidOffsetU32)
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "missing attr in entry");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "missing attr in entry");
             ManifestAttrParser parser(m_reader);
             return attr.parseAttr(index, &parser, value);
         }

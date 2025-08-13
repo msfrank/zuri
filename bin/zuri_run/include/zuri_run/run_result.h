@@ -18,7 +18,6 @@ namespace zuri_run {
     class RunStatus : public tempo_utils::TypedStatus<RunCondition> {
     public:
         using TypedStatus::TypedStatus;
-        static RunStatus ok();
         static bool convert(RunStatus &dstStatus, const tempo_utils::Status &srcStatus);
 
     private:

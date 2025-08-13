@@ -6,6 +6,8 @@ set(CMAKE_AUTOMOC OFF)
 add_library(ZuriBuildRuntime STATIC
     src/build_graph.cpp
     include/zuri_build/build_graph.h
+    src/build_result.cpp
+    include/zuri_build/build_result.h
     src/collect_modules_task.cpp
     include/zuri_build/collect_modules_task.h
     src/import_resolver.cpp

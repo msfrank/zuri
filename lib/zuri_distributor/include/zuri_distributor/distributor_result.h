@@ -18,7 +18,6 @@ namespace zuri_distributor {
     class DistributorStatus : public tempo_utils::TypedStatus<DistributorCondition> {
     public:
         using TypedStatus::TypedStatus;
-        static DistributorStatus ok();
         static bool convert(DistributorStatus &dstStatus, const tempo_utils::Status &srcStatus);
 
     private:

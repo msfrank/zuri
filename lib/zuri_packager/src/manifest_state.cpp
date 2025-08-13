@@ -129,8 +129,8 @@ tempo_utils::Result<zuri_packager::ManifestEntry *>
 zuri_packager::ManifestState::appendEntry(EntryType type, const tempo_utils::UrlPath &path)
 {
     if (m_pathIndex.contains(path))
-        return PackageStatus::forCondition(
-            PackageCondition::kDuplicateEntry, "entry already exists at path");
+        return PackagerStatus::forCondition(
+            PackagerCondition::kDuplicateEntry, "entry already exists at path");
 
     if (path.isEmpty()) {
         // an empty path indicates the package (i.e. root) entry
@@ -143,8 +143,8 @@ zuri_packager::ManifestState::appendEntry(EntryType type, const tempo_utils::Url
         // a non-empty path must have a parent
         auto parentPath = path.getInit();
         if (!m_pathIndex.contains(parentPath))
-            return PackageStatus::forCondition(
-                PackageCondition::kPackageInvariant, "entry is missing parent");
+            return PackagerStatus::forCondition(
+                PackagerCondition::kPackagerInvariant, "entry is missing parent");
         auto *parent = getEntry(m_pathIndex.at(parentPath));
 
         EntryAddress address(m_manifestEntries.size());
@@ -278,8 +278,8 @@ zuri_packager::ManifestState::toManifest() const
                 type = zpk1::EntryType::Link;
                 break;
             default:
-                return PackageStatus::forCondition(
-                    PackageCondition::kPackageInvariant, "invalid entry type");
+                return PackagerStatus::forCondition(
+                    PackagerCondition::kPackagerInvariant, "invalid entry type");
         }
 
         // serialize entry attrs
