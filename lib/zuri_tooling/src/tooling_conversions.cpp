@@ -139,3 +139,19 @@ zuri_tooling::TargetEntryParser::convertValue(const tempo_config::ConfigNode &no
             return {};
     }
 }
+
+tempo_utils::Status
+zuri_tooling::PackageCacheEntryParser::convertValue(
+    const tempo_config::ConfigNode &node,
+    PackageCacheEntry &packageCacheEntry) const
+{
+    if (node.getNodeType() != tempo_config::ConfigNodeType::kMap)
+        return tempo_config::ConfigStatus::forCondition(
+            tempo_config::ConfigCondition::kWrongType, "target entry config must be a map");
+    auto packageCacheConfig = node.toMap();
+
+    tempo_config::BooleanParser writeableParser(false);
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
+        packageCacheEntry.writeable, writeableParser, packageCacheConfig, "writeable"));
+    return {};
+}

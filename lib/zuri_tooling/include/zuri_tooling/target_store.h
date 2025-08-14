@@ -26,20 +26,20 @@ namespace zuri_tooling {
 
     class TargetStore {
     public:
-        explicit TargetStore(const tempo_config::ConfigMap &targetsConfig);
+        explicit TargetStore(const tempo_config::ConfigMap &targetsMap);
 
         tempo_utils::Status configure();
 
         bool hasTarget(const std::string &targetName) const;
-        const TargetEntry& getTarget(const std::string &targetName) const;
-        absl::flat_hash_map<std::string,TargetEntry>::const_iterator targetsBegin() const;
-        absl::flat_hash_map<std::string,TargetEntry>::const_iterator targetsEnd() const;
+        std::shared_ptr<const TargetEntry> getTarget(const std::string &targetName) const;
+        absl::flat_hash_map<std::string,std::shared_ptr<const TargetEntry>>::const_iterator targetsBegin() const;
+        absl::flat_hash_map<std::string,std::shared_ptr<const TargetEntry>>::const_iterator targetsEnd() const;
         int numTargets() const;
 
     private:
-        tempo_config::ConfigMap m_targetsConfig;
+        tempo_config::ConfigMap m_targetsMap;
 
-        absl::flat_hash_map<std::string,TargetEntry> m_targetEntries;
+        absl::flat_hash_map<std::string,std::shared_ptr<const TargetEntry>> m_targetEntries;
     };
 }
 

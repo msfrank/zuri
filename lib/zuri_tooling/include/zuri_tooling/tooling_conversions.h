@@ -4,6 +4,7 @@
 #include <tempo_config/abstract_converter.h>
 
 #include "import_store.h"
+#include "package_store.h"
 #include "target_store.h"
 
 namespace zuri_tooling {
@@ -25,5 +26,13 @@ namespace zuri_tooling {
 
         tempo_utils::Status convertValue(const tempo_config::ConfigNode &node, TargetEntry &targetEntry) const override;
     };
+
+    class PackageCacheEntryParser : public tempo_config::AbstractConverter<PackageCacheEntry> {
+    public:
+        tempo_utils::Status convertValue(
+            const tempo_config::ConfigNode &node,
+            PackageCacheEntry &packageCacheEntry) const override;
+    };
 }
+
 #endif // ZURI_TOOLING_TOOLING_CONVERSIONS_H

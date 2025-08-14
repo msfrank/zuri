@@ -23,20 +23,20 @@ namespace zuri_tooling {
 
     class ImportStore {
     public:
-        explicit ImportStore(const tempo_config::ConfigMap &importsConfig);
+        explicit ImportStore(const tempo_config::ConfigMap &importsMap);
 
         tempo_utils::Status configure();
 
         bool hasImport(const std::string &importName) const;
-        const ImportEntry& getImport(const std::string &importName) const;
-        absl::flat_hash_map<std::string,ImportEntry>::const_iterator importsBegin() const;
-        absl::flat_hash_map<std::string,ImportEntry>::const_iterator importsEnd() const;
+        std::shared_ptr<const ImportEntry> getImport(const std::string &importName) const;
+        absl::flat_hash_map<std::string,std::shared_ptr<const ImportEntry>>::const_iterator importsBegin() const;
+        absl::flat_hash_map<std::string,std::shared_ptr<const ImportEntry>>::const_iterator importsEnd() const;
         int numImports() const;
 
     private:
-        tempo_config::ConfigMap m_importsConfig;
+        tempo_config::ConfigMap m_importsMap;
 
-        absl::flat_hash_map<std::string,ImportEntry> m_importEntries;
+        absl::flat_hash_map<std::string,std::shared_ptr<const ImportEntry>> m_importEntries;
     };
 }
 

@@ -8,19 +8,21 @@ add_library(zuri::zuri_tooling ALIAS zuri_tooling)
 
 set(ZURI_TOOLING_INCLUDES
     include/zuri_tooling/import_store.h
+    include/zuri_tooling/package_store.h
     include/zuri_tooling/target_store.h
     include/zuri_tooling/tooling_conversions.h
     include/zuri_tooling/tooling_result.h
-    include/zuri_tooling/zuri_workspace.h
+    include/zuri_tooling/zuri_config.h
     )
 set_target_properties(zuri_tooling PROPERTIES PUBLIC_HEADER "${ZURI_TOOLING_INCLUDES}")
 
 target_sources(zuri_tooling PRIVATE
     src/import_store.cpp
+    src/package_store.cpp
     src/target_store.cpp
     src/tooling_conversions.cpp
     src/tooling_result.cpp
-    src/zuri_workspace.cpp
+    src/zuri_config.cpp
     )
 
 # set the library version
@@ -48,6 +50,7 @@ target_include_directories(zuri_tooling PUBLIC
 target_include_directories(zuri_tooling PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 target_compile_definitions(zuri_tooling PRIVATE
+    "DISTRIBUTION_ROOT=\"${DISTRIBUTION_ROOT}\""
     "CONFIG_DIR_PREFIX=\"${CONFIG_DIR_PREFIX}\""
     "VENDOR_CONFIG_DIR_PREFIX=\"${VENDOR_CONFIG_DIR_PREFIX}\""
 )
