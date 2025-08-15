@@ -270,7 +270,37 @@ zuri_tooling::ZuriConfig::configure()
     m_packageStore = std::make_shared<PackageStore>(dcacheMap, ucacheMap, icacheMap, tcacheMap);
     TU_RETURN_IF_NOT_OK (m_packageStore->configure());
 
+    auto buildMap = m_zuriMap.mapAt("build").toMap();
+    if (buildMap.getNodeType() == tempo_config::ConfigNodeType::kMap) {
+        m_buildToolConfig = std::make_shared<BuildToolConfig>(buildMap);
+        TU_RETURN_IF_NOT_OK (m_buildToolConfig->configure());
+    }
+
     return {};
+}
+
+std::filesystem::path
+zuri_tooling::ZuriConfig::getDistributionRoot() const
+{
+    return m_distributionRoot;
+}
+
+std::filesystem::path
+zuri_tooling::ZuriConfig::getUserRoot() const
+{
+    return m_userRoot;
+}
+
+std::filesystem::path
+zuri_tooling::ZuriConfig::getWorkspaceRoot() const
+{
+    return m_workspaceConfigFile.parent_path();
+}
+
+std::filesystem::path
+zuri_tooling::ZuriConfig::getWorkspaceConfigFile() const
+{
+    return m_workspaceConfigFile;
 }
 
 std::shared_ptr<zuri_tooling::ImportStore>
@@ -283,4 +313,16 @@ std::shared_ptr<zuri_tooling::TargetStore>
 zuri_tooling::ZuriConfig::getTargetStore() const
 {
     return m_targetStore;
+}
+
+std::shared_ptr<zuri_tooling::PackageStore>
+zuri_tooling::ZuriConfig::getPackageStore() const
+{
+    return m_packageStore;
+}
+
+std::shared_ptr<zuri_tooling::BuildToolConfig>
+zuri_tooling::ZuriConfig::getBuildToolConfig() const
+{
+    return m_buildToolConfig;
 }

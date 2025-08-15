@@ -19,9 +19,9 @@ TEST(BuildGraph, ConfigureSingleTarget)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
 
     auto createBuildGraph = BuildGraph::create(targetStore, importStore);
@@ -50,9 +50,9 @@ TEST(BuildGraph, ConfigureMultipleTargetsNoDependencies)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
 
     auto createBuildGraph = BuildGraph::create(targetStore, importStore);
@@ -83,9 +83,9 @@ TEST(BuildGraph, ConfigureMultipleTargetsADependsBDependsC)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
 
     auto createBuildGraph = BuildGraph::create(targetStore, importStore);
@@ -116,9 +116,9 @@ TEST(BuildGraph, ConfigureMultipleTargetsADependsBAndC)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
 
     auto createBuildGraph = BuildGraph::create(targetStore, importStore);
@@ -150,9 +150,9 @@ TEST(BuildGraph, DetermineTargetBuildOrder)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));

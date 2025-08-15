@@ -21,9 +21,9 @@ TEST(TargetCycleDetector, SingleTargetNoCycles) {
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
@@ -58,9 +58,9 @@ TEST(TargetCycleDetector, MultipleIndependentTargetsNoCycles)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
@@ -97,9 +97,9 @@ TEST(TargetCycleDetector, MultipleTargetsADependsBDependsCNoCycles)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
@@ -136,9 +136,9 @@ TEST(TargetCycleDetector, MultipleTargetsADependsBAndCNoCycles)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
@@ -176,9 +176,9 @@ TEST(TargetCycleDetector, CircularDependency)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
@@ -219,9 +219,9 @@ TEST(TargetCycleDetector, MultipleCircularDependencies)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));

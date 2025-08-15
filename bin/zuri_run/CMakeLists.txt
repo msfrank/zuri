@@ -11,8 +11,6 @@ add_library(ZuriRunRuntime STATIC
     src/fragment_store.cpp
     include/zuri_run/read_eval_print_loop.h
     src/read_eval_print_loop.cpp
-    include/zuri_run/load_config.h
-    src/load_config.cpp
     include/zuri_run/run_result.h
     src/run_result.cpp
     include/zuri_run/zuri_run.h
@@ -36,6 +34,7 @@ target_link_libraries(ZuriRunRuntime
     lyric::lyric_parser
     lyric::lyric_runtime
     tempo::tempo_command
+    zuri::zuri_tooling
     libedit::libedit
     ${SANITIZER_LIBS}
     ${PROFILER_LIBS}

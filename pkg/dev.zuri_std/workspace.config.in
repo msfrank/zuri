@@ -1,49 +1,51 @@
 {
-    "zuri-build": {
-        "settings": {
-            "global": {
-                "sourceBasePath": "src"
-            },
-            "tasks": {
-                "provide_plugin:/collections": {
-                    "buildTarget": "fetch_external_file:/collections"
+    "zuri": {
+        "build": {
+            "settings": {
+                "global": {
+                    "sourceBasePath": "src"
                 },
-                "fetch_external_file:/collections": {
-                    "filePath": "@ZURI_STD_COLLECTIONS_PLUGIN_FILEPATH@",
-                    "artifactPath": "/collections.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
-                    "contentType": "application/vnd.lyric.plugin"
-                },
-                "provide_plugin:/log": {
-                    "buildTarget": "fetch_external_file:/log"
-                },
-                "fetch_external_file:/log": {
-                    "filePath": "@ZURI_STD_LOG_PLUGIN_FILEPATH@",
-                    "artifactPath": "/log.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
-                    "contentType": "application/vnd.lyric.plugin"
-                },
-                "provide_plugin:/system": {
-                    "buildTarget": "fetch_external_file:/system"
-                },
-                "fetch_external_file:/system": {
-                    "filePath": "@ZURI_STD_SYSTEM_PLUGIN_FILEPATH@",
-                    "artifactPath": "/system.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
-                    "contentType": "application/vnd.lyric.plugin"
-                },
-                "provide_plugin:/text": {
-                    "buildTarget": "fetch_external_file:/text"
-                },
-                "fetch_external_file:/text": {
-                    "filePath": "@ZURI_STD_TEXT_PLUGIN_FILEPATH@",
-                    "artifactPath": "/text.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
-                    "contentType": "application/vnd.lyric.plugin"
-                },
-                "provide_plugin:/time": {
-                    "buildTarget": "fetch_external_file:/time"
-                },
-                "fetch_external_file:/time": {
-                    "filePath": "@ZURI_STD_TIME_PLUGIN_FILEPATH@",
-                    "artifactPath": "/time.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
-                    "contentType": "application/vnd.lyric.plugin"
+                "tasks": {
+                    "provide_plugin:/collections": {
+                        "buildTarget": "fetch_external_file:/collections"
+                    },
+                    "fetch_external_file:/collections": {
+                        "filePath": "@ZURI_STD_COLLECTIONS_PLUGIN_FILEPATH@",
+                        "artifactPath": "/collections.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+                        "contentType": "application/vnd.lyric.plugin"
+                    },
+                    "provide_plugin:/log": {
+                        "buildTarget": "fetch_external_file:/log"
+                    },
+                    "fetch_external_file:/log": {
+                        "filePath": "@ZURI_STD_LOG_PLUGIN_FILEPATH@",
+                        "artifactPath": "/log.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+                        "contentType": "application/vnd.lyric.plugin"
+                    },
+                    "provide_plugin:/system": {
+                        "buildTarget": "fetch_external_file:/system"
+                    },
+                    "fetch_external_file:/system": {
+                        "filePath": "@ZURI_STD_SYSTEM_PLUGIN_FILEPATH@",
+                        "artifactPath": "/system.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+                        "contentType": "application/vnd.lyric.plugin"
+                    },
+                    "provide_plugin:/text": {
+                        "buildTarget": "fetch_external_file:/text"
+                    },
+                    "fetch_external_file:/text": {
+                        "filePath": "@ZURI_STD_TEXT_PLUGIN_FILEPATH@",
+                        "artifactPath": "/text.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+                        "contentType": "application/vnd.lyric.plugin"
+                    },
+                    "provide_plugin:/time": {
+                        "buildTarget": "fetch_external_file:/time"
+                    },
+                    "fetch_external_file:/time": {
+                        "filePath": "@ZURI_STD_TIME_PLUGIN_FILEPATH@",
+                        "artifactPath": "/time.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+                        "contentType": "application/vnd.lyric.plugin"
+                    }
                 }
             }
         },

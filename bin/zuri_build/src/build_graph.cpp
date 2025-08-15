@@ -5,8 +5,8 @@
 #include <zuri_build/build_graph.h>
 
 BuildGraph::BuildGraph(
-    std::shared_ptr<TargetStore> targetStore,
-    std::shared_ptr<ImportStore> importStore,
+    std::shared_ptr<zuri_tooling::TargetStore> targetStore,
+    std::shared_ptr<zuri_tooling::ImportStore> importStore,
     std::unique_ptr<BuildGraphImpl> buildGraph,
     absl::flat_hash_map<std::string,BuildGraphVertex> targetsMap,
     absl::flat_hash_map<std::string,BuildGraphVertex> importsMap,
@@ -27,8 +27,8 @@ BuildGraph::BuildGraph(
 
 tempo_utils::Result<std::shared_ptr<BuildGraph>>
 BuildGraph::create(
-    std::shared_ptr<TargetStore> targetStore,
-    std::shared_ptr<ImportStore> importStore)
+    std::shared_ptr<zuri_tooling::TargetStore> targetStore,
+    std::shared_ptr<zuri_tooling::ImportStore> importStore)
 {
     auto buildGraph = std::make_unique<BuildGraphImpl>();
 
@@ -51,22 +51,22 @@ BuildGraph::create(
     for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); it++) {
         const auto &importName = it->first;
         const auto &importEntry = it->second;
-        switch (importEntry.type) {
-            case ImportEntryType::Target: {
-                auto entry = targetsMap.find(importEntry.targetName);
+        switch (importEntry->type) {
+            case zuri_tooling::ImportEntryType::Target: {
+                auto entry = targetsMap.find(importEntry->targetName);
                 if (entry == targetsMap.cend())
                     return tempo_config::ConfigStatus::forCondition(
                         tempo_config::ConfigCondition::kConfigInvariant,
-                        "import '{}' refers to nonexistent target '{}'", importName, importEntry.targetName);
+                        "import '{}' refers to nonexistent target '{}'", importName, importEntry->targetName);
                 importsMap[importName] = entry->second;
                 break;
             }
-            case ImportEntryType::Requirement: {
-                requestedRequirements.insert(importEntry.requirementSpecifier);
+            case zuri_tooling::ImportEntryType::Requirement: {
+                requestedRequirements.insert(importEntry->requirementSpecifier);
                 break;
             }
-            case ImportEntryType::Package: {
-                requestedPackages.insert(importEntry.packageUrl);
+            case zuri_tooling::ImportEntryType::Package: {
+                requestedPackages.insert(importEntry->packageUrl);
                 break;
             }
             default:
@@ -82,7 +82,7 @@ BuildGraph::create(
         const auto &targetEntry = it->second;
         auto targetVertex = targetsMap.at(it->first);
 
-        for (const auto &targetDep : targetEntry.depends) {
+        for (const auto &targetDep : targetEntry->depends) {
             auto entry = targetsMap.find(targetDep);
             if (entry == targetsMap.cend())
                 return tempo_config::ConfigStatus::forCondition(
@@ -91,14 +91,14 @@ BuildGraph::create(
             boost::add_edge(targetVertex, entry->second, *buildGraph);
         }
 
-        for (const auto &targetImport : targetEntry.imports) {
+        for (const auto &targetImport : targetEntry->imports) {
             if (!importStore->hasImport(targetImport))
                 return tempo_config::ConfigStatus::forCondition(
                     tempo_config::ConfigCondition::kConfigInvariant,
                     "target '{}' refers to nonexistent import '{}'", targetName, targetImport);
             const auto &importEntry = importStore->getImport(targetImport);
-            switch (importEntry.type) {
-                case ImportEntryType::Target: {
+            switch (importEntry->type) {
+                case zuri_tooling::ImportEntryType::Target: {
                     boost::add_edge(targetVertex, importsMap.at(targetImport), *buildGraph);
                     break;
                 }
@@ -118,13 +118,13 @@ BuildGraph::create(
         std::move(requestedRequirements)));
 }
 
-std::shared_ptr<TargetStore>
+std::shared_ptr<zuri_tooling::TargetStore>
 BuildGraph::getTargetStore() const
 {
     return m_targetStore;
 }
 
-std::shared_ptr<ImportStore>
+std::shared_ptr<zuri_tooling::ImportStore>
 BuildGraph::getImportStore() const
 {
     return m_importStore;

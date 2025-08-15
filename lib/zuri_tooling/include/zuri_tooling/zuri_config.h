@@ -11,6 +11,7 @@
 #include "import_store.h"
 #include "package_store.h"
 #include "target_store.h"
+#include "build_tool_config.h"
 
 namespace zuri_tooling {
 
@@ -41,6 +42,8 @@ namespace zuri_tooling {
 
         std::shared_ptr<ImportStore> getImportStore() const;
         std::shared_ptr<TargetStore> getTargetStore() const;
+        std::shared_ptr<PackageStore> getPackageStore() const;
+        std::shared_ptr<BuildToolConfig> getBuildToolConfig() const;
 
     private:
         std::filesystem::path m_distributionRoot;
@@ -52,6 +55,7 @@ namespace zuri_tooling {
         std::shared_ptr<ImportStore> m_importStore;
         std::shared_ptr<TargetStore> m_targetStore;
         std::shared_ptr<PackageStore> m_packageStore;
+        std::shared_ptr<BuildToolConfig> m_buildToolConfig;
 
         ZuriConfig(
             const std::filesystem::path &distributionRoot,

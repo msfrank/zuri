@@ -32,11 +32,6 @@ TEST_F(TargetBuilderTests, BuildLibrary)
 {
     lyric_test::TesterOptions testerOptions;
     testerOptions.taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
-    testerOptions.taskSettings = lyric_build::TaskSettings(tempo_config::ConfigMap{
-        {"global", tempo_config::ConfigMap{
-                {"sourceBasePath", tempo_config::ConfigValue("src")},
-        }}
-    });
     TU_RAISE_IF_NOT_OK (testerOptions.taskRegistry->registerTaskDomain("collect_modules", new_collect_modules_task));
     lyric_test::LyricTester tester(testerOptions);
     TU_RAISE_IF_NOT_OK (tester.configure());
@@ -54,9 +49,9 @@ TEST_F(TargetBuilderTests, BuildLibrary)
         }
     }
     )"));
-    auto targetStore = std::make_shared<TargetStore>(targetsConfig.toMap());
+    auto targetStore = std::make_shared<zuri_tooling::TargetStore>(targetsConfig.toMap());
     TU_RAISE_IF_NOT_OK (targetStore->configure());
-    auto importStore = std::make_shared<ImportStore>(tempo_config::ConfigMap{});
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
     std::shared_ptr<BuildGraph> buildGraph;
     TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));

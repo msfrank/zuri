@@ -7,10 +7,15 @@
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/merge_map.h>
+#include <tempo_config/workspace_config.h>
 #include <tempo_utils/uuid.h>
-#include <zuri_run/load_config.h>
 #include <zuri_run/read_eval_print_loop.h>
 #include <zuri_run/zuri_run.h>
+#include <zuri_tooling/zuri_config.h>
+
+namespace zuri_tooling {
+    class ZuriConfig;
+}
 
 tempo_utils::Status
 zuri_run::zuri_run(int argc, const char *argv[])
@@ -102,6 +107,9 @@ zuri_run::zuri_run(int argc, const char *argv[])
     // convert arguments to config
     TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(shellArguments, argMappings, commandConfig));
 
+    // construct command map
+    tempo_config::ConfigMap commandMap(commandConfig);
+
     // configure logging
     tempo_utils::LoggingConfiguration logging = {
         tempo_utils::SeverityFilter::kDefault,
@@ -141,7 +149,7 @@ zuri_run::zuri_run(int argc, const char *argv[])
     // initialize logging
     tempo_utils::init_logging(logging);
 
-    TU_LOG_INFO << "shell config:\n" << tempo_command::command_config_to_string(commandConfig);
+    TU_LOG_INFO << "command config:\n" << tempo_command::command_config_to_string(commandConfig);
 
     // determine the workspace root
     std::filesystem::path workspaceRoot;
@@ -164,27 +172,28 @@ zuri_run::zuri_run(int argc, const char *argv[])
         commandConfig, "sessionId"));
 
     // if distribution root is relative, then make it absolute
-    if (distributionRoot.is_relative()) {
-        auto executableDir = std::filesystem::path(argv[0]).parent_path();
-        distributionRoot = executableDir / distributionRoot;
+    if (!distributionRoot.empty()) {
+        if (distributionRoot.is_relative()) {
+            auto executableDir = std::filesystem::path(argv[0]).parent_path();
+            distributionRoot = executableDir / distributionRoot;
+        }
     }
+
     TU_LOG_V << "using distribution root " << distributionRoot;
 
-    tempo_config::ConfigMap toolMap;
-
     // load tool config and vendor config
+    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
     if (!workspaceRoot.empty()) {
-        std::shared_ptr<tempo_config::WorkspaceConfig> workspaceConfig;
-        TU_ASSIGN_OR_RETURN (workspaceConfig, load_workspace_config(workspaceRoot, distributionRoot));
-        toolMap = workspaceConfig->getToolConfig();
+        std::filesystem::path workspaceConfigFile;
+        TU_ASSIGN_OR_RETURN (workspaceConfigFile, tempo_config::find_workspace_config(workspaceRoot));
+        TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forWorkspace(
+            workspaceConfigFile, {}, distributionRoot));
     } else {
-        std::shared_ptr<tempo_config::ProgramConfig> programConfig;
-        TU_ASSIGN_OR_RETURN (programConfig, load_program_config(distributionRoot));
-        toolMap = programConfig->getToolConfig();
+        TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(
+            {}, distributionRoot));
     }
 
-    // merge the tool config with the command config overrides
-    auto mergedMap = tempo_config::merge_map(toolMap, tempo_config::ConfigMap(commandConfig));
+    auto buildToolConfig = zuriConfig->getBuildToolConfig();
 
     // construct the fragment store
     auto fragmentStore = std::make_shared<FragmentStore>();
@@ -192,10 +201,6 @@ zuri_run::zuri_run(int argc, const char *argv[])
     // initialize the parser
     lyric_parser::ParserOptions parserOptions;
     auto parser = std::make_unique<lyric_parser::LyricParser>(parserOptions);
-
-    // construct the builder task settings
-    auto settingsConfig = toolMap.mapAt("settings").toMap();
-    lyric_build::TaskSettings taskSettings(settingsConfig);
 
     // construct the loader chain used by the builder and interpreter
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
@@ -208,7 +213,7 @@ zuri_run::zuri_run(int argc, const char *argv[])
     builderOptions.fallbackLoader = applicationLoader;
     builderOptions.virtualFilesystem = fragmentStore;
     auto builder = std::make_unique<lyric_build::LyricBuilder>(
-        std::filesystem::current_path(), taskSettings, builderOptions);
+        std::filesystem::current_path(), buildToolConfig->getTaskSettings(), builderOptions);
 
     // initialize the builder
     TU_RETURN_IF_NOT_OK (builder->configure());

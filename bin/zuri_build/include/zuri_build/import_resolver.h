@@ -6,6 +6,7 @@
 #include <zuri_distributor/package_cache.h>
 
 #include "zuri_distributor/dependency_selector.h"
+#include "zuri_tooling/package_store.h"
 
 struct ResolverEntry {
     zuri_packager::PackageId id;
@@ -16,7 +17,7 @@ struct ResolverEntry {
 class ImportResolver {
 public:
     ImportResolver(
-        const tempo_config::ConfigMap &resolverConfig,
+        std::shared_ptr<zuri_tooling::PackageStore> packageStore,
         std::shared_ptr<zuri_distributor::PackageCache> importPackageCache);
 
     tempo_utils::Status configure();
@@ -28,7 +29,7 @@ public:
     tempo_utils::Status resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver);
 
 private:
-    tempo_config::ConfigMap m_resolverConfig;
+    std::shared_ptr<zuri_tooling::PackageStore> m_packageStore;
     std::shared_ptr<zuri_distributor::PackageCache> m_importPackageCache;
     std::shared_ptr<zuri_distributor::AbstractPackageResolver> m_resolver;
     std::unique_ptr<zuri_distributor::DependencySelector> m_selector;

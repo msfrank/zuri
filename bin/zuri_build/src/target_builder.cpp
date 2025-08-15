@@ -62,12 +62,12 @@ TargetBuilder::buildTarget(
         }
 
         const auto &currEntry = targetStore->getTarget(currTargetName);
-        switch (currEntry.type) {
-            case TargetEntryType::Program: {
+        switch (currEntry->type) {
+            case zuri_tooling::TargetEntryType::Program: {
                 TU_ASSIGN_OR_RETURN (currTargetPath, buildProgramTarget(currTargetName, currEntry));
                 break;
             }
-            case TargetEntryType::Library: {
+            case zuri_tooling::TargetEntryType::Library: {
                 TU_ASSIGN_OR_RETURN (currTargetPath, buildLibraryTarget(currTargetName, currEntry));
                 break;
             }
@@ -83,24 +83,28 @@ TargetBuilder::buildTarget(
 }
 
 tempo_utils::Result<std::filesystem::path>
-TargetBuilder::buildProgramTarget(const std::string &targetName, const TargetEntry &programTarget)
+TargetBuilder::buildProgramTarget(
+    const std::string &targetName,
+    std::shared_ptr<const zuri_tooling::TargetEntry> programTarget)
 {
-    TU_ASSERT (programTarget.type == TargetEntryType::Program);
+    TU_ASSERT (programTarget->type == zuri_tooling::TargetEntryType::Program);
 
     return {};
 }
 
 tempo_utils::Result<std::filesystem::path>
-TargetBuilder::buildLibraryTarget(const std::string &targetName, const TargetEntry &libraryTarget)
+TargetBuilder::buildLibraryTarget(
+    const std::string &targetName,
+    std::shared_ptr<const zuri_tooling::TargetEntry> libraryTarget)
 {
-    TU_ASSERT (libraryTarget.type == TargetEntryType::Library);
+    TU_ASSERT (libraryTarget->type == zuri_tooling::TargetEntryType::Library);
 
     // declare the build tasks
     lyric_build::TaskId collectModules("collect_modules", targetName);
     absl::flat_hash_map<std::string, tempo_config::ConfigNode> collectModulesOverrides;
 
     std::vector<tempo_config::ConfigNode> modulePaths;
-    for (const auto &libraryModule : libraryTarget.modules) {
+    for (const auto &libraryModule : libraryTarget->modules) {
         tempo_config::ConfigValue modulePath(libraryModule.getPath().toString());
         modulePaths.push_back(std::move(modulePath));
     }
@@ -123,7 +127,7 @@ TargetBuilder::buildLibraryTarget(const std::string &targetName, const TargetEnt
     }
 
     // construct the target writer
-    TargetWriter targetWriter(m_installRoot, libraryTarget.specifier);
+    TargetWriter targetWriter(m_installRoot, libraryTarget->specifier);
     TU_RETURN_IF_NOT_OK (targetWriter.configure());
 
     auto cache = m_builder->getCache();

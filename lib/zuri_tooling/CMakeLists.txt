@@ -12,6 +12,7 @@ set(ZURI_TOOLING_INCLUDES
     include/zuri_tooling/target_store.h
     include/zuri_tooling/tooling_conversions.h
     include/zuri_tooling/tooling_result.h
+    include/zuri_tooling/build_tool_config.h
     include/zuri_tooling/zuri_config.h
     )
 set_target_properties(zuri_tooling PROPERTIES PUBLIC_HEADER "${ZURI_TOOLING_INCLUDES}")
@@ -22,6 +23,7 @@ target_sources(zuri_tooling PRIVATE
     src/target_store.cpp
     src/tooling_conversions.cpp
     src/tooling_result.cpp
+    src/build_tool_config.cpp
     src/zuri_config.cpp
     )
 
@@ -57,8 +59,10 @@ target_compile_definitions(zuri_tooling PRIVATE
 
 target_link_libraries(zuri_tooling
     PUBLIC
+    lyric::lyric_build
     lyric::lyric_runtime
     lyric::lyric_schema
+    tempo::tempo_config
     tempo::tempo_utils
     zuri::zuri_packager
     )

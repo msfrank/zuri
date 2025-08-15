@@ -14,28 +14,26 @@
 #include <tempo_config/merge_map.h>
 #include <tempo_config/parse_config.h>
 #include <tempo_config/time_conversions.h>
+#include <tempo_config/workspace_config.h>
 #include <zuri_build/build_graph.h>
 #include <zuri_build/collect_modules_task.h>
-#include <zuri_build/import_store.h>
+#include <zuri_build/import_resolver.h>
 #include <zuri_build/target_builder.h>
-#include <zuri_build/target_store.h>
-#include <zuri_build/workspace_config.h>
 #include <zuri_build/zuri_build.h>
-
-#include "zuri_build/import_resolver.h"
-#include "zuri_distributor/distributor_result.h"
-#include "zuri_distributor/package_cache.h"
-#include "zuri_distributor/package_cache_loader.h"
+#include <zuri_distributor/distributor_result.h>
+#include <zuri_distributor/package_cache.h>
+#include <zuri_distributor/package_cache_loader.h>
+#include <zuri_tooling/tooling_conversions.h>
+#include <zuri_tooling/zuri_config.h>
 
 tempo_utils::Status
 run_zuri_build(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::current_path());
     tempo_config::PathParser workspaceConfigFileParser(std::filesystem::path{});
-    tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
+    tempo_config::PathParser distributionRootParser(std::filesystem::path{});
     tempo_config::PathParser buildRootParser(std::filesystem::path{});
     tempo_config::PathParser installRootParser(std::filesystem::path{});
-    tempo_config::IntegerParser jobParallelismParser(0);
     tempo_config::StringParser targetNameParser;
     tempo_config::SeqTParser targetsParser(&targetNameParser, {});
     tempo_config::BooleanParser colorizeOutputParser(false);
@@ -207,44 +205,32 @@ run_zuri_build(int argc, const char *argv[])
         commandConfig, "targets"));
 
     // if distribution root is relative, then make it absolute
-    if (distributionRoot.is_relative()) {
-        auto executableDir = std::filesystem::path(argv[0]).parent_path();
-        distributionRoot = executableDir / distributionRoot;
+    if (!distributionRoot.empty()) {
+        if (distributionRoot.is_relative()) {
+            auto executableDir = std::filesystem::path(argv[0]).parent_path();
+            distributionRoot = executableDir / distributionRoot;
+        }
     }
 
     TU_LOG_V << "using distribution root " << distributionRoot;
 
-    // load the workspace config
-    std::shared_ptr<tempo_config::WorkspaceConfig> config;
-    if (!workspaceConfigFile.empty()) {
-        TU_ASSIGN_OR_RETURN (config, load_workspace_config(workspaceConfigFile, distributionRoot));
-    } else {
-        TU_ASSIGN_OR_RETURN (config, find_workspace_config(workspaceRoot, distributionRoot));
-        workspaceRoot = config->getWorkspaceRoot();
+    // load the zuri config
+    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
+    if (workspaceConfigFile.empty()) {
+        TU_ASSIGN_OR_RETURN (workspaceConfigFile, tempo_config::find_workspace_config(workspaceRoot));
     }
+    TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forWorkspace(
+        workspaceConfigFile, {}, distributionRoot));
 
     // if build root was not defined in commandConfig, then default to subdirectory of the workspace root
     if (buildRoot.empty()) {
         buildRoot = workspaceRoot / "build";
     }
 
-    // get the tool config and merge it with the command config overrides
-    auto toolMap = config->getToolConfig();
-    auto mergedMap = tempo_config::merge_map(toolMap, tempo_config::ConfigMap(commandConfig));
-
-    // construct the config store from the workspace
-    auto settingsMap = toolMap.mapAt("settings").toMap();
-    lyric_build::TaskSettings taskSettings(settingsMap);
-
-    // construct and configure the import store
-    auto importsMap = toolMap.mapAt("imports").toMap();
-    auto importStore = std::make_shared<ImportStore>(importsMap);
-    TU_RETURN_IF_NOT_OK (importStore->configure());
-
-    // construct and configure the target store
-    auto targetsMap = toolMap.mapAt("targets").toMap();
-    auto targetStore = std::make_shared<TargetStore>(targetsMap);
-    TU_RETURN_IF_NOT_OK (targetStore->configure());
+    auto importStore = zuriConfig->getImportStore();
+    auto targetStore = zuriConfig->getTargetStore();
+    auto packageStore = zuriConfig->getPackageStore();
+    auto buildToolConfig = zuriConfig->getBuildToolConfig();
 
     //
     std::shared_ptr<BuildGraph> buildGraph;
@@ -268,8 +254,7 @@ run_zuri_build(int argc, const char *argv[])
         buildRoot, "imports"));
 
     // construct and configure the import resolver
-    auto resolverMap = toolMap.mapAt("resolvers").toMap();
-    auto importResolver = std::make_shared<ImportResolver>(resolverMap, importPackageCache);
+    auto importResolver = std::make_shared<ImportResolver>(packageStore, importPackageCache);
     TU_RETURN_IF_NOT_OK (importResolver->configure());
 
     lyric_build::BuilderOptions builderOptions;
@@ -277,33 +262,14 @@ run_zuri_build(int argc, const char *argv[])
     // set build root for builder
     builderOptions.buildRoot = buildRoot;
 
+    builderOptions.cacheMode = buildToolConfig->getCacheMode();
+    builderOptions.bootstrapDirectory = buildToolConfig->getBootstrapDirectory();
+    builderOptions.waitTimeout = buildToolConfig->getWaitTimeout();
+
     // determine the job parallelism
-    int jobParallelism;
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(jobParallelism, jobParallelismParser,
-        mergedMap, "jobParallelism"));
-    if (jobParallelism != 0) {
-        builderOptions.numThreads = jobParallelism;
-    }
-
-    // determine the cache mode
-    tempo_config::EnumTParser cacheModeParser({
-        {"Default", lyric_build::CacheMode::Default},
-        {"Persistent", lyric_build::CacheMode::Persistent},
-        {"InMemory", lyric_build::CacheMode::InMemory},
-        },
-        lyric_build::CacheMode::Default);
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(builderOptions.cacheMode, cacheModeParser,
-        mergedMap, "cacheMode"));
-
-    // set the wait timeout if it was provided
-    tempo_config::DurationParser waitTimeoutParser(absl::Duration{});
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(builderOptions.waitTimeout, waitTimeoutParser,
-        mergedMap, "waitTimeout"));
-
-    // set the bootstrap directory if it was provided
-    tempo_config::PathParser bootstrapDirectoryParser(std::filesystem::path{});
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(builderOptions.bootstrapDirectory, bootstrapDirectoryParser,
-        mergedMap, "bootstrapDirectory"));
+    tempo_config::IntegerParser jobParallelismParser(buildToolConfig->getJobParallelism());
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(builderOptions.numThreads, jobParallelismParser,
+        commandMap, "jobParallelism"));
 
     // create the shortcut resolver
     auto shortcutResolver = std::make_shared<lyric_importer::ShortcutResolver>();
@@ -314,23 +280,23 @@ run_zuri_build(int argc, const char *argv[])
     for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); ++it) {
         const auto &importName = it->first;
         const auto &importEntry = it->second;
-        switch (importEntry.type) {
-            case ImportEntryType::Target: {
-                if (!targetStore->hasTarget(importEntry.targetName))
+        switch (importEntry->type) {
+            case zuri_tooling::ImportEntryType::Target: {
+                if (!targetStore->hasTarget(importEntry->targetName))
                     return tempo_command::CommandStatus::forCondition(
                         tempo_command::CommandCondition::kInvalidConfiguration,
-                        "missing target '{}' for import '{}'", importEntry.targetName, importName);
-                if (targetShortcuts.contains(importEntry.targetName))
+                        "missing target '{}' for import '{}'", importEntry->targetName, importName);
+                if (targetShortcuts.contains(importEntry->targetName))
                     return tempo_command::CommandStatus::forCondition(
                         tempo_command::CommandCondition::kInvalidConfiguration,
-                        "target '{}' is referenced from multiple imports", importEntry.targetName);
-                targetShortcuts[importEntry.targetName] = importName;
+                        "target '{}' is referenced from multiple imports", importEntry->targetName);
+                targetShortcuts[importEntry->targetName] = importName;
                 break;
             }
-            case ImportEntryType::Requirement:
-                TU_RETURN_IF_NOT_OK (importResolver->addRequirement(importEntry.requirementSpecifier, importName));
+            case zuri_tooling::ImportEntryType::Requirement:
+                TU_RETURN_IF_NOT_OK (importResolver->addRequirement(importEntry->requirementSpecifier, importName));
                 break;
-            case ImportEntryType::Package:
+            case zuri_tooling::ImportEntryType::Package:
             default:
                 return tempo_command::CommandStatus::forCondition(
                     tempo_command::CommandCondition::kInvalidConfiguration,
@@ -357,7 +323,7 @@ run_zuri_build(int argc, const char *argv[])
     builderOptions.fallbackLoader = std::make_shared<lyric_runtime::ChainLoader>();
 
     // construct the builder based on workspace config and config overrides
-    lyric_build::LyricBuilder builder(workspaceRoot, taskSettings, builderOptions);
+    lyric_build::LyricBuilder builder(workspaceRoot, buildToolConfig->getTaskSettings(), builderOptions);
     TU_RETURN_IF_NOT_OK (builder.configure());
 
     // build each target (and its dependencies) in the order specified on the command line

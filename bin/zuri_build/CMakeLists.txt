@@ -12,16 +12,10 @@ add_library(ZuriBuildRuntime STATIC
     include/zuri_build/collect_modules_task.h
     src/import_resolver.cpp
     include/zuri_build/import_resolver.h
-    src/import_store.cpp
-    include/zuri_build/import_store.h
-    src/workspace_config.cpp
-    include/zuri_build/workspace_config.h
     src/target_builder.cpp
     include/zuri_build/target_builder.h
     src/target_cycle_detector.cpp
     include/zuri_build/target_cycle_detector.h
-    src/target_store.cpp
-    include/zuri_build/target_store.h
     src/target_writer.cpp
     include/zuri_build/target_writer.h
     src/zuri_build.cpp
@@ -47,6 +41,7 @@ target_link_libraries(ZuriBuildRuntime
     tempo::tempo_utils
     zuri::zuri_distributor
     zuri::zuri_packager
+    zuri::zuri_tooling
     Boost::headers
     ${SANITIZER_LIBS}
     ${PROFILER_LIBS}

@@ -29,10 +29,10 @@ private:
 
     tempo_utils::Result<std::filesystem::path> buildProgramTarget(
         const std::string &targetName,
-        const TargetEntry &programTarget);
+        std::shared_ptr<const zuri_tooling::TargetEntry> programTarget);
     tempo_utils::Result<std::filesystem::path> buildLibraryTarget(
         const std::string &targetName,
-        const TargetEntry &libraryTarget);
+        std::shared_ptr<const zuri_tooling::TargetEntry> libraryTarget);
 };
 
 #endif // ZURI_BUILD_TARGET_BUILDER_H

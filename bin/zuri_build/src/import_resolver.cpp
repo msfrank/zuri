@@ -1,14 +1,13 @@
 
 #include <zuri_build/import_resolver.h>
 #include <zuri_build/program_status.h>
+#include <zuri_distributor/package_fetcher.h>
 #include <zuri_distributor/static_package_resolver.h>
 
-#include "zuri_distributor/package_fetcher.h"
-
 ImportResolver::ImportResolver(
-    const tempo_config::ConfigMap &resolverConfig,
+    std::shared_ptr<zuri_tooling::PackageStore> packageStore,
     std::shared_ptr<zuri_distributor::PackageCache> importPackageCache)
-    : m_resolverConfig(resolverConfig),
+    : m_packageStore(std::move(packageStore)),
       m_importPackageCache(std::move(importPackageCache))
 {
     TU_ASSERT (m_importPackageCache != nullptr);

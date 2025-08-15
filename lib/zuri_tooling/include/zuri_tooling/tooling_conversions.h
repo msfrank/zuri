@@ -1,7 +1,9 @@
 #ifndef ZURI_TOOLING_TOOLING_CONVERSIONS_H
 #define ZURI_TOOLING_TOOLING_CONVERSIONS_H
 
+#include <lyric_build/lyric_builder.h>
 #include <tempo_config/abstract_converter.h>
+#include <tempo_config/enum_conversions.h>
 
 #include "import_store.h"
 #include "package_store.h"
@@ -32,6 +34,20 @@ namespace zuri_tooling {
         tempo_utils::Status convertValue(
             const tempo_config::ConfigNode &node,
             PackageCacheEntry &packageCacheEntry) const override;
+    };
+
+    /**
+     *
+     */
+    class CacheModeParser : public tempo_config::EnumTParser<lyric_build::CacheMode> {
+    public:
+        explicit CacheModeParser(lyric_build::CacheMode defaultMode)
+            : EnumTParser({
+            {"Default", lyric_build::CacheMode::Default},
+            {"Persistent", lyric_build::CacheMode::Persistent},
+            {"InMemory", lyric_build::CacheMode::InMemory}}, defaultMode)
+        {}
+        CacheModeParser() : CacheModeParser(lyric_build::CacheMode::Default) {}
     };
 }
 
