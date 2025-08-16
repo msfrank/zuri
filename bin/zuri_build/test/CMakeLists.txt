@@ -5,9 +5,7 @@ include(GoogleTest)
 # define unit tests
 
 set(TEST_CASES
-    build_graph_tests.cpp
     target_builder_tests.cpp
-    target_cycle_detector_tests.cpp
     )
 
 # define test suite driver

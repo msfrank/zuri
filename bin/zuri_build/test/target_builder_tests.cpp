@@ -7,10 +7,9 @@
 #include <tempo_test/status_matchers.h>
 #include <tempo_utils/tempdir_maker.h>
 
-#include <zuri_build/build_graph.h>
+#include <zuri_build/collect_modules_task.h>
 #include <zuri_build/target_builder.h>
-
-#include "zuri_build/collect_modules_task.h"
+#include <zuri_tooling/build_graph.h>
 
 class TargetBuilderTests : public ::testing::Test {
 protected:
@@ -32,7 +31,8 @@ TEST_F(TargetBuilderTests, BuildLibrary)
 {
     lyric_test::TesterOptions testerOptions;
     testerOptions.taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
-    TU_RAISE_IF_NOT_OK (testerOptions.taskRegistry->registerTaskDomain("collect_modules", new_collect_modules_task));
+    TU_RAISE_IF_NOT_OK (testerOptions.taskRegistry->registerTaskDomain(
+        "collect_modules", zuri_build::new_collect_modules_task));
     lyric_test::LyricTester tester(testerOptions);
     TU_RAISE_IF_NOT_OK (tester.configure());
 
@@ -53,8 +53,8 @@ TEST_F(TargetBuilderTests, BuildLibrary)
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
     auto tempdir = installRoot->getTempdir();
 
@@ -64,7 +64,7 @@ TEST_F(TargetBuilderTests, BuildLibrary)
     std::shared_ptr<zuri_distributor::PackageCache> packageCache;
     TU_ASSIGN_OR_RAISE (packageCache, zuri_distributor::PackageCache::openOrCreate(tempdir, "pkgcache"));
 
-    TargetBuilder targetBuilder(buildGraph, builder, shortcutResolver, packageCache, installRoot->getTempdir());
+    zuri_build::TargetBuilder targetBuilder(buildGraph, builder, shortcutResolver, packageCache, installRoot->getTempdir());
 
     auto buildTargetResult = targetBuilder.buildTarget("lib1", {});
     ASSERT_THAT (buildTargetResult, tempo_test::IsResult());

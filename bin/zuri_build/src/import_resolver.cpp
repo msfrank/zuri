@@ -3,22 +3,24 @@
 #include <zuri_build/build_result.h>
 #include <zuri_distributor/package_fetcher.h>
 #include <zuri_distributor/static_package_resolver.h>
+#include <zuri_tooling/package_manager.h>
 
-ImportResolver::ImportResolver(
-    std::shared_ptr<zuri_tooling::PackageStore> packageStore,
-    std::shared_ptr<zuri_distributor::PackageCache> importPackageCache)
-    : m_packageStore(std::move(packageStore)),
-      m_importPackageCache(std::move(importPackageCache))
+zuri_build::ImportResolver::ImportResolver(std::shared_ptr<zuri_tooling::PackageManager> packageManager)
+    : m_packageManager(std::move(packageManager))
 {
-    TU_ASSERT (m_importPackageCache != nullptr);
+    TU_ASSERT (m_packageManager != nullptr);
 }
 
 tempo_utils::Status
-ImportResolver::configure()
+zuri_build::ImportResolver::configure()
 {
     if (m_selector != nullptr)
         return zuri_build::BuildStatus::forCondition(zuri_build::BuildCondition::kBuildInvariant,
             "import resolver is already configured");
+
+    m_dcache = m_packageManager->getDcache();
+    m_ucache = m_packageManager->getUcache();
+    m_icache = m_packageManager->getIcache();
 
     //auto httpResolver = std::make_shared<zuri_distributor::HttpPackageResolver>();
     std::shared_ptr<zuri_distributor::AbstractPackageResolver> resolver;
@@ -33,7 +35,7 @@ ImportResolver::configure()
 }
 
 tempo_utils::Status
-ImportResolver::addRequirement(
+zuri_build::ImportResolver::addRequirement(
     const zuri_packager::PackageSpecifier &requirement,
     std::string_view shortcut)
 {
@@ -45,7 +47,7 @@ struct PendingRequirement {
 };
 
 tempo_utils::Status
-ImportResolver::resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver)
+zuri_build::ImportResolver::resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver)
 {
     // resolve all transitive dependencies and generate the dependency ordering
     std::vector<zuri_distributor::Selection> dependencyOrder;
@@ -57,7 +59,7 @@ ImportResolver::resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver>
 
     // add each missing dependency to fetcher
     for (const auto &selection : dependencyOrder) {
-        if (!m_importPackageCache->containsPackage(selection.specifier)) {
+        if (!packageIsPresent(selection.specifier)) {
             TU_RETURN_IF_NOT_OK (fetcher.addPackage(selection.specifier, selection.url));
         }
     }
@@ -70,7 +72,7 @@ ImportResolver::resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver>
         if (fetcher.hasResult(selection.specifier)) {
             auto result = fetcher.getResult(selection.specifier);
             TU_RETURN_IF_NOT_OK (result.status);
-            m_importPackageCache->installPackage(result.path);
+            TU_RETURN_IF_STATUS (m_icache->installPackage(result.path));
         }
 
         // insert shortcut if specified
@@ -81,4 +83,16 @@ ImportResolver::resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver>
     }
 
     return {};
+}
+
+bool
+zuri_build::ImportResolver::packageIsPresent(const zuri_packager::PackageSpecifier &specifier) const
+{
+    if (m_icache->containsPackage(specifier))
+        return true;
+    if (m_ucache->containsPackage(specifier))
+        return true;
+    if (m_dcache->containsPackage(specifier))
+        return true;
+    return false;
 }

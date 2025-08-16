@@ -7,6 +7,7 @@ add_library(zuri_tooling SHARED)
 add_library(zuri::zuri_tooling ALIAS zuri_tooling)
 
 set(ZURI_TOOLING_INCLUDES
+    include/zuri_tooling/build_graph.h
     include/zuri_tooling/build_tool_config.h
     include/zuri_tooling/import_store.h
     include/zuri_tooling/package_manager.h
@@ -19,6 +20,7 @@ set(ZURI_TOOLING_INCLUDES
 set_target_properties(zuri_tooling PROPERTIES PUBLIC_HEADER "${ZURI_TOOLING_INCLUDES}")
 
 target_sources(zuri_tooling PRIVATE
+    src/build_graph.cpp
     src/build_tool_config.cpp
     src/import_store.cpp
     src/package_manager.cpp
@@ -27,6 +29,8 @@ target_sources(zuri_tooling PRIVATE
     src/tooling_conversions.cpp
     src/tooling_result.cpp
     src/zuri_config.cpp
+
+    include/zuri_tooling/internal/build_graph_impl.h
     )
 
 # set the library version
@@ -68,6 +72,8 @@ target_link_libraries(zuri_tooling
     tempo::tempo_utils
     zuri::zuri_distributor
     zuri::zuri_packager
+    PRIVATE
+    Boost::headers
     )
 
 # install targets
@@ -77,4 +83,4 @@ install(TARGETS zuri_tooling EXPORT zuri-targets
     )
 
 # add testing subdirectory
-#add_subdirectory(test)
+add_subdirectory(test)

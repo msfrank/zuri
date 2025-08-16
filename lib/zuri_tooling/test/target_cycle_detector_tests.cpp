@@ -5,10 +5,7 @@
 #include <tempo_config/config_utils.h>
 #include <tempo_test/result_matchers.h>
 #include <tempo_test/status_matchers.h>
-
-#include <zuri_build/build_graph.h>
-
-#include "zuri_build/target_cycle_detector.h"
+#include <zuri_tooling/build_graph.h>
 
 TEST(TargetCycleDetector, SingleTargetNoCycles) {
     tempo_config::ConfigNode targetsConfig;
@@ -25,15 +22,11 @@ TEST(TargetCycleDetector, SingleTargetNoCycles) {
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
-    auto createTargetCycleDetector = TargetCycleDetector::create(buildGraph);
-    ASSERT_THAT (createTargetCycleDetector, tempo_test::IsResult());
-
-    auto targetCycleDetector = createTargetCycleDetector.getResult();
-    ASSERT_FALSE (targetCycleDetector->hasCycles());
-    ASSERT_EQ (0, targetCycleDetector->numCycles());
+    ASSERT_FALSE (buildGraph->hasCycles());
+    ASSERT_EQ (0, buildGraph->numCycles());
 }
 
 TEST(TargetCycleDetector, MultipleIndependentTargetsNoCycles)
@@ -62,15 +55,11 @@ TEST(TargetCycleDetector, MultipleIndependentTargetsNoCycles)
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
-    auto createTargetCycleDetector = TargetCycleDetector::create(buildGraph);
-    ASSERT_THAT (createTargetCycleDetector, tempo_test::IsResult());
-
-    auto targetCycleDetector = createTargetCycleDetector.getResult();
-    ASSERT_FALSE (targetCycleDetector->hasCycles());
-    ASSERT_EQ (0, targetCycleDetector->numCycles());
+    ASSERT_FALSE (buildGraph->hasCycles());
+    ASSERT_EQ (0, buildGraph->numCycles());
 }
 
 TEST(TargetCycleDetector, MultipleTargetsADependsBDependsCNoCycles)
@@ -101,15 +90,11 @@ TEST(TargetCycleDetector, MultipleTargetsADependsBDependsCNoCycles)
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
-    auto createTargetCycleDetector = TargetCycleDetector::create(buildGraph);
-    ASSERT_THAT (createTargetCycleDetector, tempo_test::IsResult());
-
-    auto targetCycleDetector = createTargetCycleDetector.getResult();
-    ASSERT_FALSE (targetCycleDetector->hasCycles());
-    ASSERT_EQ (0, targetCycleDetector->numCycles());
+    ASSERT_FALSE (buildGraph->hasCycles());
+    ASSERT_EQ (0, buildGraph->numCycles());
 }
 
 TEST(TargetCycleDetector, MultipleTargetsADependsBAndCNoCycles)
@@ -140,15 +125,11 @@ TEST(TargetCycleDetector, MultipleTargetsADependsBAndCNoCycles)
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
-    auto createTargetCycleDetector = TargetCycleDetector::create(buildGraph);
-    ASSERT_THAT (createTargetCycleDetector, tempo_test::IsResult());
-
-    auto targetCycleDetector = createTargetCycleDetector.getResult();
-    ASSERT_FALSE (targetCycleDetector->hasCycles());
-    ASSERT_EQ (0, targetCycleDetector->numCycles());
+    ASSERT_FALSE (buildGraph->hasCycles());
+    ASSERT_EQ (0, buildGraph->numCycles());
 }
 
 TEST(TargetCycleDetector, CircularDependency)
@@ -180,17 +161,13 @@ TEST(TargetCycleDetector, CircularDependency)
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
-    auto createTargetCycleDetector = TargetCycleDetector::create(buildGraph);
-    ASSERT_THAT (createTargetCycleDetector, tempo_test::IsResult());
+    ASSERT_TRUE (buildGraph->hasCycles());
+    ASSERT_EQ (1, buildGraph->numCycles());
 
-    auto targetCycleDetector = createTargetCycleDetector.getResult();
-    ASSERT_TRUE (targetCycleDetector->hasCycles());
-    ASSERT_EQ (1, targetCycleDetector->numCycles());
-
-    auto cycle = *targetCycleDetector->cyclesBegin();
+    auto cycle = *buildGraph->cyclesBegin();
     TU_LOG_ERROR << "cycle: " << absl::StrJoin(cycle, " depends on ");
 }
 
@@ -223,17 +200,13 @@ TEST(TargetCycleDetector, MultipleCircularDependencies)
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
-    auto createTargetCycleDetector = TargetCycleDetector::create(buildGraph);
-    ASSERT_THAT (createTargetCycleDetector, tempo_test::IsResult());
+    std::vector targetCycles(buildGraph->cyclesBegin(), buildGraph->cyclesEnd());
+    ASSERT_TRUE (buildGraph->hasCycles());
+    ASSERT_EQ (2, buildGraph->numCycles());
 
-    auto targetCycleDetector = createTargetCycleDetector.getResult();
-    std::vector targetCycles(targetCycleDetector->cyclesBegin(), targetCycleDetector->cyclesEnd());
-    ASSERT_TRUE (targetCycleDetector->hasCycles());
-    ASSERT_EQ (2, targetCycleDetector->numCycles());
-
-    auto cycle = *targetCycleDetector->cyclesBegin();
+    auto cycle = *buildGraph->cyclesBegin();
     TU_LOG_ERROR << "cycle: " << absl::StrJoin(cycle, " depends on ");
 }

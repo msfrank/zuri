@@ -319,6 +319,7 @@ target_link_libraries(zuri_testsuite
     ZuriBuildTestSuite
     ZuriDistributorTestSuite
     ZuriPackagerTestSuite
+    ZuriToolingTestSuite
     ZuriStdPackageTestSuite
 )
 gtest_discover_tests(zuri_testsuite)

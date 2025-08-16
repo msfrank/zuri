@@ -3,8 +3,8 @@
 #include <zuri_build/target_builder.h>
 #include <zuri_build/target_writer.h>
 
-TargetBuilder::TargetBuilder(
-    std::shared_ptr<BuildGraph> buildGraph,
+zuri_build::TargetBuilder::TargetBuilder(
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph,
     lyric_build::LyricBuilder *builder,
     std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver,
     std::shared_ptr<zuri_distributor::PackageCache> targetPackageCache,
@@ -22,7 +22,7 @@ TargetBuilder::TargetBuilder(
 }
 
 tempo_utils::Result<std::filesystem::path>
-TargetBuilder::buildTarget(
+zuri_build::TargetBuilder::buildTarget(
     const std::string &targetName,
     const absl::flat_hash_map<std::string,std::string> &targetShortcuts)
 {
@@ -83,7 +83,7 @@ TargetBuilder::buildTarget(
 }
 
 tempo_utils::Result<std::filesystem::path>
-TargetBuilder::buildProgramTarget(
+zuri_build::TargetBuilder::buildProgramTarget(
     const std::string &targetName,
     std::shared_ptr<const zuri_tooling::TargetEntry> programTarget)
 {
@@ -93,7 +93,7 @@ TargetBuilder::buildProgramTarget(
 }
 
 tempo_utils::Result<std::filesystem::path>
-TargetBuilder::buildLibraryTarget(
+zuri_build::TargetBuilder::buildLibraryTarget(
     const std::string &targetName,
     std::shared_ptr<const zuri_tooling::TargetEntry> libraryTarget)
 {

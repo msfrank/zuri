@@ -15,19 +15,17 @@
 #include <tempo_config/parse_config.h>
 #include <tempo_config/time_conversions.h>
 #include <tempo_config/workspace_config.h>
-#include <zuri_build/build_graph.h>
 #include <zuri_build/collect_modules_task.h>
 #include <zuri_build/import_resolver.h>
 #include <zuri_build/target_builder.h>
 #include <zuri_build/zuri_build.h>
 #include <zuri_distributor/distributor_result.h>
-#include <zuri_distributor/package_cache.h>
-#include <zuri_distributor/package_cache_loader.h>
+#include <zuri_tooling/build_graph.h>
 #include <zuri_tooling/tooling_conversions.h>
 #include <zuri_tooling/zuri_config.h>
 
 tempo_utils::Status
-run_zuri_build(int argc, const char *argv[])
+zuri_build::zuri_build(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::current_path());
     tempo_config::PathParser workspaceConfigFileParser(std::filesystem::path{});
@@ -233,8 +231,8 @@ run_zuri_build(int argc, const char *argv[])
     auto buildToolConfig = zuriConfig->getBuildToolConfig();
 
     //
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RETURN (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RETURN (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
     // verify there is at least one target and all targets are defined
     if (targets.empty())
@@ -248,13 +246,12 @@ run_zuri_build(int argc, const char *argv[])
                 "unknown target '{}'", target);
     }
 
-    // open or create the import package cache
-    std::shared_ptr<zuri_distributor::PackageCache> importPackageCache;
-    TU_ASSIGN_OR_RETURN (importPackageCache, zuri_distributor::PackageCache::openOrCreate(
-        buildRoot, "imports"));
+    // construct and configure the package manager
+    auto packageManager = std::make_shared<zuri_tooling::PackageManager>(zuriConfig, buildRoot);
+    TU_RETURN_IF_NOT_OK (packageManager->configure());
 
     // construct and configure the import resolver
-    auto importResolver = std::make_shared<ImportResolver>(packageStore, importPackageCache);
+    auto importResolver = std::make_shared<ImportResolver>(packageManager);
     TU_RETURN_IF_NOT_OK (importResolver->configure());
 
     lyric_build::BuilderOptions builderOptions;
@@ -311,23 +308,15 @@ run_zuri_build(int argc, const char *argv[])
     taskRegistry->registerTaskDomain("collect_modules", new_collect_modules_task);
     builderOptions.taskRegistry = std::move(taskRegistry);
 
-    // open or create the target package cache
-    std::shared_ptr<zuri_distributor::PackageCache> targetPackageCache;
-    TU_ASSIGN_OR_RETURN (targetPackageCache, zuri_distributor::PackageCache::openOrCreate(
-        buildRoot, "targets"));
-
     // set the fallback loader to load from the package cache hierarchy
-    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
-    loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(targetPackageCache));
-    loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(importPackageCache));
-    builderOptions.fallbackLoader = std::make_shared<lyric_runtime::ChainLoader>();
+    builderOptions.fallbackLoader = packageManager->getLoader();
 
     // construct the builder based on workspace config and config overrides
     lyric_build::LyricBuilder builder(workspaceRoot, buildToolConfig->getTaskSettings(), builderOptions);
     TU_RETURN_IF_NOT_OK (builder.configure());
 
     // build each target (and its dependencies) in the order specified on the command line
-    TargetBuilder targetBuilder(buildGraph, &builder, shortcutResolver, targetPackageCache, installRoot);
+    TargetBuilder targetBuilder(buildGraph, &builder, shortcutResolver, packageManager->getTcache(), installRoot);
     for (const auto &target : targets) {
         TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target, targetShortcuts));
     }

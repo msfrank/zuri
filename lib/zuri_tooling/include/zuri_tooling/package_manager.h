@@ -16,6 +16,10 @@ namespace zuri_tooling {
 
         tempo_utils::Status configure();
 
+        std::shared_ptr<zuri_distributor::PackageCache> getDcache() const;
+        std::shared_ptr<zuri_distributor::PackageCache> getUcache() const;
+        std::shared_ptr<zuri_distributor::PackageCache> getIcache() const;
+        std::shared_ptr<zuri_distributor::PackageCache> getTcache() const;
         std::shared_ptr<lyric_runtime::AbstractLoader> getLoader() const;
 
     private:

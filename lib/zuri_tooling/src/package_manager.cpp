@@ -61,6 +61,30 @@ zuri_tooling::PackageManager::configure()
     return {};
 }
 
+std::shared_ptr<zuri_distributor::PackageCache>
+zuri_tooling::PackageManager::getDcache() const
+{
+    return m_dcache;
+}
+
+std::shared_ptr<zuri_distributor::PackageCache>
+zuri_tooling::PackageManager::getUcache() const
+{
+    return m_ucache;
+}
+
+std::shared_ptr<zuri_distributor::PackageCache>
+zuri_tooling::PackageManager::getIcache() const
+{
+    return m_icache;
+}
+
+std::shared_ptr<zuri_distributor::PackageCache>
+zuri_tooling::PackageManager::getTcache() const
+{
+    return m_tcache;
+}
+
 std::shared_ptr<lyric_runtime::AbstractLoader>
 zuri_tooling::PackageManager::getLoader() const
 {

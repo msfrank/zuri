@@ -15,7 +15,7 @@
 #include <tempo_utils/log_message.h>
 #include <zuri_build/collect_modules_task.h>
 
-CollectModulesTask::CollectModulesTask(
+zuri_build::CollectModulesTask::CollectModulesTask(
     const tempo_utils::UUID &generation,
     const lyric_build::TaskKey &key,
     std::shared_ptr<tempo_tracing::TraceSpan> span)
@@ -24,7 +24,7 @@ CollectModulesTask::CollectModulesTask(
 }
 
 tempo_utils::Status
-CollectModulesTask::configure(
+zuri_build::CollectModulesTask::configure(
     const lyric_build::TaskSettings *config,
     lyric_build::AbstractFilesystem *virtualFilesystem)
 {
@@ -58,7 +58,7 @@ CollectModulesTask::configure(
 }
 
 tempo_utils::Result<std::string>
-CollectModulesTask::configureTask(
+zuri_build::CollectModulesTask::configureTask(
     const lyric_build::TaskSettings *config,
     lyric_build::AbstractFilesystem *virtualFilesystem)
 {
@@ -68,13 +68,13 @@ CollectModulesTask::configureTask(
 }
 
 tempo_utils::Result<absl::flat_hash_set<lyric_build::TaskKey>>
-CollectModulesTask::checkDependencies()
+zuri_build::CollectModulesTask::checkDependencies()
 {
     return m_collectTargets;
 }
 
 tempo_utils::Status
-CollectModulesTask::collectModules(
+zuri_build::CollectModulesTask::collectModules(
     const std::string &taskHash,
     const absl::flat_hash_map<lyric_build::TaskKey,lyric_build::TaskState> &depStates,
     lyric_build::BuildState *buildState)
@@ -190,7 +190,7 @@ CollectModulesTask::collectModules(
 }
 
 Option<tempo_utils::Status>
-CollectModulesTask::runTask(
+zuri_build::CollectModulesTask::runTask(
     const std::string &taskHash,
     const absl::flat_hash_map<lyric_build::TaskKey,lyric_build::TaskState> &depStates,
     lyric_build::BuildState *buildState)
@@ -219,7 +219,7 @@ CollectModulesTask::runTask(
 }
 
 lyric_build::BaseTask *
-new_collect_modules_task(
+zuri_build::new_collect_modules_task(
     const tempo_utils::UUID &generation,
     const lyric_build::TaskKey &key,
     std::shared_ptr<tempo_tracing::TraceSpan> span)

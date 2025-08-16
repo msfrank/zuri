@@ -6,7 +6,7 @@
 #include <tempo_utils/memory_bytes.h>
 #include <zuri_build/target_writer.h>
 
-TargetWriter::TargetWriter(
+zuri_build::TargetWriter::TargetWriter(
     const std::filesystem::path &installRoot,
     const zuri_packager::PackageSpecifier &specifier)
     : m_installRoot(installRoot),
@@ -18,7 +18,7 @@ TargetWriter::TargetWriter(
 }
 
 tempo_utils::Status
-TargetWriter::configure()
+zuri_build::TargetWriter::configure()
 {
     if (m_priv == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
@@ -38,7 +38,7 @@ TargetWriter::configure()
 }
 
 void
-TargetWriter::setDescription(std::string_view description)
+zuri_build::TargetWriter::setDescription(std::string_view description)
 {
     if (m_priv == nullptr)
         return;
@@ -46,7 +46,7 @@ TargetWriter::setDescription(std::string_view description)
 }
 
 void
-TargetWriter::setOwner(std::string_view owner)
+zuri_build::TargetWriter::setOwner(std::string_view owner)
 {
     if (m_priv == nullptr)
         return;
@@ -54,7 +54,7 @@ TargetWriter::setOwner(std::string_view owner)
 }
 
 void
-TargetWriter::setHomepage(std::string_view homepage)
+zuri_build::TargetWriter::setHomepage(std::string_view homepage)
 {
     if (m_priv == nullptr)
         return;
@@ -63,7 +63,7 @@ TargetWriter::setHomepage(std::string_view homepage)
 
 void
 
-TargetWriter::setLicense(std::string_view license)
+zuri_build::TargetWriter::setLicense(std::string_view license)
 {
     if (m_priv == nullptr)
         return;
@@ -71,7 +71,7 @@ TargetWriter::setLicense(std::string_view license)
 }
 
 tempo_utils::Status
-TargetWriter::addDependency(const zuri_packager::PackageDependency &dependency)
+zuri_build::TargetWriter::addDependency(const zuri_packager::PackageDependency &dependency)
 {
     if (!dependency.isValid())
         return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kPackagerInvariant,
@@ -92,7 +92,7 @@ TargetWriter::addDependency(const zuri_packager::PackageDependency &dependency)
 using perms = std::filesystem::perms;
 
 tempo_utils::Status
-TargetWriter::writeModule(
+zuri_build::TargetWriter::writeModule(
     const tempo_utils::UrlPath &modulePath,
     const lyric_build::LyricMetadata &metadata,
     std::shared_ptr<const tempo_utils::ImmutableBytes> content)
@@ -129,7 +129,7 @@ TargetWriter::writeModule(
 }
 
 tempo_utils::Status
-TargetWriter::writePackageConfig()
+zuri_build::TargetWriter::writePackageConfig()
 {
     auto rootBuilder = tempo_config::startMap()
         .put("name", tempo_config::valueNode(m_specifier.getPackageName()))
@@ -164,7 +164,7 @@ TargetWriter::writePackageConfig()
 }
 
 tempo_utils::Result<std::filesystem::path>
-TargetWriter::writeTarget()
+zuri_build::TargetWriter::writeTarget()
 {
     if (m_priv == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,

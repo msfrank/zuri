@@ -4,8 +4,6 @@ set(CMAKE_AUTOMOC OFF)
 
 # build ZuriBuildRuntime static archive
 add_library(ZuriBuildRuntime STATIC
-    src/build_graph.cpp
-    include/zuri_build/build_graph.h
     src/build_result.cpp
     include/zuri_build/build_result.h
     src/collect_modules_task.cpp
@@ -14,8 +12,6 @@ add_library(ZuriBuildRuntime STATIC
     include/zuri_build/import_resolver.h
     src/target_builder.cpp
     include/zuri_build/target_builder.h
-    src/target_cycle_detector.cpp
-    include/zuri_build/target_cycle_detector.h
     src/target_writer.cpp
     include/zuri_build/target_writer.h
     src/zuri_build.cpp

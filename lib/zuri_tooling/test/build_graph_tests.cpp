@@ -5,7 +5,7 @@
 #include <tempo_test/result_matchers.h>
 #include <tempo_test/status_matchers.h>
 
-#include <zuri_build/build_graph.h>
+#include <zuri_tooling/build_graph.h>
 
 TEST(BuildGraph, ConfigureSingleTarget)
 {
@@ -24,7 +24,7 @@ TEST(BuildGraph, ConfigureSingleTarget)
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
 
-    auto createBuildGraph = BuildGraph::create(targetStore, importStore);
+    auto createBuildGraph = zuri_tooling::BuildGraph::create(targetStore, importStore);
     ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
 }
 
@@ -55,7 +55,7 @@ TEST(BuildGraph, ConfigureMultipleTargetsNoDependencies)
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
 
-    auto createBuildGraph = BuildGraph::create(targetStore, importStore);
+    auto createBuildGraph = zuri_tooling::BuildGraph::create(targetStore, importStore);
     ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
 }
 
@@ -88,7 +88,7 @@ TEST(BuildGraph, ConfigureMultipleTargetsADependsBDependsC)
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
 
-    auto createBuildGraph = BuildGraph::create(targetStore, importStore);
+    auto createBuildGraph = zuri_tooling::BuildGraph::create(targetStore, importStore);
     ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
 }
 
@@ -121,7 +121,7 @@ TEST(BuildGraph, ConfigureMultipleTargetsADependsBAndC)
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
 
-    auto createBuildGraph = BuildGraph::create(targetStore, importStore);
+    auto createBuildGraph = zuri_tooling::BuildGraph::create(targetStore, importStore);
     ASSERT_THAT (createBuildGraph, tempo_test::IsResult());
 }
 
@@ -154,8 +154,8 @@ TEST(BuildGraph, DetermineTargetBuildOrder)
     TU_RAISE_IF_NOT_OK (targetStore->configure());
     auto importStore = std::make_shared<zuri_tooling::ImportStore>(tempo_config::ConfigMap{});
     TU_RAISE_IF_NOT_OK (importStore->configure());
-    std::shared_ptr<BuildGraph> buildGraph;
-    TU_ASSIGN_OR_RAISE (buildGraph, BuildGraph::create(targetStore, importStore));
+    std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
+    TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
     auto calculateC = buildGraph->calculateBuildOrder("C");
     ASSERT_THAT (calculateC, tempo_test::IsResult());
