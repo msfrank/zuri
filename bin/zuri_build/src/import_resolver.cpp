@@ -1,6 +1,6 @@
 
 #include <zuri_build/import_resolver.h>
-#include <zuri_build/program_status.h>
+#include <zuri_build/build_result.h>
 #include <zuri_distributor/package_fetcher.h>
 #include <zuri_distributor/static_package_resolver.h>
 
@@ -17,7 +17,7 @@ tempo_utils::Status
 ImportResolver::configure()
 {
     if (m_selector != nullptr)
-        return ProgramStatus::forCondition(ProgramCondition::ProgramInvariant,
+        return zuri_build::BuildStatus::forCondition(zuri_build::BuildCondition::kBuildInvariant,
             "import resolver is already configured");
 
     //auto httpResolver = std::make_shared<zuri_distributor::HttpPackageResolver>();

@@ -1,0 +1,33 @@
+#ifndef ZURI_TOOLING_PACKAGE_MANAGER_H
+#define ZURI_TOOLING_PACKAGE_MANAGER_H
+
+#include <lyric_runtime/abstract_loader.h>
+#include <lyric_runtime/chain_loader.h>
+#include <tempo_utils/result.h>
+#include <zuri_distributor/package_cache.h>
+
+#include "zuri_config.h"
+
+namespace zuri_tooling {
+
+    class PackageManager {
+    public:
+        PackageManager(std::shared_ptr<ZuriConfig> zuriConfig, const std::filesystem::path &buildRoot = {});
+
+        tempo_utils::Status configure();
+
+        std::shared_ptr<lyric_runtime::AbstractLoader> getLoader() const;
+
+    private:
+        std::shared_ptr<ZuriConfig> m_zuriConfig;
+        std::filesystem::path m_buildRoot;
+
+        std::shared_ptr<zuri_distributor::PackageCache> m_dcache;
+        std::shared_ptr<zuri_distributor::PackageCache> m_ucache;
+        std::shared_ptr<zuri_distributor::PackageCache> m_icache;
+        std::shared_ptr<zuri_distributor::PackageCache> m_tcache;
+        std::shared_ptr<lyric_runtime::ChainLoader> m_loader;
+    };
+}
+
+#endif // ZURI_TOOLING_PACKAGE_MANAGER_H
