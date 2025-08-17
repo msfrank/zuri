@@ -10,8 +10,6 @@
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
-#include <tempo_config/enum_conversions.h>
-#include <tempo_config/merge_map.h>
 #include <tempo_config/parse_config.h>
 #include <tempo_config/time_conversions.h>
 #include <tempo_config/workspace_config.h>
@@ -101,7 +99,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
     tempo_command::OptionsHash options;
     tempo_command::ArgumentVector arguments;
 
-    // parse global options and get the subcommand
+    // parse global options and arguments
     auto status = tempo_command::parse_completely(tokens, groupings, options, arguments);
     if (status.notOk()) {
         tempo_command::CommandStatus commandStatus;
@@ -119,10 +117,10 @@ zuri_build::zuri_build(int argc, const char *argv[])
         }
     }
 
-    // initialize the global config from defaults
-    tempo_command::CommandConfig commandConfig = command_config_from_defaults(defaults);
+    // initialize the command config from defaults
+    tempo_command::CommandConfig commandConfig = tempo_command::command_config_from_defaults(defaults);
 
-    // convert option to config
+    // convert options to config
     TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
 
     // convert arguments to config
@@ -170,7 +168,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
     // initialize logging
     tempo_utils::init_logging(logging);
 
-    TU_LOG_INFO << "command config:\n" << tempo_command::command_config_to_string(commandConfig);
+    TU_LOG_V << "command config:\n" << tempo_command::command_config_to_string(commandConfig);
 
     // determine the workspace root
     std::filesystem::path workspaceRoot;
@@ -212,7 +210,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
 
     TU_LOG_V << "using distribution root " << distributionRoot;
 
-    // load the zuri config
+    // load zuri config
     std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
     if (workspaceConfigFile.empty()) {
         TU_ASSIGN_OR_RETURN (workspaceConfigFile, tempo_config::find_workspace_config(workspaceRoot));

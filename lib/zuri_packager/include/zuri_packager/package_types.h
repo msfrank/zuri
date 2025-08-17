@@ -6,6 +6,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include <tempo_utils/integer_types.h>
+#include <tempo_utils/url_authority.h>
 
 #define ZURI_PACKAGER_PACKAGE_FILE_SUFFIX                "zpk"
 #define ZURI_PACKAGER_PACKAGE_FILE_DOT_SUFFIX            ".zpk"
@@ -121,6 +122,7 @@ namespace zuri_packager {
         bool operator>(const PackageId &other) const;
 
         static PackageId fromString(std::string_view s);
+        static PackageId fromAuthority(const tempo_utils::UrlAuthority &authority);
 
         template <typename H>
         friend H AbslHashValue(H h, const PackageId &id) {

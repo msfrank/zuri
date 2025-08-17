@@ -147,6 +147,12 @@ zuri_packager::PackageId
 zuri_packager::PackageId::fromString(std::string_view s)
 {
     auto authority = tempo_utils::UrlAuthority::fromString(s);
+    return fromAuthority(authority);
+}
+
+zuri_packager::PackageId
+zuri_packager::PackageId::fromAuthority(const tempo_utils::UrlAuthority &authority)
+{
     if (!authority.isValid())
         return {};
     auto name = authority.getUsername();

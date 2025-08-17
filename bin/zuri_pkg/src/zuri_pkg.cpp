@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-#include <lyric_runtime/chain_loader.h>
 #include <tempo_command/command_config.h>
 #include <tempo_command/command_help.h>
 #include <tempo_command/command_parser.h>
@@ -8,29 +7,26 @@
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/workspace_config.h>
 #include <tempo_utils/uuid.h>
-#include <zuri_run/read_eval_print_loop.h>
-#include <zuri_run/zuri_run.h>
+#include <zuri_pkg/zuri_pkg.h>
 #include <zuri_tooling/zuri_config.h>
 
+#include "zuri_pkg/pkg_install.h"
+
 tempo_utils::Status
-zuri_run::zuri_run(int argc, const char *argv[])
+zuri_pkg::zuri_pkg(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::path{});
     tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
-    tempo_config::PathParser sessionRootParser(std::filesystem::path{});
     tempo_config::BooleanParser colorizeOutputParser(false);
     tempo_config::IntegerParser verboseParser(0);
     tempo_config::IntegerParser quietParser(0);
     tempo_config::BooleanParser silentParser(false);
-
-    tempo_config::StringParser sessionIdParser(std::string{});
 
     std::vector<tempo_command::Default> defaults = {
         {"workspaceRoot", workspaceRootParser.getDefault(),
             "Load config from workspace", "DIR"},
         {"distributionRoot", distributionRootParser.getDefault(),
             "Specify an alternative distribution root directory", "DIR"},
-        {"sessionId", {}, "Resume the specified session", "ID"},
         {"colorizeOutput", colorizeOutputParser.getDefault(),
             "Display colorized output"},
         {"verbose", verboseParser.getDefault(),
@@ -45,7 +41,6 @@ zuri_run::zuri_run(int argc, const char *argv[])
     const std::vector<tempo_command::Grouping> groupings = {
         {"workspaceRoot", {"-W", "--workspace-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"distributionRoot", {"--distribution-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"sessionId", {"-r", "--resume-session"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
@@ -54,18 +49,24 @@ zuri_run::zuri_run(int argc, const char *argv[])
         {"version", {"--version"}, tempo_command::GroupingType::VERSION_FLAG},
     };
 
+    enum Subcommands {
+        Install,
+        Remove,
+        Cache,
+        NUM_SUBCOMMANDS,
+    };
+    std::vector<tempo_command::Subcommand> subcommands(NUM_SUBCOMMANDS);
+    subcommands[Install] = {"install", "Install packages and their dependencies"};
+    subcommands[Remove] = {"remove", "Remove packages"};
+    subcommands[Cache] = {"cache", "Manage the package caches"};
+
     const std::vector<tempo_command::Mapping> optMappings = {
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "distributionRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "sessionId"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
         {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
         {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "silent"},
-    };
-
-    std::vector<tempo_command::Mapping> argMappings = {
-        {tempo_command::MappingType::ANY_INSTANCES, "arguments"},
     };
 
     // parse argv array into a vector of tokens
@@ -73,19 +74,19 @@ zuri_run::zuri_run(int argc, const char *argv[])
     TU_ASSIGN_OR_RETURN (tokens, tempo_command::tokenize_argv(argc - 1, &argv[1]));
 
     tempo_command::OptionsHash options;
-    tempo_command::ArgumentVector arguments;
+    int selected;
 
-    // parse options and arguments
-    auto status = tempo_command::parse_completely(tokens, groupings, options, arguments);
+    // parse options and get the subcommand
+    auto status = tempo_command::parse_until_subcommand(tokens, subcommands, groupings, selected, options);
     if (status.notOk()) {
         tempo_command::CommandStatus commandStatus;
         if (!status.convertTo(commandStatus))
             return status;
         switch (commandStatus.getCondition()) {
             case tempo_command::CommandCondition::kHelpRequested:
-                display_help_and_exit({"zuri-run"},
-                    "Run a Zuri program",
-                    {}, groupings, optMappings, argMappings, defaults);
+                display_help_and_exit({"zuri-pkg"},
+                    "Manage Zuri packages",
+                    subcommands, groupings, optMappings, {}, defaults);
             case tempo_command::CommandCondition::kVersionRequested:
                 tempo_command::display_version_and_exit(PROJECT_VERSION);
             default:
@@ -94,13 +95,10 @@ zuri_run::zuri_run(int argc, const char *argv[])
     }
 
     // initialize the command config from defaults
-    tempo_command::CommandConfig commandConfig = tempo_command::command_config_from_defaults(defaults);
+    tempo_command::CommandConfig commandConfig = command_config_from_defaults(defaults);
 
     // convert options to config
     TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
-
-    // convert arguments to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(arguments, argMappings, commandConfig));
 
     // construct command map
     tempo_config::ConfigMap commandMap(commandConfig);
@@ -151,20 +149,10 @@ zuri_run::zuri_run(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceRoot, workspaceRootParser,
         commandConfig, "workspaceRoot"));
 
-    // determine the session root
-    std::filesystem::path sessionRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionRoot, sessionRootParser,
-        commandConfig, "sessionRoot"));
-
     // determine the distribution root
     std::filesystem::path distributionRoot;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(distributionRoot, distributionRootParser,
         commandConfig, "distributionRoot"));
-
-    // determine the session id
-    std::string sessionIdString;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionIdString, sessionIdParser,
-        commandConfig, "sessionId"));
 
     // if distribution root is relative, then make it absolute
     if (!distributionRoot.empty()) {
@@ -188,49 +176,13 @@ zuri_run::zuri_run(int argc, const char *argv[])
             {}, distributionRoot));
     }
 
-    auto buildToolConfig = zuriConfig->getBuildToolConfig();
-
-    // construct the fragment store
-    auto fragmentStore = std::make_shared<FragmentStore>();
-
-    // initialize the parser
-    lyric_parser::ParserOptions parserOptions;
-    auto parser = std::make_unique<lyric_parser::LyricParser>(parserOptions);
-
-    // construct the loader chain used by the builder and interpreter
-    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
-    loaderChain.push_back(fragmentStore);
-    auto applicationLoader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
-
-    // construct the builder used to compile fragments
-    lyric_build::BuilderOptions builderOptions;
-    builderOptions.cacheMode = lyric_build::CacheMode::InMemory;
-    builderOptions.fallbackLoader = applicationLoader;
-    builderOptions.virtualFilesystem = fragmentStore;
-    auto builder = std::make_unique<lyric_build::LyricBuilder>(
-        std::filesystem::current_path(), buildToolConfig->getTaskSettings(), builderOptions);
-
-    // initialize the builder
-    TU_RETURN_IF_NOT_OK (builder->configure());
-
-    // construct the interpreter state
-    std::shared_ptr<lyric_runtime::InterpreterState> interpreterState;
-    TU_ASSIGN_OR_RETURN(interpreterState, lyric_runtime::InterpreterState::create(
-        builder->getBootstrapLoader(), applicationLoader));
-
-    // construct the session
-    if (sessionIdString.empty()) {
-        sessionIdString = tempo_utils::UUID::randomUUID().toString();
+    switch (selected) {
+        case Install:
+            return pkg_install(tokens);
+        case Remove:
+        case Cache:
+        default:
+            return tempo_command::CommandStatus::forCondition(
+                tempo_command::CommandCondition::kCommandInvariant, "unexpected subcommand");
     }
-    auto ephemeralSession = std::make_shared<EphemeralSession>(sessionIdString,
-        std::move(parser), std::move(builder), fragmentStore, interpreterState);
-
-    // construct and configure the repl
-    zuri_run::ReadEvalPrintLoop repl(ephemeralSession);
-    TU_RETURN_IF_NOT_OK (repl.configure());
-
-    // hand over control to the repl
-    TU_RETURN_IF_NOT_OK (repl.run());
-
-    return repl.cleanup();
 }
