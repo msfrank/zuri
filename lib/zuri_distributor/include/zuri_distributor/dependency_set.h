@@ -4,7 +4,7 @@
 #include <tempo_utils/result.h>
 #include <tempo_utils/status.h>
 #include <tempo_utils/url.h>
-#include <zuri_packager/package_dependency.h>
+#include <zuri_packager/package_specifier.h>
 #include <zuri_packager/package_types.h>
 
 namespace zuri_distributor {

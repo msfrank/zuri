@@ -19,8 +19,6 @@ namespace zuri_distributor {
 
         tempo_utils::Result<Option<std::filesystem::path>> resolvePackage(
             const zuri_packager::PackageSpecifier &specifier) const;
-        tempo_utils::Result<Option<std::filesystem::path>> resolvePackage(
-            const zuri_packager::PackageDependency &dependency) const;
 
         tempo_utils::Result<std::filesystem::path> installPackage(const std::filesystem::path &packagePath);
         tempo_utils::Result<std::filesystem::path> installPackage(std::shared_ptr<zuri_packager::PackageReader> reader);

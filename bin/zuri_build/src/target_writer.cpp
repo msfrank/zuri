@@ -71,20 +71,20 @@ zuri_build::TargetWriter::setLicense(std::string_view license)
 }
 
 tempo_utils::Status
-zuri_build::TargetWriter::addDependency(const zuri_packager::PackageDependency &dependency)
+zuri_build::TargetWriter::addDependency(const zuri_packager::PackageSpecifier &specifier)
 {
-    if (!dependency.isValid())
+    if (!specifier.isValid())
         return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kPackagerInvariant,
             "invalid dependency");
     if (m_priv == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is finished");
 
-    auto depId = absl::StrCat(dependency.getName(), "@", dependency.getDomain());
+    auto depId = specifier.getPackageId();
     if (m_priv->dependencies.contains(depId))
         return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kPackagerInvariant,
-            "dependency already exists for '{}'", depId);
-    m_priv->dependencies[depId] = dependency;
+            "dependency already exists for '{}'", depId.toString());
+    m_priv->dependencies[depId] = specifier.getPackageVersion();
 
     return {};
 }
@@ -152,7 +152,9 @@ zuri_build::TargetWriter::writePackageConfig()
     if (!m_priv->dependencies.empty()) {
         auto dependenciesBuilder = tempo_config::startMap();
         for (const auto &dep : m_priv->dependencies) {
-            dependenciesBuilder = dependenciesBuilder.put(dep.first, dep.second.toNode());
+            dependenciesBuilder = dependenciesBuilder.put(
+                dep.first.toString(),
+                tempo_config::valueNode(dep.second.toString()));
         }
         rootBuilder = rootBuilder.put("dependencies", dependenciesBuilder.buildNode());
     }

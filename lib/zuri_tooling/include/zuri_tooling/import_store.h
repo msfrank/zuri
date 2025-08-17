@@ -3,7 +3,7 @@
 
 #include <lyric_build/build_types.h>
 #include <tempo_utils/status.h>
-#include <zuri_packager/package_requirement.h>
+#include <zuri_packager/package_specifier.h>
 
 namespace zuri_tooling {
 

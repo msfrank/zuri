@@ -24,7 +24,6 @@ namespace zuri_test {
         std::shared_ptr<lyric_runtime::AbstractLoader> bootstrapLoader = {};
         std::shared_ptr<lyric_runtime::AbstractLoader> fallbackLoader = {};
         lyric_build::TaskSettings taskSettings = {};
-        absl::flat_hash_map<std::string,zuri_packager::PackageDependency> dependencyImports;
         std::filesystem::path existingPackageCache = {};
         std::vector<std::filesystem::path> localPackages;
         absl::flat_hash_map<
