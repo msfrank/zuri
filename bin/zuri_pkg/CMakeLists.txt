@@ -4,6 +4,8 @@ set(CMAKE_AUTOMOC OFF)
 
 # build ZuriPkgRuntime static archive
 add_library(ZuriPkgRuntime STATIC
+    include/zuri_pkg/install_solver.h
+    src/install_solver.cpp
     include/zuri_pkg/pkg_install.h
     src/pkg_install.cpp
     include/zuri_pkg/pkg_result.h

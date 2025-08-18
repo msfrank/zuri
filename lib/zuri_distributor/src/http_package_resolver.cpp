@@ -330,7 +330,7 @@ zuri_distributor::HttpPackageResolver::getPackage(
     return package;
 }
 
-std::shared_ptr<zuri_distributor::HttpPackageResolver>
+tempo_utils::Result<std::shared_ptr<zuri_distributor::HttpPackageResolver>>
 zuri_distributor::HttpPackageResolver::create(const HttpPackageResolverOptions &options)
 {
     auto priv = std::make_unique<Priv>();

@@ -2,8 +2,11 @@
 #include <curl/curl.h>
 
 #include <tempo_utils/file_appender.h>
+#include <tempo_utils/tempfile_maker.h>
+#include <tempo_utils/uuid.h>
 #include <zuri_distributor/distributor_result.h>
 #include <zuri_distributor/package_fetcher.h>
+#include <zuri_packager/package_reader.h>
 
 struct Manager;
 
@@ -12,8 +15,8 @@ struct Manager;
  */
 struct Fetch {
     // config
-    zuri_packager::PackageSpecifier specifier;
     tempo_utils::Url url;
+    std::string id;
     Manager *manager = nullptr;
 
     // state
@@ -40,7 +43,7 @@ struct Manager {
 
     // state
     CURLM *multi = nullptr;
-    absl::flat_hash_map<zuri_packager::PackageSpecifier,std::unique_ptr<Fetch>> fetches;
+    absl::flat_hash_map<std::string,std::unique_ptr<Fetch>> fetches;
     curl_off_t totalBytesExpected = 0;
     curl_off_t totalBytesFetched = 0;
 
@@ -93,9 +96,14 @@ write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 
     // if appender doesn't exist then create one
     if (fetch->appender == nullptr) {
-        auto packagePath = fetch->specifier.toPackagePath(fetch->manager->downloadRoot);
+        // create a unique temporary file
+        tempo_utils::TempfileMaker fetchFile(fetch->manager->downloadRoot, "fetch.XXXXXXXX", std::string_view{});
+        if (!fetchFile.isValid()) {
+            fetch->status = fetchFile.getStatus();
+            return CURL_WRITEFUNC_ERROR;
+        }
         fetch->appender = std::make_unique<tempo_utils::FileAppender>(
-            packagePath, tempo_utils::FileAppenderMode::CREATE_OR_OVERWRITE);
+            fetchFile.getTempfile(), tempo_utils::FileAppenderMode::CREATE_OR_OVERWRITE);
         if (!fetch->appender->isValid()) {
             fetch->status = fetch->appender->getStatus();
             fetch->appender.reset();
@@ -175,13 +183,19 @@ zuri_distributor::PackageFetcher::configure()
 }
 
 tempo_utils::Status
-zuri_distributor::PackageFetcher::addPackage(
-    const zuri_packager::PackageSpecifier &specifier,
-    const tempo_utils::Url &url)
+zuri_distributor::PackageFetcher::requestFile(
+    const tempo_utils::Url &url,
+    std::string_view id)
 {
     if (m_priv == nullptr)
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "package fetcher is not configured");
+    if (!url.isValid())
+        return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
+            "invalid request url '{}'", url.toString());
+    if (id.empty())
+        return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
+            "invalid request id");
 
     switch (url.getKnownScheme()) {
         case tempo_utils::KnownUrlScheme::File:
@@ -190,16 +204,16 @@ zuri_distributor::PackageFetcher::addPackage(
             break;
         default:
             return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-                "invalid url scheme '{}' for package {}", url.schemeView(), specifier.toString());
+                "invalid url scheme '{}'", url.schemeView());
     }
 
-    if (m_priv->manager.fetches.contains(specifier))
+    if (m_priv->manager.fetches.contains(id))
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-            "package {} is already requested", specifier.toString());
+            "file id {} is already requested", id);
 
     auto fetch = std::make_unique<Fetch>();
-    fetch->specifier = specifier;
     fetch->url = url;
+    fetch->id = id;
     fetch->manager = &m_priv->manager;
 
     fetch->handle = curl_easy_init();
@@ -220,9 +234,18 @@ zuri_distributor::PackageFetcher::addPackage(
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "curl_multi_add_handle failed: {}", curl_multi_strerror(ret));
 
-    m_priv->manager.fetches[specifier] = std::move(fetch);
+    m_priv->manager.fetches[id] = std::move(fetch);
 
     return {};
+}
+
+tempo_utils::Result<std::string>
+zuri_distributor::PackageFetcher::requestFile(const tempo_utils::Url &url)
+{
+    auto uuid = tempo_utils::UUID::randomUUID();
+    auto id = uuid.toString();
+    TU_RETURN_IF_NOT_OK (requestFile(url, id));
+    return id;
 }
 
 inline tempo_utils::Status
@@ -246,8 +269,25 @@ poll_until_complete(Manager &manager)
     return {};
 }
 
+static tempo_utils::Status
+rename_file(
+    const std::filesystem::path &downloadRoot,
+    Fetch *fetchPtr,
+    zuri_distributor::FetchResult &result)
+{
+    auto fetchPath = fetchPtr->appender->getAbsolutePath();
+    std::shared_ptr<zuri_packager::PackageReader> reader;
+    TU_ASSIGN_OR_RETURN (reader, zuri_packager::PackageReader::open(fetchPath));
+    zuri_packager::PackageSpecifier specifier;
+    TU_ASSIGN_OR_RETURN (specifier, reader->readPackageSpecifier());
+    auto packagePath = specifier.toPackagePath(downloadRoot);
+    std::filesystem::rename(fetchPath, packagePath);
+    result.path = packagePath;
+    return {};
+}
+
 tempo_utils::Status
-zuri_distributor::PackageFetcher::fetchPackages()
+zuri_distributor::PackageFetcher::fetchFiles()
 {
     if (m_priv == nullptr)
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
@@ -270,40 +310,42 @@ zuri_distributor::PackageFetcher::fetchPackages()
             continue;
 
         FetchResult result;
+        result.url = fetchPtr->url;
+        result.id = fetchPtr->id;
         if (fetchPtr->status.isOk()) {
-            result.path = fetchPtr->appender->getAbsolutePath();
+            result.status = rename_file(m_priv->manager.downloadRoot, fetchPtr, result);
         } else {
             result.status = fetchPtr->status;
         }
 
-        m_results[fetchPtr->specifier] = std::move(result);
+        m_results[fetchPtr->id] = std::move(result);
     }
 
     return {};
 }
 
 bool
-zuri_distributor::PackageFetcher::hasResult(const zuri_packager::PackageSpecifier &specifier) const
+zuri_distributor::PackageFetcher::hasResult(std::string_view id) const
 {
-    return m_results.contains(specifier);
+    return m_results.contains(id);
 }
 
 zuri_distributor::FetchResult
-zuri_distributor::PackageFetcher::getResult(const zuri_packager::PackageSpecifier &specifier) const
+zuri_distributor::PackageFetcher::getResult(std::string_view id) const
 {
-    auto entry = m_results.find(specifier);
+    auto entry = m_results.find(id);
     if (entry != m_results.cend())
         return entry->second;
     return {};
 }
 
-absl::flat_hash_map<zuri_packager::PackageSpecifier,zuri_distributor::FetchResult>::const_iterator
+absl::flat_hash_map<std::string,zuri_distributor::FetchResult>::const_iterator
 zuri_distributor::PackageFetcher::resultsBegin() const
 {
     return m_results.cbegin();
 }
 
-absl::flat_hash_map<zuri_packager::PackageSpecifier,zuri_distributor::FetchResult>::const_iterator
+absl::flat_hash_map<std::string,zuri_distributor::FetchResult>::const_iterator
 zuri_distributor::PackageFetcher::resultsEnd() const
 {
     return m_results.cend();

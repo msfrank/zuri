@@ -9,7 +9,8 @@ namespace zuri_distributor {
 
     class HttpPackageResolver : public AbstractPackageResolver {
     public:
-        static std::shared_ptr<HttpPackageResolver> create(const HttpPackageResolverOptions &options = {});
+        static tempo_utils::Result<std::shared_ptr<HttpPackageResolver>> create(
+            const HttpPackageResolverOptions &options = {});
 
         tempo_utils::Result<RepositoryDescriptor> getRepository(std::string_view packageDomain) override;
 

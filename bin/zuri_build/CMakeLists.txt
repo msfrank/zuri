@@ -8,8 +8,8 @@ add_library(ZuriBuildRuntime STATIC
     include/zuri_build/build_result.h
     src/collect_modules_task.cpp
     include/zuri_build/collect_modules_task.h
-    src/import_resolver.cpp
-    include/zuri_build/import_resolver.h
+    src/import_solver.cpp
+    include/zuri_build/import_solver.h
     src/target_builder.cpp
     include/zuri_build/target_builder.h
     src/target_writer.cpp

@@ -14,7 +14,7 @@
 #include <tempo_config/time_conversions.h>
 #include <tempo_config/workspace_config.h>
 #include <zuri_build/collect_modules_task.h>
-#include <zuri_build/import_resolver.h>
+#include <zuri_build/import_solver.h>
 #include <zuri_build/target_builder.h>
 #include <zuri_build/zuri_build.h>
 #include <zuri_distributor/distributor_result.h>
@@ -249,8 +249,8 @@ zuri_build::zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK (packageManager->configure());
 
     // construct and configure the import resolver
-    auto importResolver = std::make_shared<ImportResolver>(packageManager);
-    TU_RETURN_IF_NOT_OK (importResolver->configure());
+    auto importSolver = std::make_shared<ImportSolver>(packageManager);
+    TU_RETURN_IF_NOT_OK (importSolver->configure());
 
     lyric_build::BuilderOptions builderOptions;
 
@@ -289,7 +289,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
                 break;
             }
             case zuri_tooling::ImportEntryType::Requirement:
-                TU_RETURN_IF_NOT_OK (importResolver->addRequirement(importEntry->requirementSpecifier, importName));
+                TU_RETURN_IF_NOT_OK (importSolver->addImport(importEntry->requirementSpecifier, importName));
                 break;
             case zuri_tooling::ImportEntryType::Package:
             default:
@@ -299,7 +299,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
         }
     }
 
-    TU_RETURN_IF_NOT_OK (importResolver->resolveImports(shortcutResolver));
+    TU_RETURN_IF_NOT_OK (importSolver->resolveImports(shortcutResolver));
 
     // create task registry and register build task domains
     auto taskRegistry = std::make_shared<lyric_build::TaskRegistry>();

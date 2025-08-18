@@ -17,6 +17,7 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::path{});
     tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
+    tempo_config::BooleanParser manageSystemParser(false);
     tempo_config::BooleanParser colorizeOutputParser(false);
     tempo_config::IntegerParser verboseParser(0);
     tempo_config::IntegerParser quietParser(0);
@@ -27,6 +28,8 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
             "Load config from workspace", "DIR"},
         {"distributionRoot", distributionRootParser.getDefault(),
             "Specify an alternative distribution root directory", "DIR"},
+        {"manageSystem", manageSystemParser.getDefault(),
+            "Manage system cache"},
         {"colorizeOutput", colorizeOutputParser.getDefault(),
             "Display colorized output"},
         {"verbose", verboseParser.getDefault(),
@@ -41,6 +44,7 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
     const std::vector<tempo_command::Grouping> groupings = {
         {"workspaceRoot", {"-W", "--workspace-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"distributionRoot", {"--distribution-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"manageSystem", {"-S", "--manage-system"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
@@ -63,6 +67,7 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
     const std::vector<tempo_command::Mapping> optMappings = {
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "distributionRoot"},
+        {tempo_command::MappingType::TRUE_IF_INSTANCE, "manageSystem"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
         {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
         {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
@@ -135,6 +140,10 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
         }
     }
 
+    bool manageSystem;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(manageSystem, manageSystemParser,
+        commandConfig, "manageSystem"));
+
     bool colorizeOutput;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(colorizeOutput, colorizeOutputParser,
         commandConfig, "colorizeOutput"));
@@ -178,7 +187,7 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
 
     switch (selected) {
         case Install:
-            return pkg_install(tokens);
+            return pkg_install(distributionRoot, manageSystem, tokens);
         case Remove:
         case Cache:
         default:

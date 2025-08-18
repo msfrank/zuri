@@ -2,11 +2,20 @@
 #include <tempo_command/command_help.h>
 #include <tempo_command/command_parser.h>
 #include <tempo_config/abstract_converter.h>
+#include <tempo_config/base_conversions.h>
 #include <tempo_config/config_result.h>
 #include <tempo_config/container_conversions.h>
+#include <tempo_utils/result.h>
+#include <zuri_distributor/abstract_package_resolver.h>
+#include <zuri_distributor/dependency_selector.h>
+#include <zuri_distributor/http_package_resolver.h>
+#include <zuri_distributor/package_fetcher.h>
 #include <zuri_packager/package_specifier.h>
 #include <zuri_packager/package_types.h>
 #include <zuri_pkg/pkg_install.h>
+#include <zuri_pkg/pkg_result.h>
+
+#include "zuri_pkg/install_solver.h"
 
 struct PackageSpecifierOrIdOrUrl {
     enum class Type {
@@ -63,19 +72,27 @@ public:
 };
 
 tempo_utils::Status
-zuri_pkg::pkg_install(tempo_command::TokenVector &tokens)
+zuri_pkg::pkg_install(
+    const std::filesystem::path &distributionRoot,
+    bool manageSystem,
+    tempo_command::TokenVector &tokens)
 {
     PackageSpecifierOrIdOrUrlParser packageSpecifierOrIdOrUrlParser;
     tempo_config::SeqTParser packagesParser(&packageSpecifierOrIdOrUrlParser, {});
+    tempo_config::BooleanParser dryRunParser(false);
 
     std::vector<tempo_command::Default> defaults = {
+        {"dryRun", dryRunParser.getDefault(),
+            "Display what would be installed but make no changes"},
         {"packages", {}, "Packages to install", "PACKAGE"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
+        {"dryRun", {"--dry-run"}, tempo_command::GroupingType::NO_ARGUMENT},
     };
 
     const std::vector<tempo_command::Mapping> optMappings = {
+        {tempo_command::MappingType::TRUE_IF_INSTANCE, "dryRun"},
     };
 
     std::vector<tempo_command::Mapping> argMappings = {
@@ -115,6 +132,22 @@ zuri_pkg::pkg_install(tempo_command::TokenVector &tokens)
     // construct command map
     tempo_config::ConfigMap commandMap(commandConfig);
 
+    // load zuri config
+    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
+    TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(
+        {}, distributionRoot));
+
+    // construct and configure the package manager
+    auto packageManager = std::make_shared<zuri_tooling::PackageManager>(zuriConfig);
+    TU_RETURN_IF_NOT_OK (packageManager->configure());
+
+    bool dryRun;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(dryRun, dryRunParser,
+        commandConfig, "dryRun"));
+
+    InstallSolver installSolver(packageManager, manageSystem, dryRun);
+    TU_RETURN_IF_NOT_OK (installSolver.configure());
+
     std::vector<PackageSpecifierOrIdOrUrl> packages;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(packages, packagesParser,
         commandConfig, "packages"));
@@ -122,18 +155,18 @@ zuri_pkg::pkg_install(tempo_command::TokenVector &tokens)
     for (const auto &package : packages) {
         switch (package.type) {
             case PackageSpecifierOrIdOrUrl::Type::Id:
-                TU_CONSOLE_OUT << "installing latest version of " << package.packageId.toString();
+                TU_RETURN_IF_NOT_OK (installSolver.addPackage(package.packageId));
                 break;
             case PackageSpecifierOrIdOrUrl::Type::Specifier:
-                TU_CONSOLE_OUT << "installing " << package.packageSpecifier.toString();
+                TU_RETURN_IF_NOT_OK (installSolver.addPackage(package.packageSpecifier));
                 break;
             case PackageSpecifierOrIdOrUrl::Type::Url:
-                TU_CONSOLE_OUT << "installing from url " << package.packageUrl.toString();
+                TU_RETURN_IF_NOT_OK (installSolver.addPackage(package.packageUrl));
                 break;
             default:
                 break;
         }
     }
 
-    return {};
+    return installSolver.installPackages();
 }

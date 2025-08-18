@@ -96,6 +96,7 @@ zuri_tooling::BuildGraph::BuildGraph(
       m_importStore(std::move(importStore)),
       m_requestedPackages(std::move(requestedPackages)),
       m_requestedRequirements(std::move(requestedRequirements)),
+      m_targetCycles(std::move(targetCycles)),
       m_priv(std::move(priv))
 {
     TU_ASSERT (m_targetStore != nullptr);

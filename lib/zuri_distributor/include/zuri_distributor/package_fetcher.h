@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <memory>
 
+#include <tempo_utils/result.h>
 #include <tempo_utils/status.h>
 #include <zuri_packager/package_specifier.h>
 
@@ -21,6 +22,8 @@ namespace zuri_distributor {
     };
 
     struct FetchResult {
+        tempo_utils::Url url;
+        std::string id;
         std::filesystem::path path;
         tempo_utils::Status status;
     };
@@ -31,13 +34,15 @@ namespace zuri_distributor {
         ~PackageFetcher();
 
         tempo_utils::Status configure();
-        tempo_utils::Status addPackage(const zuri_packager::PackageSpecifier &specifier, const tempo_utils::Url &url);
-        tempo_utils::Status fetchPackages();
 
-        bool hasResult(const zuri_packager::PackageSpecifier &specifier) const;
-        FetchResult getResult(const zuri_packager::PackageSpecifier &specifier) const;
-        absl::flat_hash_map<zuri_packager::PackageSpecifier,FetchResult>::const_iterator resultsBegin() const;
-        absl::flat_hash_map<zuri_packager::PackageSpecifier,FetchResult>::const_iterator resultsEnd() const;
+        tempo_utils::Status requestFile(const tempo_utils::Url &url, std::string_view id);
+        tempo_utils::Result<std::string> requestFile(const tempo_utils::Url &url);
+        tempo_utils::Status fetchFiles();
+
+        bool hasResult(std::string_view id) const;
+        FetchResult getResult(std::string_view id) const;
+        absl::flat_hash_map<std::string,FetchResult>::const_iterator resultsBegin() const;
+        absl::flat_hash_map<std::string,FetchResult>::const_iterator resultsEnd() const;
         int numResults() const;
 
     private:
@@ -45,7 +50,7 @@ namespace zuri_distributor {
 
         struct Priv;
         std::unique_ptr<Priv> m_priv;
-        absl::flat_hash_map<zuri_packager::PackageSpecifier,FetchResult> m_results;
+        absl::flat_hash_map<std::string,FetchResult> m_results;
     };
 }
 

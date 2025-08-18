@@ -5,7 +5,10 @@
 #include <tempo_utils/status.h>
 
 namespace zuri_pkg {
-    tempo_utils::Status pkg_install(tempo_command::TokenVector &tokens);
+    tempo_utils::Status pkg_install(
+        const std::filesystem::path &distributionRoot,
+        bool manageSystem,
+        tempo_command::TokenVector &tokens);
 }
 
 #endif // ZURI_PKG_PKG_INSTALL_H

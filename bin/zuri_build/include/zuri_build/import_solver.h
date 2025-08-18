@@ -1,5 +1,5 @@
-#ifndef ZURI_BUILD_IMPORT_RESOLVER_H
-#define ZURI_BUILD_IMPORT_RESOLVER_H
+#ifndef ZURI_BUILD_IMPORT_SOLVER_H
+#define ZURI_BUILD_IMPORT_SOLVER_H
 
 #include <lyric_importer/shortcut_resolver.h>
 #include <zuri_distributor/abstract_package_resolver.h>
@@ -9,20 +9,14 @@
 
 namespace zuri_build {
 
-    struct ResolverEntry {
-        zuri_packager::PackageId id;
-        std::string requirement;
-        std::shared_ptr<zuri_packager::PackageReader> reader;
-    };
-
-    class ImportResolver {
+    class ImportSolver {
     public:
-        explicit ImportResolver(std::shared_ptr<zuri_tooling::PackageManager> packageManager);
+        explicit ImportSolver(std::shared_ptr<zuri_tooling::PackageManager> packageManager);
 
         tempo_utils::Status configure();
 
-        tempo_utils::Status addRequirement(
-            const zuri_packager::PackageSpecifier &requirement,
+        tempo_utils::Status addImport(
+            const zuri_packager::PackageSpecifier &specifier,
             std::string_view shortcut);
 
         tempo_utils::Status resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver);
@@ -39,4 +33,4 @@ namespace zuri_build {
     };
 }
 
-#endif // ZURI_BUILD_IMPORT_RESOLVER_H
+#endif // ZURI_BUILD_IMPORT_SOLVER_H

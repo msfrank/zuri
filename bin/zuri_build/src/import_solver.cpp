@@ -1,30 +1,29 @@
 
-#include <zuri_build/import_resolver.h>
+#include <zuri_build/import_solver.h>
 #include <zuri_build/build_result.h>
+#include <zuri_distributor/http_package_resolver.h>
 #include <zuri_distributor/package_fetcher.h>
-#include <zuri_distributor/static_package_resolver.h>
 #include <zuri_tooling/package_manager.h>
 
-zuri_build::ImportResolver::ImportResolver(std::shared_ptr<zuri_tooling::PackageManager> packageManager)
+zuri_build::ImportSolver::ImportSolver(std::shared_ptr<zuri_tooling::PackageManager> packageManager)
     : m_packageManager(std::move(packageManager))
 {
     TU_ASSERT (m_packageManager != nullptr);
 }
 
 tempo_utils::Status
-zuri_build::ImportResolver::configure()
+zuri_build::ImportSolver::configure()
 {
     if (m_selector != nullptr)
-        return zuri_build::BuildStatus::forCondition(zuri_build::BuildCondition::kBuildInvariant,
-            "import resolver is already configured");
+        return BuildStatus::forCondition(BuildCondition::kBuildInvariant,
+            "import solver is already configured");
 
     m_dcache = m_packageManager->getDcache();
     m_ucache = m_packageManager->getUcache();
     m_icache = m_packageManager->getIcache();
 
-    //auto httpResolver = std::make_shared<zuri_distributor::HttpPackageResolver>();
     std::shared_ptr<zuri_distributor::AbstractPackageResolver> resolver;
-    TU_ASSIGN_OR_RETURN (resolver, zuri_distributor::StaticPackageResolver::create({}));
+    TU_ASSIGN_OR_RETURN (resolver, zuri_distributor::HttpPackageResolver::create({}));
 
     auto selector = std::make_unique<zuri_distributor::DependencySelector>(resolver);
 
@@ -35,21 +34,17 @@ zuri_build::ImportResolver::configure()
 }
 
 tempo_utils::Status
-zuri_build::ImportResolver::addRequirement(
-    const zuri_packager::PackageSpecifier &requirement,
+zuri_build::ImportSolver::addImport(
+    const zuri_packager::PackageSpecifier &specifier,
     std::string_view shortcut)
 {
-    return m_selector->addDirectDependency(requirement, shortcut);
+    return m_selector->addDirectDependency(specifier, shortcut);
 }
 
-struct PendingRequirement {
-    zuri_packager::PackageId targetId;
-};
-
 tempo_utils::Status
-zuri_build::ImportResolver::resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver)
+zuri_build::ImportSolver::resolveImports(std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver)
 {
-    // resolve all transitive dependencies and generate the dependency ordering
+    // resolve all transitive dependencies and generate the install ordering
     std::vector<zuri_distributor::Selection> dependencyOrder;
     TU_ASSIGN_OR_RETURN (dependencyOrder, m_selector->calculateDependencyOrder());
 
@@ -60,17 +55,18 @@ zuri_build::ImportResolver::resolveImports(std::shared_ptr<lyric_importer::Short
     // add each missing dependency to fetcher
     for (const auto &selection : dependencyOrder) {
         if (!packageIsPresent(selection.specifier)) {
-            TU_RETURN_IF_NOT_OK (fetcher.addPackage(selection.specifier, selection.url));
+            TU_RETURN_IF_NOT_OK (fetcher.requestFile(selection.url, selection.specifier.toString()));
         }
     }
 
     // fetch missing dependencies
-    TU_RETURN_IF_NOT_OK (fetcher.fetchPackages());
+    TU_RETURN_IF_NOT_OK (fetcher.fetchFiles());
 
     // install fetched dependencies into import package cache
     for (const auto &selection : dependencyOrder) {
-        if (fetcher.hasResult(selection.specifier)) {
-            auto result = fetcher.getResult(selection.specifier);
+        auto id = selection.specifier.toString();
+        if (fetcher.hasResult(id)) {
+            auto result = fetcher.getResult(id);
             TU_RETURN_IF_NOT_OK (result.status);
             TU_RETURN_IF_STATUS (m_icache->installPackage(result.path));
         }
@@ -86,13 +82,11 @@ zuri_build::ImportResolver::resolveImports(std::shared_ptr<lyric_importer::Short
 }
 
 bool
-zuri_build::ImportResolver::packageIsPresent(const zuri_packager::PackageSpecifier &specifier) const
+zuri_build::ImportSolver::packageIsPresent(const zuri_packager::PackageSpecifier &specifier) const
 {
     if (m_icache->containsPackage(specifier))
         return true;
     if (m_ucache->containsPackage(specifier))
         return true;
-    if (m_dcache->containsPackage(specifier))
-        return true;
-    return false;
+    return m_dcache->containsPackage(specifier);
 }
