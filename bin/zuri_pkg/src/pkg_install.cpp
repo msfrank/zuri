@@ -89,6 +89,7 @@ zuri_pkg::pkg_install(
 
     const std::vector<tempo_command::Grouping> groupings = {
         {"dryRun", {"--dry-run"}, tempo_command::GroupingType::NO_ARGUMENT},
+        {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
     };
 
     const std::vector<tempo_command::Mapping> optMappings = {

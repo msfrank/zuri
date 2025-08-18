@@ -18,12 +18,16 @@ zuri_packager::PackageIdParser::convertValue(
     const tempo_config::ConfigNode &node,
     PackageId &id) const
 {
-    if (node.isNil() && !m_default.isEmpty()) {
+    if (node.isNil()) {
+        if (m_default.isEmpty())
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kMissingValue,
+                "missing required package id value");
         id = m_default.getValue();
         return {};
     }
     if (node.getNodeType() != tempo_config::ConfigNodeType::kValue)
-        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType);
+        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType,
+            "expected Value node but found {}", config_node_type_to_string(node.getNodeType()));
 
     auto value = node.toValue().getValue();
     auto authority = tempo_utils::UrlAuthority::fromString(value);
@@ -54,12 +58,16 @@ zuri_packager::PackageVersionParser::convertValue(
     const tempo_config::ConfigNode &node,
     PackageVersion &version) const
 {
-    if (node.isNil() && !m_default.isEmpty()) {
+    if (node.isNil()) {
+        if (m_default.isEmpty())
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kMissingValue,
+                "missing required package version value");
         version = m_default.getValue();
         return {};
     }
     if (node.getNodeType() != tempo_config::ConfigNodeType::kValue)
-        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType);
+        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType,
+            "expected Value node but found {}", config_node_type_to_string(node.getNodeType()));
 
     auto value = node.toValue().getValue();
     auto v = PackageVersion::fromString(value);
@@ -85,12 +93,16 @@ zuri_packager::PackageSpecifierParser::convertValue(
     const tempo_config::ConfigNode &node,
     PackageSpecifier &specifier) const
 {
-    if (node.isNil() && !m_default.isEmpty()) {
+    if (node.isNil()) {
+        if (m_default.isEmpty())
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kMissingValue,
+                "missing required package specifier value");
         specifier = m_default.getValue();
         return {};
     }
     if (node.getNodeType() != tempo_config::ConfigNodeType::kValue)
-        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType);
+        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType,
+            "expected Value node but found {}", config_node_type_to_string(node.getNodeType()));
 
     auto value = node.toValue().getValue();
     auto authority = tempo_utils::UrlAuthority::fromString(value);
@@ -114,22 +126,30 @@ zuri_packager::RequirementsMapParser::convertValue(
     const tempo_config::ConfigNode &node,
     RequirementsMap &requirementsMap) const
 {
-    if (node.getNodeType() == tempo_config::ConfigNodeType::kMap) {
-        auto map = node.toMap();
-        absl::flat_hash_map<PackageId,PackageVersion> requirements;
-        for (auto it = map.mapBegin(); it != map.mapEnd(); ++it) {
-            if (it->second.getNodeType() != tempo_config::ConfigNodeType::kValue)
-                return tempo_config::ConfigStatus::forCondition(
-                    tempo_config::ConfigCondition::kWrongType, "requirement entry must be a value");
-            auto id = PackageId::fromString(it->first);
-            auto value = it->second.toValue();
-            auto version = PackageVersion::fromString(value.getValue());
-            requirements[id] = version;
-        }
-        requirementsMap = RequirementsMap(requirements);
+    if (node.isNil()) {
+        if (m_default.isEmpty())
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kMissingValue,
+                "missing required requirements map");
+        requirementsMap = m_default.getValue();
         return {};
     }
 
-    return tempo_config::ConfigStatus::forCondition(
-        tempo_config::ConfigCondition::kWrongType, "requirements must be a map");
+    if (node.getNodeType() != tempo_config::ConfigNodeType::kMap)
+        return tempo_config::ConfigStatus::forCondition(
+            tempo_config::ConfigCondition::kWrongType, "requirements must be a map");
+
+    auto map = node.toMap();
+    absl::flat_hash_map<PackageId,PackageVersion> requirements;
+    for (auto it = map.mapBegin(); it != map.mapEnd(); ++it) {
+        if (it->second.getNodeType() != tempo_config::ConfigNodeType::kValue)
+            return tempo_config::ConfigStatus::forCondition(
+                tempo_config::ConfigCondition::kParseError, "requirement entry must be a value");
+        auto id = PackageId::fromString(it->first);
+        auto value = it->second.toValue();
+        auto version = PackageVersion::fromString(value.getValue());
+        requirements[id] = version;
+    }
+    requirementsMap = RequirementsMap(requirements);
+
+    return {};
 }

@@ -25,10 +25,17 @@ zuri_pkg::InstallSolver::configure()
     m_dcache = m_packageManager->getDcache();
     m_ucache = m_packageManager->getUcache();
 
-    m_installCache = m_systemInstall? m_dcache : m_ucache;
-    if (m_installCache == nullptr)
-        return PkgStatus::forCondition(PkgCondition::kPkgInvariant,
-            "install cache is not available");
+    if (m_systemInstall) {
+        if (m_dcache == nullptr)
+            return PkgStatus::forCondition(PkgCondition::kPkgInvariant,
+                "system package cache is not available");
+        m_installCache = m_dcache;
+    } else {
+        if (m_ucache == nullptr)
+            return PkgStatus::forCondition(PkgCondition::kPkgInvariant,
+                "user package cache is not available");
+        m_installCache = m_ucache;
+    }
 
     zuri_distributor::HttpPackageResolverOptions resolverOptions;
     std::shared_ptr<zuri_distributor::AbstractPackageResolver> resolver;
@@ -101,24 +108,36 @@ zuri_pkg::InstallSolver::installPackages()
     TU_ASSIGN_OR_RETURN (dependencyOrder, m_selector->calculateDependencyOrder());
 
     // add each missing dependency to fetcher
+    int numPackagesToInstall = 0;
     for (const auto &selection : dependencyOrder) {
         if (!packageIsPresent(selection.specifier)) {
             TU_RETURN_IF_NOT_OK (m_fetcher->requestFile(selection.url, selection.specifier.toString()));
+            numPackagesToInstall++;
+        } else {
+            TU_CONSOLE_OUT << "ignoring " << selection.specifier.toString() << ": already installed";
         }
     }
+
+    if (numPackagesToInstall == 0) {
+        TU_CONSOLE_OUT << "all packages are installed, nothing to do";
+        return {};
+    }
+
+    TU_CONSOLE_OUT << "installing " << numPackagesToInstall << " packages";
 
     // fetch missing dependencies
     TU_RETURN_IF_NOT_OK (m_fetcher->fetchFiles());
 
-    // install fetched dependencies into import package cache
+    // install fetched dependencies into install cache
     for (const auto &selection : dependencyOrder) {
         auto id = selection.specifier.toString();
         if (m_fetcher->hasResult(id)) {
             auto result = m_fetcher->getResult(id);
             TU_RETURN_IF_NOT_OK (result.status);
             if (!m_dryRun) {
-                //TU_RETURN_IF_STATUS (m_installCache->installPackage(result.path));
-                TU_CONSOLE_OUT << "install package " << result.path;
+                std::filesystem::path installPath;
+                TU_ASSIGN_OR_RETURN (installPath, m_installCache->installPackage(result.path));
+                TU_LOG_V << "installed " << selection.specifier.toString() << " in " << installPath;
             } else {
                 TU_CONSOLE_OUT << "DRY RUN: install package " << result.path;
             }
@@ -135,5 +154,5 @@ zuri_pkg::InstallSolver::packageIsPresent(const zuri_packager::PackageSpecifier 
         if (m_ucache->containsPackage(specifier))
             return true;
     }
-    return m_dcache->containsPackage(specifier);
+    return m_dcache != nullptr && m_dcache->containsPackage(specifier);
 }
