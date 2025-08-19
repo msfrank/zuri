@@ -62,12 +62,19 @@ zuri_build::TargetWriter::setHomepage(std::string_view homepage)
 }
 
 void
-
 zuri_build::TargetWriter::setLicense(std::string_view license)
 {
     if (m_priv == nullptr)
         return;
     m_priv->license = license;
+}
+
+void
+zuri_build::TargetWriter::setProgramMain(const lyric_common::ModuleLocation &programMain)
+{
+    if (m_priv == nullptr)
+        return;
+    m_priv->programMain = programMain;
 }
 
 tempo_utils::Status
@@ -147,6 +154,9 @@ zuri_build::TargetWriter::writePackageConfig()
     }
     if (!m_priv->license.empty()) {
         rootBuilder = rootBuilder.put("license", tempo_config::valueNode(m_priv->license));
+    }
+    if (m_priv->programMain.isValid()) {
+        rootBuilder = rootBuilder.put("programMain", tempo_config::valueNode(m_priv->programMain.toString()));
     }
 
     if (!m_priv->dependencies.empty()) {

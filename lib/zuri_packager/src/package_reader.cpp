@@ -1,4 +1,5 @@
 
+#include <lyric_common/common_conversions.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/parse_config.h>
 #include <tempo_utils/big_endian.h>
@@ -65,6 +66,20 @@ zuri_packager::PackageReader::readPackageSpecifier() const
 
     return PackageSpecifier::fromString(absl::StrCat(
         packageName, "-", packageVersion, "@", packageDomain));
+}
+
+tempo_utils::Result<lyric_common::ModuleLocation>
+zuri_packager::PackageReader::readProgramMain() const
+{
+    tempo_config::ConfigMap packageConfig;
+    TU_ASSIGN_OR_RETURN (packageConfig, readPackageConfig());
+
+    lyric_common::ModuleLocationParser programMainParser;
+    lyric_common::ModuleLocation programMain;
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(programMain, programMainParser,
+        packageConfig, "programMain"));
+
+    return programMain;
 }
 
 tempo_utils::Result<zuri_packager::RequirementsMap>

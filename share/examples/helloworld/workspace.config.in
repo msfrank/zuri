@@ -1,17 +1,25 @@
 {
-    "zuri-build": {
-        "global": {
-            "sourceBaseUrl": "file://@SOURCE_DIRECTORY@",
-            "packageDirectoryPathList": [ "@ZURI_BUILD_PACKAGES_DIR@" ]
+    "zuri": {
+        "build": {
+            "settings": {
+                "global": {
+                    "sourceBasePath": "src"
+                }
+            }
         },
-        "tasks": {
-            "package:": {
-                "packageDomain": "examples",
-                "packageName": "helloworld",
-                "majorVersion": @PROJECT_VERSION_MAJOR@,
-                "minorVersion": @PROJECT_VERSION_MINOR@,
-                "patchVersion": @PROJECT_VERSION_PATCH@,
-                "mainLocation": "/helloworld"
+        "imports": {
+            "std": {
+                "type": "Package",
+                "packageUrl": "file://@ZURI_STD_FILEPATH@"
+            }
+        },
+        "targets": {
+            "helloworld": {
+                "type": "Program",
+                "specifier": "helloworld-@PROJECT_VERSION@@examples",
+                "programMain": "/helloworld",
+                "programModules": [],
+                "imports": ["std"]
             }
         }
     }

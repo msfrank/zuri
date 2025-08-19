@@ -2,6 +2,7 @@
 #define ZURI_PACKAGER_PACKAGE_READER_H
 
 #include <filesystem>
+#include <lyric_common/module_location.h>
 
 #include <tempo_config/config_types.h>
 #include <tempo_utils/integer_types.h>
@@ -29,6 +30,7 @@ namespace zuri_packager {
         ZuriManifest getManifest() const;
 
         tempo_utils::Result<PackageSpecifier> readPackageSpecifier() const;
+        tempo_utils::Result<lyric_common::ModuleLocation> readProgramMain() const;
         tempo_utils::Result<RequirementsMap> readRequirementsMap() const;
         tempo_utils::Result<tempo_config::ConfigMap> readPackageConfig() const;
         tempo_utils::Result<tempo_utils::Slice> readFileContents(

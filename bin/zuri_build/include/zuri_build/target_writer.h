@@ -1,5 +1,5 @@
-#ifndef LYRIC_BUILD_INTERNAL_PACKAGE_TASK_H
-#define LYRIC_BUILD_INTERNAL_PACKAGE_TASK_H
+#ifndef ZURI_BUILD_TARGET_WRITER_H
+#define ZURI_BUILD_TARGET_WRITER_H
 
 #include <lyric_build/lyric_metadata.h>
 #include <tempo_utils/tempdir_maker.h>
@@ -21,6 +21,7 @@ namespace zuri_build {
         void setOwner(std::string_view owner);
         void setHomepage(std::string_view homepage);
         void setLicense(std::string_view license);
+        void setProgramMain(const lyric_common::ModuleLocation &programMain);
 
         tempo_utils::Status addDependency(const zuri_packager::PackageSpecifier &specifier);
 
@@ -41,6 +42,7 @@ namespace zuri_build {
             std::string owner;
             std::string homepage;
             std::string license;
+            lyric_common::ModuleLocation programMain;
             absl::flat_hash_map<zuri_packager::PackageId, zuri_packager::PackageVersion> dependencies;
         };
         std::unique_ptr<Priv> m_priv;
@@ -49,4 +51,4 @@ namespace zuri_build {
     };
 }
 
-#endif // LYRIC_BUILD_INTERNAL_PACKAGE_TASK_H
+#endif // ZURI_BUILD_TARGET_WRITER_H

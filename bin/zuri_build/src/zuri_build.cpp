@@ -248,7 +248,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
     auto packageManager = std::make_shared<zuri_tooling::PackageManager>(zuriConfig, buildRoot);
     TU_RETURN_IF_NOT_OK (packageManager->configure());
 
-    // construct and configure the import resolver
+    // construct and configure the import solver
     auto importSolver = std::make_shared<ImportSolver>(packageManager);
     TU_RETURN_IF_NOT_OK (importSolver->configure());
 
@@ -292,6 +292,8 @@ zuri_build::zuri_build(int argc, const char *argv[])
                 TU_RETURN_IF_NOT_OK (importSolver->addImport(importEntry->requirementSpecifier, importName));
                 break;
             case zuri_tooling::ImportEntryType::Package:
+                TU_RETURN_IF_NOT_OK (importSolver->addImport(importEntry->packageUrl, importName));
+                break;
             default:
                 return tempo_command::CommandStatus::forCondition(
                     tempo_command::CommandCondition::kInvalidConfiguration,
@@ -299,7 +301,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
         }
     }
 
-    TU_RETURN_IF_NOT_OK (importSolver->resolveImports(shortcutResolver));
+    TU_RETURN_IF_NOT_OK (importSolver->installImports(shortcutResolver));
 
     // create task registry and register build task domains
     auto taskRegistry = std::make_shared<lyric_build::TaskRegistry>();

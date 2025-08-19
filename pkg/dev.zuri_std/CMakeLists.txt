@@ -41,6 +41,12 @@ add_custom_command (
         std-time-plugin
     )
 
+# define custom target and target properties for consuming std
 add_custom_target(zuri-std-package DEPENDS ${ZURI_STD_PACKAGE_PATH})
+set_target_properties(zuri-std-package PROPERTIES
+    ZURI_PKG_FILEPATH ${ZURI_STD_PACKAGE_PATH}
+    ZURI_PKG_SPECIFIER "std-${PROJECT_VERSION}@zuri.dev"
+    )
 
+# add testing subdirectory
 add_subdirectory(test)
