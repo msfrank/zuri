@@ -23,7 +23,7 @@ namespace zuri_build {
         void setLicense(std::string_view license);
         void setProgramMain(const lyric_common::ModuleLocation &programMain);
 
-        tempo_utils::Status addDependency(const zuri_packager::PackageSpecifier &specifier);
+        tempo_utils::Status addRequirement(const zuri_packager::PackageSpecifier &specifier);
 
         tempo_utils::Status writeModule(
             const tempo_utils::UrlPath &modulePath,
@@ -43,7 +43,7 @@ namespace zuri_build {
             std::string homepage;
             std::string license;
             lyric_common::ModuleLocation programMain;
-            absl::flat_hash_map<zuri_packager::PackageId, zuri_packager::PackageVersion> dependencies;
+            absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion> requirements;
         };
         std::unique_ptr<Priv> m_priv;
 

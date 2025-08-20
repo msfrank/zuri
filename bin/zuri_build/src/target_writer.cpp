@@ -1,5 +1,6 @@
 
 #include <lyric_build/build_result.h>
+#include <lyric_object/lyric_object.h>
 #include <tempo_config/config_builder.h>
 #include <tempo_utils/directory_maker.h>
 #include <tempo_utils/log_message.h>
@@ -78,20 +79,25 @@ zuri_build::TargetWriter::setProgramMain(const lyric_common::ModuleLocation &pro
 }
 
 tempo_utils::Status
-zuri_build::TargetWriter::addDependency(const zuri_packager::PackageSpecifier &specifier)
+zuri_build::TargetWriter::addRequirement(const zuri_packager::PackageSpecifier &specifier)
 {
     if (!specifier.isValid())
         return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kPackagerInvariant,
-            "invalid dependency");
+            "invalid requirement");
     if (m_priv == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is finished");
 
-    auto depId = specifier.getPackageId();
-    if (m_priv->dependencies.contains(depId))
-        return zuri_packager::PackagerStatus::forCondition(zuri_packager::PackagerCondition::kPackagerInvariant,
-            "dependency already exists for '{}'", depId.toString());
-    m_priv->dependencies[depId] = specifier.getPackageVersion();
+    auto id = specifier.getPackageId();
+    auto version = specifier.getPackageVersion();
+    auto entry = m_priv->requirements.find(id);
+    if (entry != m_priv->requirements.cend()) {
+        if (version > entry->second) {
+            entry->second = version;
+        }
+    } else {
+        m_priv->requirements[id] = version;
+    }
 
     return {};
 }
@@ -111,23 +117,28 @@ zuri_build::TargetWriter::writeModule(
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is not configured");
 
+    lyric_object::LyricObject object(content);
+    auto root = object.getObject();
+    for (int i = 0; i < root.numImports(); i++) {
+        auto import = root.getImport(i);
+        auto location = import.getImportLocation();
+        if (import.isSystemBootstrap()) {
+            // TODO: process bootstrap imports
+        } else if (location.getScheme() == "dev.zuri.pkg") {
+            auto specifier = zuri_packager::PackageSpecifier::fromAuthority(location.getAuthority());
+            TU_RETURN_IF_NOT_OK (addRequirement(specifier));
+        } else {
+            return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                "unhandled module scheme '{}' for import {}", location.getScheme(), location.toString());
+        }
+    }
+
     auto modulesRoot = tempo_utils::UrlPath::fromString("/modules");
     auto fullModulePath = modulesRoot.traverse(modulePath.toRelative());
-
-    // auto parentPerms = perms::owner_all
-    //     | perms::group_read
-    //     | perms::group_exec
-    //     | perms::others_read
-    //     | perms::others_exec;
 
     auto parentPath = fullModulePath.getInit();
     zuri_packager::EntryAddress parentEntry;
     TU_ASSIGN_OR_RETURN (parentEntry, m_priv->packageWriter->makeDirectory(parentPath, true));
-
-    // auto modulePerms = perms::owner_read
-    //     | perms::owner_write
-    //     | perms::group_read
-    //     | perms::others_read;
 
     zuri_packager::EntryAddress moduleEntry;
     TU_ASSIGN_OR_RETURN (moduleEntry, m_priv->packageWriter->putFile(fullModulePath, content));
@@ -159,14 +170,14 @@ zuri_build::TargetWriter::writePackageConfig()
         rootBuilder = rootBuilder.put("programMain", tempo_config::valueNode(m_priv->programMain.toString()));
     }
 
-    if (!m_priv->dependencies.empty()) {
-        auto dependenciesBuilder = tempo_config::startMap();
-        for (const auto &dep : m_priv->dependencies) {
-            dependenciesBuilder = dependenciesBuilder.put(
-                dep.first.toString(),
-                tempo_config::valueNode(dep.second.toString()));
+    if (!m_priv->requirements.empty()) {
+        auto requirementsBuilder = tempo_config::startMap();
+        for (const auto &req : m_priv->requirements) {
+            requirementsBuilder = requirementsBuilder.put(
+                req.first.toString(),
+                tempo_config::valueNode(req.second.toString()));
         }
-        rootBuilder = rootBuilder.put("dependencies", dependenciesBuilder.buildNode());
+        rootBuilder = rootBuilder.put("requirements", requirementsBuilder.buildNode());
     }
 
     auto packageConfig = rootBuilder.buildMap();

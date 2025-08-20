@@ -1,14 +1,14 @@
-#ifndef ZURI_PKG_PKG_INSTALL_H
-#define ZURI_PKG_PKG_INSTALL_H
+#ifndef ZURI_PKG_PKG_INSTALL_COMMAND_H
+#define ZURI_PKG_PKG_INSTALL_COMMAND_H
 
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_utils/status.h>
 
 namespace zuri_pkg {
-    tempo_utils::Status pkg_install(
+    tempo_utils::Status pkg_install_command(
         const std::filesystem::path &distributionRoot,
         bool manageSystem,
         tempo_command::TokenVector &tokens);
 }
 
-#endif // ZURI_PKG_PKG_INSTALL_H
+#endif // ZURI_PKG_PKG_INSTALL_COMMAND_H

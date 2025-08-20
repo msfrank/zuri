@@ -7,13 +7,14 @@
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/workspace_config.h>
 #include <tempo_utils/uuid.h>
-#include <zuri_pkg/pkg_cache_command.h>
-#include <zuri_pkg/pkg_install_command.h>
-#include <zuri_pkg/zuri_pkg.h>
+#include <zuri_zpk/zpk_inspect_command.h>
+#include <zuri_zpk/zuri_zpk.h>
 #include <zuri_tooling/zuri_config.h>
 
+#include "zuri_zpk/zpk_extract_command.h"
+
 tempo_utils::Status
-zuri_pkg::zuri_pkg(int argc, const char *argv[])
+zuri_zpk::zuri_zpk(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::path{});
     tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
@@ -28,8 +29,6 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
             "Load config from workspace", "DIR"},
         {"distributionRoot", distributionRootParser.getDefault(),
             "Specify an alternative distribution root directory", "DIR"},
-        {"manageSystem", manageSystemParser.getDefault(),
-            "Manage system cache"},
         {"colorizeOutput", colorizeOutputParser.getDefault(),
             "Display colorized output"},
         {"verbose", verboseParser.getDefault(),
@@ -38,13 +37,11 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
             "Display warnings and errors only (specify twice for errors only)"},
         {"silent", silentParser.getDefault(),
             "Suppress all output"},
-        {"arguments", {}, "List of arguments to pass to the program", "ARGS"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
         {"workspaceRoot", {"-W", "--workspace-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"distributionRoot", {"--distribution-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"manageSystem", {"-S", "--manage-system"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
@@ -54,20 +51,17 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
     };
 
     enum Subcommands {
-        Install,
-        Remove,
-        Cache,
+        Extract,
+        Inspect,
         NUM_SUBCOMMANDS,
     };
     std::vector<tempo_command::Subcommand> subcommands(NUM_SUBCOMMANDS);
-    subcommands[Install] = {"install", "Install packages and their dependencies"};
-    subcommands[Remove] = {"remove", "Remove packages"};
-    subcommands[Cache] = {"cache", "Manage the package caches"};
+    subcommands[Extract] = {"extract", "Extract the specified zpk file"};
+    subcommands[Inspect] = {"inspect", "Inspect the contents of a zpk file"};
 
     const std::vector<tempo_command::Mapping> optMappings = {
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "distributionRoot"},
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "manageSystem"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
         {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
         {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
@@ -89,8 +83,8 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
             return status;
         switch (commandStatus.getCondition()) {
             case tempo_command::CommandCondition::kHelpRequested:
-                display_help_and_exit({"zuri-pkg"},
-                    "Manage Zuri packages",
+                display_help_and_exit({"zuri-zpk"},
+                    "Interact with Zuri zpk files",
                     subcommands, groupings, optMappings, {}, defaults);
             case tempo_command::CommandCondition::kVersionRequested:
                 tempo_command::display_version_and_exit(PROJECT_VERSION);
@@ -140,10 +134,6 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
         }
     }
 
-    bool manageSystem;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(manageSystem, manageSystemParser,
-        commandConfig, "manageSystem"));
-
     bool colorizeOutput;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(colorizeOutput, colorizeOutputParser,
         commandConfig, "colorizeOutput"));
@@ -175,22 +165,14 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
 
     // load zuri config
     std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
-    if (!workspaceRoot.empty()) {
-        std::filesystem::path workspaceConfigFile;
-        TU_ASSIGN_OR_RETURN (workspaceConfigFile, tempo_config::find_workspace_config(workspaceRoot));
-        TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forWorkspace(
-            workspaceConfigFile, {}, distributionRoot));
-    } else {
-        TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(
-            {}, distributionRoot));
-    }
+    TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(
+        {}, distributionRoot));
 
     switch (selected) {
-        case Cache:
-            return pkg_cache_command(distributionRoot, manageSystem, tokens);
-        case Install:
-            return pkg_install_command(distributionRoot, manageSystem, tokens);
-        case Remove:
+        case Extract:
+            return zpk_extract_command(zuriConfig, tokens);
+        case Inspect:
+            return zpk_inspect_command(zuriConfig, tokens);
         default:
             return tempo_command::CommandStatus::forCondition(
                 tempo_command::CommandCondition::kCommandInvariant, "unexpected subcommand");

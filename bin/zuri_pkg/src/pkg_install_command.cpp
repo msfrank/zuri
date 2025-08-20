@@ -6,13 +6,11 @@
 #include <tempo_config/config_result.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_utils/result.h>
-#include <zuri_distributor/abstract_package_resolver.h>
 #include <zuri_distributor/dependency_selector.h>
-#include <zuri_distributor/http_package_resolver.h>
 #include <zuri_distributor/package_fetcher.h>
 #include <zuri_packager/package_specifier.h>
 #include <zuri_packager/package_types.h>
-#include <zuri_pkg/pkg_install.h>
+#include <zuri_pkg/pkg_install_command.h>
 #include <zuri_pkg/pkg_result.h>
 
 #include "zuri_pkg/install_solver.h"
@@ -72,7 +70,7 @@ public:
 };
 
 tempo_utils::Status
-zuri_pkg::pkg_install(
+zuri_pkg::pkg_install_command(
     const std::filesystem::path &distributionRoot,
     bool manageSystem,
     tempo_command::TokenVector &tokens)
@@ -111,7 +109,7 @@ zuri_pkg::pkg_install(
             return status;
         switch (commandStatus.getCondition()) {
             case tempo_command::CommandCondition::kHelpRequested:
-                display_help_and_exit({"zuri-pkg", "install"},
+                tempo_command::display_help_and_exit({"zuri-pkg", "install"},
                     "Install a package",
                     {}, groupings, optMappings, argMappings, defaults);
             case tempo_command::CommandCondition::kVersionRequested:
