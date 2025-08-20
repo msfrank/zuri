@@ -77,7 +77,7 @@ TEST_F(DependencySelector, AddSingleDirectDependency)
 {
     zuri_distributor::DependencySelector selector(resolver);
 
-    ASSERT_THAT (selector.addDirectDependency(g1_1_0), tempo_test::IsOk());
+    ASSERT_THAT (selector.addDirectDependency(g1_1_0), tempo_test::IsResult());
 
     auto dependencyOrderResult = selector.calculateDependencyOrder();
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
@@ -96,7 +96,7 @@ TEST_F(DependencySelector, AddSingleDirectDependencyWithTransitiveDependencies)
 {
     zuri_distributor::DependencySelector selector(resolver);
 
-    ASSERT_THAT (selector.addDirectDependency(c1_3_0), tempo_test::IsOk());
+    ASSERT_THAT (selector.addDirectDependency(c1_3_0), tempo_test::IsResult());
 
     auto dependencyOrderResult = selector.calculateDependencyOrder();
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
@@ -117,9 +117,9 @@ TEST_F(DependencySelector, AddMultipleDirectDependencies)
 {
     zuri_distributor::DependencySelector selector(resolver);
 
-    ASSERT_THAT (selector.addDirectDependency(c1_1_0), tempo_test::IsOk());
-    ASSERT_THAT (selector.addDirectDependency(e1_2_0), tempo_test::IsOk());
-    ASSERT_THAT (selector.addDirectDependency(g1_1_0), tempo_test::IsOk());
+    ASSERT_THAT (selector.addDirectDependency(c1_1_0), tempo_test::IsResult());
+    ASSERT_THAT (selector.addDirectDependency(e1_2_0), tempo_test::IsResult());
+    ASSERT_THAT (selector.addDirectDependency(g1_1_0), tempo_test::IsResult());
 
     auto dependencyOrderResult = selector.calculateDependencyOrder();
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
@@ -138,8 +138,8 @@ TEST_F(DependencySelector, AddMultipleDirectDependenciesWithTransitiveDependenci
 {
     zuri_distributor::DependencySelector selector(resolver);
 
-    ASSERT_THAT (selector.addDirectDependency(b1_1_0), tempo_test::IsOk());
-    ASSERT_THAT (selector.addDirectDependency(c1_3_0), tempo_test::IsOk());
+    ASSERT_THAT (selector.addDirectDependency(b1_1_0), tempo_test::IsResult());
+    ASSERT_THAT (selector.addDirectDependency(c1_3_0), tempo_test::IsResult());
 
     auto dependencyOrderResult = selector.calculateDependencyOrder();
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());
@@ -159,8 +159,8 @@ TEST_F(DependencySelector, AddMultipleDirectDependenciesWithMinimumSelection)
 {
     zuri_distributor::DependencySelector selector(resolver);
 
-    ASSERT_THAT (selector.addDirectDependency(b1_1_0), tempo_test::IsOk());
-    ASSERT_THAT (selector.addDirectDependency(c1_2_0), tempo_test::IsOk());
+    ASSERT_THAT (selector.addDirectDependency(b1_1_0), tempo_test::IsResult());
+    ASSERT_THAT (selector.addDirectDependency(c1_2_0), tempo_test::IsResult());
 
     auto dependencyOrderResult = selector.calculateDependencyOrder();
     ASSERT_THAT (dependencyOrderResult, tempo_test::IsResult());

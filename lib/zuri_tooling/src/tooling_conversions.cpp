@@ -8,88 +8,59 @@
 #include <zuri_tooling/tooling_conversions.h>
 
 tempo_utils::Status
-zuri_tooling::ImportEntryParser::parseTarget(const tempo_config::ConfigMap &map, ImportEntry &importEntry)
-{
-    tempo_config::StringParser targetNameParser;
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        importEntry.targetName, targetNameParser, map, "targetName"));
-    return {};
-}
-
-tempo_utils::Status
-zuri_tooling::ImportEntryParser::parseRequirement(const tempo_config::ConfigMap &map, ImportEntry &importEntry)
-{
-    zuri_packager::PackageSpecifierParser requirementSpecifierParser;
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        importEntry.requirementSpecifier, requirementSpecifierParser, map, "requirementSpecifier"));
-    return {};
-}
-
-tempo_utils::Status
-zuri_tooling::ImportEntryParser::parsePackage(const tempo_config::ConfigMap &map, ImportEntry &importEntry)
-{
-    tempo_config::UrlParser packageUrlParser;
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        importEntry.packageUrl, packageUrlParser, map, "packageUrl"));
-    return {};
-}
-
-tempo_utils::Status
 zuri_tooling::ImportEntryParser::convertValue(const tempo_config::ConfigNode &node, ImportEntry &importEntry) const
 {
-    if (node.getNodeType() != tempo_config::ConfigNodeType::kMap)
-        return tempo_config::ConfigStatus::forCondition(
-            tempo_config::ConfigCondition::kWrongType, "import entry config must be a map");
-    auto importConfig = node.toMap();
-
-    tempo_config::EnumTParser<ImportEntryType> importEntryTypeParser({
-        {"Target", ImportEntryType::Target},
-        {"Requirement", ImportEntryType::Requirement},
-        {"Package", ImportEntryType::Package},
-    });
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        importEntry.type, importEntryTypeParser, importConfig, "type"));
-    switch (importEntry.type) {
-        case ImportEntryType::Target:
-            return parseTarget(importConfig, importEntry);
-        case ImportEntryType::Requirement:
-            return parseRequirement(importConfig, importEntry);
-        case ImportEntryType::Package:
-            return parsePackage(importConfig, importEntry);
-        default:
-            return {};
-    }
+    zuri_packager::PackageVersionParser versionParser;
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(importEntry.version, versionParser, node));
+    return {};
 }
 
 tempo_utils::Status
 zuri_tooling::TargetEntryParser::parseProgram(const tempo_config::ConfigMap &map, TargetEntry &targetEntry) const
 {
+    zuri_packager::PackageSpecifierParser specifierParser;
     lyric_common::ModuleLocationParser moduleLocationParser;
-    tempo_config::SeqTParser libraryModulesParser(&moduleLocationParser, {});
+    tempo_config::SeqTParser programModulesParser(&moduleLocationParser, {});
+    TargetEntry::Program program;
+
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        targetEntry.modules, libraryModulesParser, map, "programModules"));
+        program.specifier, specifierParser, map, "specifier"));
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        targetEntry.main, moduleLocationParser, map, "programMain"));
+        program.modules, programModulesParser, map, "programModules"));
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
+        program.main, moduleLocationParser, map, "programMain"));
+    targetEntry.target = std::move(program);
+
     return {};
 }
 
 tempo_utils::Status
 zuri_tooling::TargetEntryParser::parseLibrary(const tempo_config::ConfigMap &map, TargetEntry &targetEntry) const
 {
+    zuri_packager::PackageSpecifierParser specifierParser;
     lyric_common::ModuleLocationParser moduleLocationParser;
     tempo_config::SeqTParser libraryModulesParser(&moduleLocationParser);
+    TargetEntry::Library library;
+
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        targetEntry.modules, libraryModulesParser, map, "libraryModules"));
+        library.specifier, specifierParser, map, "specifier"));
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
+        library.modules, libraryModulesParser, map, "libraryModules"));
+    targetEntry.target = std::move(library);
+
     return {};
 }
 
 tempo_utils::Status
-zuri_tooling::TargetEntryParser::parseArchive(const tempo_config::ConfigMap &map, TargetEntry &targetEntry) const
+zuri_tooling::TargetEntryParser::parsePackage(const tempo_config::ConfigMap &map, TargetEntry &targetEntry) const
 {
-    lyric_common::ModuleLocationParser moduleLocationParser;
-    tempo_config::SeqTParser archiveModulesParser(&moduleLocationParser);
+    tempo_config::UrlParser urlParser;
+    TargetEntry::Package package;
+
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        targetEntry.modules, archiveModulesParser, map, "archiveModules"));
+        package.url, urlParser, map, "packageUrl"));
+    targetEntry.target = std::move(package);
+
     return {};
 }
 
@@ -103,17 +74,12 @@ zuri_tooling::TargetEntryParser::convertValue(const tempo_config::ConfigNode &no
 
     // parse type
     tempo_config::EnumTParser<TargetEntryType> targetEntryTypeParser({
-        {"Program", TargetEntryType::Program},
         {"Library", TargetEntryType::Library},
-        {"Archive", TargetEntryType::Archive},
+        {"Program", TargetEntryType::Program},
+        {"Package", TargetEntryType::Package},
     });
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
         targetEntry.type, targetEntryTypeParser, targetConfig, "type"));
-
-    // parse specifier
-    zuri_packager::PackageSpecifierParser specifierParser;
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        targetEntry.specifier, specifierParser, targetConfig, "specifier"));
 
     // parse depends
     tempo_config::StringParser dependencyParser;
@@ -121,20 +87,14 @@ zuri_tooling::TargetEntryParser::convertValue(const tempo_config::ConfigNode &no
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
         targetEntry.depends, dependsParser, targetConfig, "depends"));
 
-    // parse imports
-    tempo_config::StringParser importParser;
-    tempo_config::SeqTParser importsParser(&importParser, {});
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        targetEntry.imports, importsParser, targetConfig, "imports"));
-
     // parse type specific members
     switch (targetEntry.type) {
         case TargetEntryType::Program:
             return parseProgram(targetConfig, targetEntry);
         case TargetEntryType::Library:
             return parseLibrary(targetConfig, targetEntry);
-        case TargetEntryType::Archive:
-            return parseArchive(targetConfig, targetEntry);
+        case TargetEntryType::Package:
+            return parsePackage(targetConfig, targetEntry);
         default:
             return {};
     }

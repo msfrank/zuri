@@ -1,6 +1,8 @@
 #ifndef ZURI_TOOLING_TARGET_STORE_H
 #define ZURI_TOOLING_TARGET_STORE_H
 
+#include <variant>
+
 #include <lyric_common/module_location.h>
 #include <tempo_config/config_types.h>
 #include <tempo_utils/status.h>
@@ -12,16 +14,27 @@ namespace zuri_tooling {
         Invalid,
         Library,
         Program,
-        Archive,
+        Package,
     };
 
     struct TargetEntry {
         TargetEntryType type;
-        zuri_packager::PackageSpecifier specifier;
         std::vector<std::string> depends;
-        std::vector<std::string> imports;
-        std::vector<lyric_common::ModuleLocation> modules;
-        lyric_common::ModuleLocation main;
+
+        struct Program {
+            zuri_packager::PackageSpecifier specifier;
+            std::vector<lyric_common::ModuleLocation> modules;
+            lyric_common::ModuleLocation main;
+        };
+        struct Library {
+            zuri_packager::PackageSpecifier specifier;
+            std::vector<lyric_common::ModuleLocation> modules;
+        };
+        struct Package {
+            tempo_utils::Url url;
+        };
+
+        std::variant<Library,Program,Package> target;
     };
 
     class TargetStore {

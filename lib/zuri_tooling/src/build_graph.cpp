@@ -88,14 +88,10 @@ namespace zuri_tooling {
 zuri_tooling::BuildGraph::BuildGraph(
     std::shared_ptr<TargetStore> targetStore,
     std::shared_ptr<ImportStore> importStore,
-    absl::flat_hash_set<tempo_utils::Url> &&requestedPackages,
-    absl::flat_hash_set<zuri_packager::PackageSpecifier> &&requestedRequirements,
     absl::flat_hash_set<std::vector<std::string>> &&targetCycles,
     std::unique_ptr<Priv> &&priv)
     : m_targetStore(std::move(targetStore)),
       m_importStore(std::move(importStore)),
-      m_requestedPackages(std::move(requestedPackages)),
-      m_requestedRequirements(std::move(requestedRequirements)),
       m_targetCycles(std::move(targetCycles)),
       m_priv(std::move(priv))
 {
@@ -113,9 +109,6 @@ zuri_tooling::BuildGraph::create(
 
     auto target_name = get(internal::vertex_target_name_t(), priv->buildGraph);
 
-    absl::flat_hash_set<tempo_utils::Url> requestedPackages;
-    absl::flat_hash_set<zuri_packager::PackageSpecifier> requestedRequirements;
-
     // construct map of target name to dependency index
     for (auto it = targetStore->targetsBegin(); it != targetStore->targetsEnd(); it++) {
         auto v = boost::add_vertex(priv->buildGraph);
@@ -123,35 +116,35 @@ zuri_tooling::BuildGraph::create(
         priv->targetsMap[it->first] = v;
     }
 
-    // construct map of import name to dependency index (if import refers to a target) and additionally
-    // build the sets of requested packages and package requirements
-    for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); it++) {
-        const auto &importName = it->first;
-        const auto &importEntry = it->second;
-        switch (importEntry->type) {
-            case ImportEntryType::Target: {
-                auto entry = priv->targetsMap.find(importEntry->targetName);
-                if (entry == priv->targetsMap.cend())
-                    return tempo_config::ConfigStatus::forCondition(
-                        tempo_config::ConfigCondition::kConfigInvariant,
-                        "import '{}' refers to nonexistent target '{}'", importName, importEntry->targetName);
-                priv->importsMap[importName] = entry->second;
-                break;
-            }
-            case ImportEntryType::Requirement: {
-                requestedRequirements.insert(importEntry->requirementSpecifier);
-                break;
-            }
-            case ImportEntryType::Package: {
-                requestedPackages.insert(importEntry->packageUrl);
-                break;
-            }
-            default:
-                return tempo_config::ConfigStatus::forCondition(
-                    tempo_config::ConfigCondition::kConfigInvariant,
-                    "invalid type for import '{}'", importName);
-        }
-    }
+    // // construct map of import name to dependency index (if import refers to a target) and additionally
+    // // build the sets of requested packages and package requirements
+    // for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); it++) {
+    //     const auto &importName = it->first;
+    //     const auto &importEntry = it->second;
+    //     switch (importEntry->type) {
+    //         case ImportEntryType::Target: {
+    //             auto entry = priv->targetsMap.find(importEntry->targetName);
+    //             if (entry == priv->targetsMap.cend())
+    //                 return tempo_config::ConfigStatus::forCondition(
+    //                     tempo_config::ConfigCondition::kConfigInvariant,
+    //                     "import '{}' refers to nonexistent target '{}'", importName, importEntry->targetName);
+    //             priv->importsMap[importName] = entry->second;
+    //             break;
+    //         }
+    //         case ImportEntryType::Requirement: {
+    //             requestedRequirements.insert(importEntry->requirementSpecifier);
+    //             break;
+    //         }
+    //         case ImportEntryType::Package: {
+    //             requestedPackages.insert(importEntry->packageUrl);
+    //             break;
+    //         }
+    //         default:
+    //             return tempo_config::ConfigStatus::forCondition(
+    //                 tempo_config::ConfigCondition::kConfigInvariant,
+    //                 "invalid type for import '{}'", importName);
+    //     }
+    // }
 
     // build list of dependency edges
     for (auto it = targetStore->targetsBegin(); it != targetStore->targetsEnd(); it++) {
@@ -168,21 +161,21 @@ zuri_tooling::BuildGraph::create(
             boost::add_edge(targetVertex, entry->second, priv->buildGraph);
         }
 
-        for (const auto &targetImport : targetEntry->imports) {
-            if (!importStore->hasImport(targetImport))
-                return tempo_config::ConfigStatus::forCondition(
-                    tempo_config::ConfigCondition::kConfigInvariant,
-                    "target '{}' refers to nonexistent import '{}'", targetName, targetImport);
-            const auto &importEntry = importStore->getImport(targetImport);
-            switch (importEntry->type) {
-                case ImportEntryType::Target: {
-                    boost::add_edge(targetVertex, priv->importsMap.at(targetImport), priv->buildGraph);
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
+        // for (const auto &targetImport : targetEntry->imports) {
+        //     if (!importStore->hasImport(targetImport))
+        //         return tempo_config::ConfigStatus::forCondition(
+        //             tempo_config::ConfigCondition::kConfigInvariant,
+        //             "target '{}' refers to nonexistent import '{}'", targetName, targetImport);
+        //     const auto &importEntry = importStore->getImport(targetImport);
+        //     switch (importEntry->type) {
+        //         case ImportEntryType::Target: {
+        //             boost::add_edge(targetVertex, priv->importsMap.at(targetImport), priv->buildGraph);
+        //             break;
+        //         }
+        //         default:
+        //             break;
+        //     }
+        // }
     }
 
     absl::flat_hash_set<std::vector<std::string>> targetCycles;
@@ -193,8 +186,6 @@ zuri_tooling::BuildGraph::create(
     return std::shared_ptr<BuildGraph>(new BuildGraph(
         std::move(targetStore),
         std::move(importStore),
-        std::move(requestedPackages),
-        std::move(requestedRequirements),
         std::move(targetCycles),
         std::move(priv)));
 }

@@ -7,18 +7,8 @@
 
 namespace zuri_tooling {
 
-    enum class ImportEntryType {
-        Invalid,
-        Target,
-        Requirement,
-        Package,
-    };
-
     struct ImportEntry {
-        ImportEntryType type;
-        std::string targetName;
-        zuri_packager::PackageSpecifier requirementSpecifier;
-        tempo_utils::Url packageUrl;
+        zuri_packager::PackageVersion version;
     };
 
     class ImportStore {
@@ -27,16 +17,16 @@ namespace zuri_tooling {
 
         tempo_utils::Status configure();
 
-        bool hasImport(const std::string &importName) const;
-        std::shared_ptr<const ImportEntry> getImport(const std::string &importName) const;
-        absl::flat_hash_map<std::string,std::shared_ptr<const ImportEntry>>::const_iterator importsBegin() const;
-        absl::flat_hash_map<std::string,std::shared_ptr<const ImportEntry>>::const_iterator importsEnd() const;
+        bool hasImport(const zuri_packager::PackageId &packageId) const;
+        std::shared_ptr<const ImportEntry> getImport(const zuri_packager::PackageId &packageId) const;
+        absl::flat_hash_map<zuri_packager::PackageId,std::shared_ptr<const ImportEntry>>::const_iterator importsBegin() const;
+        absl::flat_hash_map<zuri_packager::PackageId,std::shared_ptr<const ImportEntry>>::const_iterator importsEnd() const;
         int numImports() const;
 
     private:
         tempo_config::ConfigMap m_importsMap;
 
-        absl::flat_hash_map<std::string,std::shared_ptr<const ImportEntry>> m_importEntries;
+        absl::flat_hash_map<zuri_packager::PackageId,std::shared_ptr<const ImportEntry>> m_importEntries;
     };
 }
 

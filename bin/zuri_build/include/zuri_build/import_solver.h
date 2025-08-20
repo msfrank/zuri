@@ -17,13 +17,14 @@ namespace zuri_build {
         tempo_utils::Status configure();
 
         tempo_utils::Status addImport(
-            const zuri_packager::PackageSpecifier &specifier,
-            std::string_view shortcut);
-        tempo_utils::Status addImport(
-            const tempo_utils::Url &url,
-            std::string_view shortcut);
+            const zuri_packager::PackageId &importId,
+            std::shared_ptr<const zuri_tooling::ImportEntry> entry);
+        tempo_utils::Status addTarget(
+            std::string_view targetName,
+            std::shared_ptr<const zuri_tooling::TargetEntry> entry);
 
-        tempo_utils::Status installImports(std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver);
+        tempo_utils::Result<absl::flat_hash_map<std::string,tempo_utils::Url>> installImports(
+            std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver);
 
     private:
         std::shared_ptr<zuri_tooling::PackageManager> m_packageManager;
@@ -33,7 +34,7 @@ namespace zuri_build {
         std::shared_ptr<zuri_distributor::AbstractPackageResolver> m_resolver;
         std::unique_ptr<zuri_distributor::PackageFetcher> m_fetcher;
         std::unique_ptr<zuri_distributor::DependencySelector> m_selector;
-        absl::flat_hash_map<tempo_utils::Url,std::string> m_urlShortcuts;
+        absl::flat_hash_map<std::string,tempo_utils::Url> m_targetUrls;
 
         bool packageIsPresent(const zuri_packager::PackageSpecifier &specifier) const;
     };

@@ -9,6 +9,7 @@
 namespace zuri_distributor {
 
     struct Selection {
+        std::string id;
         zuri_packager::PackageSpecifier specifier;
         tempo_utils::Url url;
         std::string shortcut;
@@ -18,11 +19,11 @@ namespace zuri_distributor {
     public:
         explicit DependencySelector(std::shared_ptr<AbstractPackageResolver> resolver);
 
-        tempo_utils::Status addDirectDependency(const zuri_packager::PackageId &packageId,
+        tempo_utils::Result<std::string> addDirectDependency(const zuri_packager::PackageId &packageId,
             std::string_view shortcut = {});
-        tempo_utils::Status addDirectDependency(const zuri_packager::PackageSpecifier &packageSpecifier,
+        tempo_utils::Result<std::string> addDirectDependency(const zuri_packager::PackageSpecifier &packageSpecifier,
             std::string_view shortcut = {});
-        tempo_utils::Status addDirectDependency(const std::filesystem::path &packagePath,
+        tempo_utils::Result<std::string> addDirectDependency(const std::filesystem::path &packagePath,
             std::string_view shortcut = {});
 
         tempo_utils::Status selectDependencies();
@@ -32,7 +33,9 @@ namespace zuri_distributor {
     private:
         std::shared_ptr<AbstractPackageResolver> m_resolver;
         DependencySet m_dependencies;
-        absl::flat_hash_map<zuri_packager::PackageSpecifier,tempo_utils::Url> m_packageUrls;
+        absl::flat_hash_map<
+            zuri_packager::PackageSpecifier,
+            std::pair<std::string,tempo_utils::Url>> m_packageSelections;
 
         struct PendingSelection {
             enum class Type {
@@ -42,6 +45,7 @@ namespace zuri_distributor {
                 Transitive,
             };
             Type type;
+            std::string id;
             zuri_packager::PackageId requestedId;
             zuri_packager::PackageSpecifier requestedSpecifier;
             std::filesystem::path requestedPath;
@@ -51,15 +55,19 @@ namespace zuri_distributor {
         std::queue<PendingSelection> m_pending;
 
         tempo_utils::Status dependOnLatestVersion(
-            const zuri_packager::PackageId &id,
+            const std::string &id,
+            const zuri_packager::PackageId &packageId,
             const std::string &shortcut);
         tempo_utils::Status dependOnSpecifiedVersion(
-            const zuri_packager::PackageSpecifier &specifier,
+            const std::string &id,
+            const zuri_packager::PackageSpecifier &packageSpecifier,
             const std::string &shortcut);
         tempo_utils::Status dependOnSpecifiedPath(
-            const std::filesystem::path &path,
+            const std::string &id,
+            const std::filesystem::path &packagePath,
             const std::string &shortcut);
         tempo_utils::Status dependTransitively(
+            const std::string &id,
             const zuri_packager::PackageSpecifier &target,
             const zuri_packager::PackageSpecifier &dependency);
     };

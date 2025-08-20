@@ -41,39 +41,54 @@ zuri_build::ImportSolver::configure()
 
 tempo_utils::Status
 zuri_build::ImportSolver::addImport(
-    const zuri_packager::PackageSpecifier &specifier,
-    std::string_view shortcut)
+    const zuri_packager::PackageId &importId,
+    std::shared_ptr<const zuri_tooling::ImportEntry> importEntry)
 {
-    return m_selector->addDirectDependency(specifier, shortcut);
+    zuri_packager::PackageSpecifier specifier(importId, importEntry->version);
+    TU_RETURN_IF_STATUS (m_selector->addDirectDependency(specifier, importId.toString()));
+    return {};
 }
 
 tempo_utils::Status
-zuri_build::ImportSolver::addImport(
-    const tempo_utils::Url &url,
-    std::string_view shortcut)
+zuri_build::ImportSolver::addTarget(
+    std::string_view targetName,
+    std::shared_ptr<const zuri_tooling::TargetEntry> targetEntry)
 {
-    if (m_urlShortcuts.contains(url))
+    if (m_targetUrls.contains(targetName))
         return BuildStatus::forCondition(BuildCondition::kBuildInvariant,
-            "import already defined for {}", url.toString());
-    m_urlShortcuts[url] = shortcut;
+            "import already defined for target '{}'", targetName);
+    switch (targetEntry->type) {
+        case zuri_tooling::TargetEntryType::Package: {
+            auto package = std::get<zuri_tooling::TargetEntry::Package>(targetEntry->target);
+            if (!package.url.isAbsolute())
+                return BuildStatus::forCondition(BuildCondition::kBuildInvariant,
+                    "cannot import target '{}'; package must refer to an absolute url", targetName);
+            m_targetUrls[targetName] = package.url;
+            break;
+        }
+        default:
+            return BuildStatus::forCondition(BuildCondition::kBuildInvariant,
+                "target '{}' cannot be imported", targetName);
+    }
     return {};
 }
 
 
-tempo_utils::Status
+tempo_utils::Result<absl::flat_hash_map<std::string,tempo_utils::Url>>
 zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver)
 {
-    // copy url shortcuts to local and clear the member
-    auto urlShortcuts = std::move(m_urlShortcuts);
-    m_urlShortcuts.clear();
+    absl::flat_hash_map<std::string,std::string> fetcherIdTargets;
+    absl::flat_hash_map<std::string,std::string> selectionIdTargets;
+    absl::flat_hash_map<std::string,tempo_utils::Url> targetBases;
 
     // create a request for each package url
-    std::vector<std::string> urlIds;
-    for (const auto &entry : urlShortcuts) {
+    for (const auto &entry : m_targetUrls) {
         std::string id;
-        TU_ASSIGN_OR_RETURN (id, m_fetcher->requestFile(entry.first));
-        urlIds.push_back(std::move(id));
+        TU_ASSIGN_OR_RETURN (id, m_fetcher->requestFile(entry.second));
+        fetcherIdTargets[id] = entry.first;
+        TU_LOG_V << "fetcher id:" << id << " -> target:" << entry.first;
     }
+    m_targetUrls.clear();
 
     // fetch all packages specified by url
     TU_RETURN_IF_NOT_OK (m_fetcher->fetchFiles());
@@ -83,8 +98,11 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
     for (auto it = m_fetcher->resultsBegin(); it != m_fetcher->resultsEnd(); it++) {
         const auto &result = it->second;
         if (result.status.isOk()) {
-            auto shortcut = urlShortcuts.at(result.url);
-            TU_RETURN_IF_NOT_OK (m_selector->addDirectDependency(result.path, shortcut));
+            std::string selectionId;
+            TU_ASSIGN_OR_RETURN (selectionId, m_selector->addDirectDependency(result.path));
+            const auto &target = fetcherIdTargets.at(result.id);
+            selectionIdTargets[selectionId] = target;
+            TU_LOG_V << "selection id:" << selectionId << " -> target:" << target;
         } else {
             TU_LOG_V << "failed to download " << result.url;
             failed = true;
@@ -113,9 +131,17 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
 
         // insert shortcut if specified
         if (!selection.shortcut.empty()) {
-            auto origin = selection.specifier.toUrlOrigin();
-            TU_RETURN_IF_NOT_OK (shortcutResolver->insertShortcut(selection.shortcut, origin));
+            auto base = selection.specifier.toUrl();
+            TU_RETURN_IF_NOT_OK (shortcutResolver->insertShortcut(selection.shortcut, base));
             TU_LOG_V << "added shortcut '" << selection.shortcut << "' for " << selection.specifier.toString();
+        } else {
+            // otherwise if selection is a package target then insert the origin
+            TU_LOG_V << "selection id:" << selection.id;
+            auto entry = selectionIdTargets.find(selection.id);
+            if (entry != selectionIdTargets.cend()) {
+                targetBases[entry->second] = selection.specifier.toUrl();
+                TU_LOG_V << "target:" << entry->second << " -> origin:" << selection.specifier.toUrl().toString();
+            }
         }
     }
 
@@ -138,7 +164,7 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
         }
     }
 
-    return {};
+    return targetBases;
 }
 
 bool

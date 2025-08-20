@@ -1,83 +1,91 @@
 
 #include <tempo_command/command_help.h>
 #include <tempo_config/config_builder.h>
+#include <zuri_build/build_result.h>
 #include <zuri_build/target_builder.h>
 #include <zuri_build/target_writer.h>
 
 zuri_build::TargetBuilder::TargetBuilder(
     std::shared_ptr<zuri_tooling::BuildGraph> buildGraph,
     lyric_build::LyricBuilder *builder,
-    std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver,
-    std::shared_ptr<zuri_distributor::PackageCache> targetPackageCache,
+    absl::flat_hash_map<std::string,tempo_utils::Url> &&targetBases,
+    std::shared_ptr<zuri_distributor::PackageCache> tcache,
     const std::filesystem::path &installRoot)
     : m_buildGraph(std::move(buildGraph)),
       m_builder(builder),
-      m_shortcutResolver(std::move(shortcutResolver)),
-      m_targetPackageCache(std::move(targetPackageCache)),
+      m_targetBases(std::move(targetBases)),
+      m_tcache(std::move(tcache)),
       m_installRoot(installRoot)
 {
     TU_ASSERT (m_buildGraph != nullptr);
     TU_ASSERT (m_builder != nullptr);
-    TU_ASSERT (m_targetPackageCache != nullptr);
+    TU_ASSERT (m_tcache != nullptr);
     TU_ASSERT (!m_installRoot.empty());
 }
 
 tempo_utils::Result<std::filesystem::path>
-zuri_build::TargetBuilder::buildTarget(
-    const std::string &targetName,
-    const absl::flat_hash_map<std::string,std::string> &targetShortcuts)
+zuri_build::TargetBuilder::buildTarget(const std::string &targetName)
 {
+    auto targetStore = m_buildGraph->getTargetStore();
+
+    // make a fresh copy of target bases
+    auto targetBases = m_targetBases;
+
+    std::filesystem::path currTargetPath;
+
+    // determine the order in which to build the specified target and all of its dependent targets
     std::vector<std::string> targetBuildOrder;
     TU_ASSIGN_OR_RETURN (targetBuildOrder, m_buildGraph->calculateBuildOrder(targetName));
 
-    std::filesystem::path currTargetPath;
-    std::filesystem::path prevTargetPath;
-    std::string prevTargetName;
-
-    auto targetStore = m_buildGraph->getTargetStore();
-
+    // process each target in order
     for (const auto &currTargetName : targetBuildOrder) {
+        const auto &currEntry = targetStore->getTarget(currTargetName);
 
-        // if target dependency exists then install it in the target package cache
-        if (!prevTargetPath.empty()) {
-            std::shared_ptr<zuri_packager::PackageReader> packageReader;
-            TU_ASSIGN_OR_RETURN (packageReader, zuri_packager::PackageReader::open(prevTargetPath));
-            zuri_packager::PackageSpecifier specifier;
-            TU_ASSIGN_OR_RETURN (specifier, packageReader->readPackageSpecifier());
-
-            // if target exists in package cache then remove it first
-            if (m_targetPackageCache->containsPackage(specifier)) {
-                TU_RETURN_IF_NOT_OK (m_targetPackageCache->removePackage(specifier));
-            }
-            TU_RETURN_IF_STATUS (m_targetPackageCache->installPackage(packageReader));
-
-            //
-            auto entry = targetShortcuts.find(prevTargetName);
-            if (entry != targetShortcuts.cend()) {
-                const auto &shortcutName = entry->second;
-                if (!m_shortcutResolver->hasShortcut(shortcutName)) {
-                    auto origin = specifier.toUrlOrigin();
-                    TU_RETURN_IF_NOT_OK (m_shortcutResolver->insertShortcut(shortcutName, origin));
-                }
-            }
+        // package targets are processed during initialization so there is nothing to do
+        if (currEntry->type == zuri_tooling::TargetEntryType::Package) {
+            continue;
         }
 
-        const auto &currEntry = targetStore->getTarget(currTargetName);
+        // construct the shortcut resolver for the target
+        auto targetShortcuts = std::make_shared<lyric_importer::ShortcutResolver>();
+        for (const auto &dependsName : currEntry->depends) {
+            auto entry = targetBases.find(dependsName);
+            if (entry == targetBases.cend())
+                return BuildStatus::forCondition(BuildCondition::kBuildInvariant,
+                    "unknown dependent '{}' for target {}", dependsName, currTargetName);
+            TU_RETURN_IF_NOT_OK (targetShortcuts->insertShortcut(entry->first, entry->second));
+        }
+
+        // build the target
         switch (currEntry->type) {
-            case zuri_tooling::TargetEntryType::Program: {
-                TU_ASSIGN_OR_RETURN (currTargetPath, buildProgramTarget(currTargetName, currEntry));
+            case zuri_tooling::TargetEntryType::Program:
+                TU_ASSIGN_OR_RETURN (currTargetPath, buildProgramTarget(currTargetName, currEntry, targetShortcuts));
                 break;
-            }
-            case zuri_tooling::TargetEntryType::Library: {
-                TU_ASSIGN_OR_RETURN (currTargetPath, buildLibraryTarget(currTargetName, currEntry));
+            case zuri_tooling::TargetEntryType::Library:
+                TU_ASSIGN_OR_RETURN (currTargetPath, buildLibraryTarget(currTargetName, currEntry, targetShortcuts));
                 break;
-            }
             default:
                 return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kConfigInvariant,
                     "invalid type for build target {}", currTargetName);
         }
-        prevTargetPath = currTargetPath;
-        prevTargetName = currTargetName;
+
+        // if we are processing a dependent target then install it in the targets cache
+        if (currTargetName != targetName) {
+            std::shared_ptr<zuri_packager::PackageReader> packageReader;
+            TU_ASSIGN_OR_RETURN (packageReader, zuri_packager::PackageReader::open(currTargetPath));
+            zuri_packager::PackageSpecifier specifier;
+            TU_ASSIGN_OR_RETURN (specifier, packageReader->readPackageSpecifier());
+
+            // if target exists in package cache then remove it first
+            // TODO: if package is unchanged then don't reinstall it
+            if (m_tcache->containsPackage(specifier)) {
+                TU_RETURN_IF_NOT_OK (m_tcache->removePackage(specifier));
+            }
+            TU_RETURN_IF_STATUS (m_tcache->installPackage(packageReader));
+
+            // add package base for target
+            targetBases[currTargetName] = specifier.toUrl();
+        }
     }
 
     return currTargetPath;
@@ -86,17 +94,19 @@ zuri_build::TargetBuilder::buildTarget(
 tempo_utils::Result<std::filesystem::path>
 zuri_build::TargetBuilder::buildProgramTarget(
     const std::string &targetName,
-    std::shared_ptr<const zuri_tooling::TargetEntry> programTarget)
+    std::shared_ptr<const zuri_tooling::TargetEntry> targetEntry,
+    std::shared_ptr<lyric_importer::ShortcutResolver> targetShortcuts)
 {
-    TU_ASSERT (programTarget->type == zuri_tooling::TargetEntryType::Program);
+    TU_ASSERT (targetEntry->type == zuri_tooling::TargetEntryType::Program);
+    const auto &program = std::get<zuri_tooling::TargetEntry::Program>(targetEntry->target);
 
     // declare the build tasks
     lyric_build::TaskId collectModules("collect_modules", targetName);
     auto collectModulesOverridesBuilder = tempo_config::startMap();
 
     auto modulePathsBuilder = tempo_config::startSeq()
-        .append(tempo_config::valueNode(programTarget->main.getPath().toString()));
-    for (const auto &programModule : programTarget->modules) {
+        .append(tempo_config::valueNode(program.main.getPath().toString()));
+    for (const auto &programModule : program.modules) {
         modulePathsBuilder = modulePathsBuilder
             .append(tempo_config::valueNode(programModule.getPath().toString()));
     }
@@ -106,10 +116,13 @@ zuri_build::TargetBuilder::buildProgramTarget(
     absl::flat_hash_map<lyric_build::TaskId, tempo_config::ConfigMap> taskOverrides;
     taskOverrides[collectModules] = collectModulesOverridesBuilder.buildMap();
 
+    lyric_build::ComputeTargetOverrides overrides;
+    overrides.settings = lyric_build::TaskSettings({}, {}, taskOverrides);
+    overrides.shortcuts = targetShortcuts;
+
     // run the build
     lyric_build::TargetComputationSet targetComputationSet;
-    TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTargets({collectModules},
-        lyric_build::TaskSettings({}, {}, taskOverrides)));
+    TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTarget(collectModules, overrides));
 
     auto targetComputation = targetComputationSet.getTarget(collectModules);
     if (targetComputation.getState().getStatus() != lyric_build::TaskState::Status::COMPLETED) {
@@ -120,11 +133,11 @@ zuri_build::TargetBuilder::buildProgramTarget(
     }
 
     // construct the target writer
-    TargetWriter targetWriter(m_installRoot, programTarget->specifier);
+    TargetWriter targetWriter(m_installRoot, program.specifier);
     TU_RETURN_IF_NOT_OK (targetWriter.configure());
 
     // set the main location
-    targetWriter.setProgramMain(programTarget->main);
+    targetWriter.setProgramMain(program.main);
 
     auto cache = m_builder->getCache();
     std::vector<lyric_build::ArtifactId> targetArtifacts;
@@ -149,16 +162,18 @@ zuri_build::TargetBuilder::buildProgramTarget(
 tempo_utils::Result<std::filesystem::path>
 zuri_build::TargetBuilder::buildLibraryTarget(
     const std::string &targetName,
-    std::shared_ptr<const zuri_tooling::TargetEntry> libraryTarget)
+    std::shared_ptr<const zuri_tooling::TargetEntry> targetEntry,
+    std::shared_ptr<lyric_importer::ShortcutResolver> targetShortcuts)
 {
-    TU_ASSERT (libraryTarget->type == zuri_tooling::TargetEntryType::Library);
+    TU_ASSERT (targetEntry->type == zuri_tooling::TargetEntryType::Library);
+    const auto &library = std::get<zuri_tooling::TargetEntry::Library>(targetEntry->target);
 
     // declare the build tasks
     lyric_build::TaskId collectModules("collect_modules", targetName);
     auto collectModulesOverridesBuilder = tempo_config::startMap();
 
     auto modulePathsBuilder = tempo_config::startSeq();
-    for (const auto &libraryModule : libraryTarget->modules) {
+    for (const auto &libraryModule : library.modules) {
         modulePathsBuilder = modulePathsBuilder
             .append(tempo_config::valueNode(libraryModule.getPath().toString()));
     }
@@ -168,10 +183,13 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     absl::flat_hash_map<lyric_build::TaskId, tempo_config::ConfigMap> taskOverrides;
     taskOverrides[collectModules] = collectModulesOverridesBuilder.buildMap();
 
+    lyric_build::ComputeTargetOverrides overrides;
+    overrides.settings = lyric_build::TaskSettings({}, {}, taskOverrides);
+    overrides.shortcuts = targetShortcuts;
+
     // run the build
     lyric_build::TargetComputationSet targetComputationSet;
-    TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTargets({collectModules},
-        lyric_build::TaskSettings({}, {}, taskOverrides)));
+    TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTarget(collectModules, overrides));
 
     auto targetComputation = targetComputationSet.getTarget(collectModules);
     if (targetComputation.getState().getStatus() != lyric_build::TaskState::Status::COMPLETED) {
@@ -182,7 +200,7 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     }
 
     // construct the target writer
-    TargetWriter targetWriter(m_installRoot, libraryTarget->specifier);
+    TargetWriter targetWriter(m_installRoot, library.specifier);
     TU_RETURN_IF_NOT_OK (targetWriter.configure());
 
     auto cache = m_builder->getCache();

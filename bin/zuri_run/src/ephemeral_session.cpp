@@ -77,13 +77,14 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
     }
 
     // define the target task overrides
-    lyric_build::TaskSettings overrides({}, {}, {
+    lyric_build::ComputeTargetOverrides overrides;
+    overrides.settings = lyric_build::TaskSettings({}, {}, {
         { target, paramsBuilder.buildMap() },
     });
 
     // compile the code fragment into an object
     lyric_build::TargetComputationSet targetComputationSet;
-    TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTargets({target}, overrides));
+    TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTarget(target, overrides));
     auto targetComputation = targetComputationSet.getTarget(target);
     auto targetState = targetComputation.getState();
 

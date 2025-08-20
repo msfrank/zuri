@@ -267,41 +267,28 @@ zuri_build::zuri_build(int argc, const char *argv[])
         commandMap, "jobParallelism"));
 
     // create the shortcut resolver
-    auto shortcutResolver = std::make_shared<lyric_importer::ShortcutResolver>();
-    builderOptions.shortcutResolver = shortcutResolver;
+    auto importShortcuts = std::make_shared<lyric_importer::ShortcutResolver>();
+    builderOptions.shortcutResolver = importShortcuts;
 
-    // resolve and install package and requirement imports
-    absl::flat_hash_map<std::string,std::string> targetShortcuts;
+    // add imports declared in the workspace
     for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); ++it) {
-        const auto &importName = it->first;
+        const auto &importId = it->first;
         const auto &importEntry = it->second;
-        switch (importEntry->type) {
-            case zuri_tooling::ImportEntryType::Target: {
-                if (!targetStore->hasTarget(importEntry->targetName))
-                    return tempo_command::CommandStatus::forCondition(
-                        tempo_command::CommandCondition::kInvalidConfiguration,
-                        "missing target '{}' for import '{}'", importEntry->targetName, importName);
-                if (targetShortcuts.contains(importEntry->targetName))
-                    return tempo_command::CommandStatus::forCondition(
-                        tempo_command::CommandCondition::kInvalidConfiguration,
-                        "target '{}' is referenced from multiple imports", importEntry->targetName);
-                targetShortcuts[importEntry->targetName] = importName;
-                break;
-            }
-            case zuri_tooling::ImportEntryType::Requirement:
-                TU_RETURN_IF_NOT_OK (importSolver->addImport(importEntry->requirementSpecifier, importName));
-                break;
-            case zuri_tooling::ImportEntryType::Package:
-                TU_RETURN_IF_NOT_OK (importSolver->addImport(importEntry->packageUrl, importName));
-                break;
-            default:
-                return tempo_command::CommandStatus::forCondition(
-                    tempo_command::CommandCondition::kInvalidConfiguration,
-                    "invalid import type for '{}'", importName);
+        TU_RETURN_IF_NOT_OK (importSolver->addImport(importId, importEntry));
+    }
+
+    // add imports declared from package targets
+    for (auto it = targetStore->targetsBegin(); it != targetStore->targetsEnd(); it++) {
+        const auto &targetName = it->first;
+        const auto &targetEntry = it->second;
+        if (targetEntry->type == zuri_tooling::TargetEntryType::Package) {
+            TU_RETURN_IF_NOT_OK (importSolver->addTarget(targetName, targetEntry));
         }
     }
 
-    TU_RETURN_IF_NOT_OK (importSolver->installImports(shortcutResolver));
+    // install imports and capture target origins
+    absl::flat_hash_map<std::string,tempo_utils::Url> targetBases;
+    TU_ASSIGN_OR_RETURN (targetBases, importSolver->installImports(importShortcuts));
 
     // create task registry and register build task domains
     auto taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
@@ -316,9 +303,9 @@ zuri_build::zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK (builder.configure());
 
     // build each target (and its dependencies) in the order specified on the command line
-    TargetBuilder targetBuilder(buildGraph, &builder, shortcutResolver, packageManager->getTcache(), installRoot);
+    TargetBuilder targetBuilder(buildGraph, &builder, std::move(targetBases), packageManager->getTcache(), installRoot);
     for (const auto &target : targets) {
-        TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target, targetShortcuts));
+        TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target));
     }
 
     return {};

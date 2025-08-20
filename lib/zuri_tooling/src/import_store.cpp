@@ -2,6 +2,7 @@
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_config/parse_config.h>
+#include <zuri_packager/packaging_conversions.h>
 #include <zuri_tooling/import_store.h>
 #include <zuri_tooling/tooling_conversions.h>
 
@@ -13,10 +14,10 @@ zuri_tooling::ImportStore::ImportStore(const tempo_config::ConfigMap &importsMap
 tempo_utils::Status
 zuri_tooling::ImportStore::configure()
 {
-    tempo_config::StringParser importNameParser;
+    zuri_packager::PackageIdParser packageIdParser;
     ImportEntryParser importEntryParser;
     tempo_config::SharedPtrConstTParser sharedConstImportEntryParser(&importEntryParser);
-    tempo_config::MapKVParser importEntriesParser(&importNameParser, &sharedConstImportEntryParser);
+    tempo_config::MapKVParser importEntriesParser(&packageIdParser, &sharedConstImportEntryParser);
 
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
         m_importEntries, importEntriesParser, m_importsMap));
@@ -25,27 +26,27 @@ zuri_tooling::ImportStore::configure()
 }
 
 bool
-zuri_tooling::ImportStore::hasImport(const std::string &importName) const
+zuri_tooling::ImportStore::hasImport(const zuri_packager::PackageId &packageId) const
 {
-    return m_importEntries.contains(importName);
+    return m_importEntries.contains(packageId);
 }
 
 std::shared_ptr<const zuri_tooling::ImportEntry>
-zuri_tooling::ImportStore::getImport(const std::string &importName) const
+zuri_tooling::ImportStore::getImport(const zuri_packager::PackageId &packageId) const
 {
-    auto entry = m_importEntries.find(importName);
+    auto entry = m_importEntries.find(packageId);
     if (entry != m_importEntries.cend())
         return entry->second;
     return {};
 }
 
-absl::flat_hash_map<std::string,std::shared_ptr<const zuri_tooling::ImportEntry>>::const_iterator
+absl::flat_hash_map<zuri_packager::PackageId,std::shared_ptr<const zuri_tooling::ImportEntry>>::const_iterator
 zuri_tooling::ImportStore::importsBegin() const
 {
     return m_importEntries.cbegin();
 }
 
-absl::flat_hash_map<std::string,std::shared_ptr<const zuri_tooling::ImportEntry>>::const_iterator
+absl::flat_hash_map<zuri_packager::PackageId,std::shared_ptr<const zuri_tooling::ImportEntry>>::const_iterator
 zuri_tooling::ImportStore::importsEnd() const
 {
     return m_importEntries.cend();

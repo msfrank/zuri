@@ -46,8 +46,6 @@ namespace zuri_tooling {
         std::shared_ptr<TargetStore> m_targetStore;
         std::shared_ptr<ImportStore> m_importStore;
 
-        absl::flat_hash_set<tempo_utils::Url> m_requestedPackages;
-        absl::flat_hash_set<zuri_packager::PackageSpecifier> m_requestedRequirements;
         absl::flat_hash_set<std::vector<std::string>> m_targetCycles;
 
         struct Priv;
@@ -56,8 +54,6 @@ namespace zuri_tooling {
         BuildGraph(
             std::shared_ptr<TargetStore> targetStore,
             std::shared_ptr<ImportStore> importStore,
-            absl::flat_hash_set<tempo_utils::Url> &&requestedPackages,
-            absl::flat_hash_set<zuri_packager::PackageSpecifier> &&requestedRequirements,
             absl::flat_hash_set<std::vector<std::string>> &&targetCycles,
             std::unique_ptr<Priv> &&priv);
 

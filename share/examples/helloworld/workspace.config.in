@@ -7,19 +7,17 @@
                 }
             }
         },
-        "imports": {
+        "targets": {
             "std": {
                 "type": "Package",
                 "packageUrl": "file://@ZURI_STD_FILEPATH@"
-            }
-        },
-        "targets": {
+            },
             "helloworld": {
                 "type": "Program",
                 "specifier": "helloworld-@PROJECT_VERSION@@examples",
                 "programMain": "/helloworld",
                 "programModules": [],
-                "imports": ["std"]
+                "depends": ["std"]
             }
         }
     }

@@ -13,27 +13,27 @@ namespace zuri_build {
         TargetBuilder(
             std::shared_ptr<zuri_tooling::BuildGraph> buildGraph,
             lyric_build::LyricBuilder *builder,
-            std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver,
-            std::shared_ptr<zuri_distributor::PackageCache> targetPackageCache,
+            absl::flat_hash_map<std::string,tempo_utils::Url> &&targetBases,
+            std::shared_ptr<zuri_distributor::PackageCache> tcache,
             const std::filesystem::path &installRoot);
 
-        tempo_utils::Result<std::filesystem::path> buildTarget(
-            const std::string &targetName,
-            const absl::flat_hash_map<std::string,std::string> &targetShortcuts);
+        tempo_utils::Result<std::filesystem::path> buildTarget(const std::string &targetName);
 
     private:
         std::shared_ptr<zuri_tooling::BuildGraph> m_buildGraph;
         lyric_build::LyricBuilder *m_builder;
-        std::shared_ptr<lyric_importer::ShortcutResolver> m_shortcutResolver;
-        std::shared_ptr<zuri_distributor::PackageCache> m_targetPackageCache;
+        absl::flat_hash_map<std::string,tempo_utils::Url> m_targetBases;
+        std::shared_ptr<zuri_distributor::PackageCache> m_tcache;
         std::filesystem::path m_installRoot;
 
         tempo_utils::Result<std::filesystem::path> buildProgramTarget(
             const std::string &targetName,
-            std::shared_ptr<const zuri_tooling::TargetEntry> programTarget);
+            std::shared_ptr<const zuri_tooling::TargetEntry> targetEntry,
+            std::shared_ptr<lyric_importer::ShortcutResolver> targetShortcuts);
         tempo_utils::Result<std::filesystem::path> buildLibraryTarget(
             const std::string &targetName,
-            std::shared_ptr<const zuri_tooling::TargetEntry> libraryTarget);
+            std::shared_ptr<const zuri_tooling::TargetEntry> targetEntry,
+            std::shared_ptr<lyric_importer::ShortcutResolver> targetShortcuts);
     };
 }
 

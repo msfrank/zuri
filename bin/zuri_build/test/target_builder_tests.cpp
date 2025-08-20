@@ -60,12 +60,11 @@ TEST_F(TargetBuilderTests, BuildLibrary)
 
     auto *testRunner = tester.getRunner();
     auto *builder = testRunner->getBuilder();
-    auto shortcutResolver = std::make_shared<lyric_importer::ShortcutResolver>();
     std::shared_ptr<zuri_distributor::PackageCache> packageCache;
     TU_ASSIGN_OR_RAISE (packageCache, zuri_distributor::PackageCache::openOrCreate(tempdir, "pkgcache"));
 
-    zuri_build::TargetBuilder targetBuilder(buildGraph, builder, shortcutResolver, packageCache, installRoot->getTempdir());
+    zuri_build::TargetBuilder targetBuilder(buildGraph, builder, {}, packageCache, installRoot->getTempdir());
 
-    auto buildTargetResult = targetBuilder.buildTarget("lib1", {});
+    auto buildTargetResult = targetBuilder.buildTarget("lib1");
     ASSERT_THAT (buildTargetResult, tempo_test::IsResult());
 }

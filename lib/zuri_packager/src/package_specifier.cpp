@@ -226,8 +226,8 @@ zuri_packager::PackageSpecifier::toDirectoryPath(const std::filesystem::path &ba
     return path;
 }
 
-tempo_utils::UrlOrigin
-zuri_packager::PackageSpecifier::toUrlOrigin() const
+tempo_utils::Url
+zuri_packager::PackageSpecifier::toUrl() const
 {
     if (!isValid())
         return {};
@@ -239,7 +239,7 @@ zuri_packager::PackageSpecifier::toUrlOrigin() const
         getMinorVersion(),
         ".",
         getPatchVersion());
-    return tempo_utils::UrlOrigin::fromString(
+    return tempo_utils::Url::fromString(
         absl::StrCat("dev.zuri.pkg://", username, "@", getPackageDomain()));
 }
 

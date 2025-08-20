@@ -57,13 +57,15 @@ zuri_pkg::InstallSolver::configure()
 tempo_utils::Status
 zuri_pkg::InstallSolver::addPackage(const zuri_packager::PackageId &id)
 {
-    return m_selector->addDirectDependency(id);
+    TU_RETURN_IF_STATUS (m_selector->addDirectDependency(id));
+    return {};
 }
 
 tempo_utils::Status
 zuri_pkg::InstallSolver::addPackage(const zuri_packager::PackageSpecifier &specifier)
 {
-    return m_selector->addDirectDependency(specifier);
+    TU_RETURN_IF_STATUS (m_selector->addDirectDependency(specifier));
+    return {};
 }
 
 tempo_utils::Status
@@ -93,7 +95,7 @@ zuri_pkg::InstallSolver::installPackages()
     for (auto it = m_fetcher->resultsBegin(); it != m_fetcher->resultsEnd(); it++) {
         const auto &result = it->second;
         if (result.status.isOk()) {
-            TU_RETURN_IF_NOT_OK (m_selector->addDirectDependency(result.path));
+            TU_RETURN_IF_STATUS (m_selector->addDirectDependency(result.path));
         } else {
             TU_LOG_V << "failed to download " << result.url;
             failed = true;

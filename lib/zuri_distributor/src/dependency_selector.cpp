@@ -1,4 +1,5 @@
 
+#include <tempo_utils/uuid.h>
 #include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/distributor_result.h>
 #include <zuri_packager/package_reader.h>
@@ -9,52 +10,59 @@ zuri_distributor::DependencySelector::DependencySelector(std::shared_ptr<Abstrac
     TU_ASSERT (m_resolver != nullptr);
 }
 
-tempo_utils::Status
+tempo_utils::Result<std::string>
 zuri_distributor::DependencySelector::addDirectDependency(
     const zuri_packager::PackageId &packageId,
     std::string_view shortcut)
 {
+    auto id = tempo_utils::UUID::randomUUID().toString();
     PendingSelection pendingSelection;
     pendingSelection.type = PendingSelection::Type::Id;
+    pendingSelection.id = id;
     pendingSelection.requestedId = packageId;
     pendingSelection.shortcut = shortcut;
     m_pending.push(std::move(pendingSelection));
-    return {};
+    return id;
 }
 
-tempo_utils::Status
+tempo_utils::Result<std::string>
 zuri_distributor::DependencySelector::addDirectDependency(
     const zuri_packager::PackageSpecifier &packageSpecifier,
     std::string_view shortcut)
 {
+    auto id = tempo_utils::UUID::randomUUID().toString();
     PendingSelection pendingSelection;
     pendingSelection.type = PendingSelection::Type::Specifier;
+    pendingSelection.id = id;
     pendingSelection.requestedSpecifier = packageSpecifier;
     pendingSelection.shortcut = shortcut;
     m_pending.push(std::move(pendingSelection));
-    return {};
+    return id;
 }
 
-tempo_utils::Status
+tempo_utils::Result<std::string>
 zuri_distributor::DependencySelector::addDirectDependency(
     const std::filesystem::path &packagePath,
     std::string_view shortcut)
 {
+    auto id = tempo_utils::UUID::randomUUID().toString();
     PendingSelection pendingSelection;
     pendingSelection.type = PendingSelection::Type::Path;
+    pendingSelection.id = id;
     pendingSelection.requestedPath = packagePath;
     pendingSelection.shortcut = shortcut;
     m_pending.push(std::move(pendingSelection));
-    return {};
+    return id;
 }
 
 tempo_utils::Status
 zuri_distributor::DependencySelector::dependOnLatestVersion(
-    const zuri_packager::PackageId &id,
+    const std::string &id,
+    const zuri_packager::PackageId &packageId,
     const std::string &shortcut)
 {
     CollectionDescriptor collectionDescriptor;
-    TU_ASSIGN_OR_RETURN (collectionDescriptor, m_resolver->getCollection(id));
+    TU_ASSIGN_OR_RETURN (collectionDescriptor, m_resolver->getCollection(packageId));
 
     zuri_packager::PackageVersion latestVersion;
     for (const auto &entry : collectionDescriptor.versions) {
@@ -67,14 +75,15 @@ zuri_distributor::DependencySelector::dependOnLatestVersion(
 
     if (!latestVersion.isValid())
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-            "no usable version found for '{}'", id.toString());
-    zuri_packager::PackageSpecifier specifier(id, latestVersion);
+            "no usable version found for '{}'", packageId.toString());
+    zuri_packager::PackageSpecifier specifier(packageId, latestVersion);
 
-    return dependOnSpecifiedVersion(specifier, shortcut);
+    return dependOnSpecifiedVersion(id, specifier, shortcut);
 }
 
 tempo_utils::Status
 zuri_distributor::DependencySelector::dependOnSpecifiedVersion(
+    const std::string &id,
     const zuri_packager::PackageSpecifier &specifier,
     const std::string &shortcut)
 {
@@ -87,17 +96,19 @@ zuri_distributor::DependencySelector::dependOnSpecifiedVersion(
     for (const auto &requested : packageDescriptor.dependencies) {
         PendingSelection pendingSelection;
         pendingSelection.type = PendingSelection::Type::Transitive;
+        pendingSelection.id = tempo_utils::UUID::randomUUID().toString();
         pendingSelection.requestedSpecifier = requested;
         pendingSelection.target = specifier;
         m_pending.push(std::move(pendingSelection));
     }
-    m_packageUrls[specifier] = packageDescriptor.url;
+    m_packageSelections[specifier] = std::pair(id, packageDescriptor.url);
 
     return {};
 }
 
 tempo_utils::Status
 zuri_distributor::DependencySelector::dependOnSpecifiedPath(
+    const std::string &id,
     const std::filesystem::path &path,
     const std::string &shortcut)
 {
@@ -116,16 +127,18 @@ zuri_distributor::DependencySelector::dependOnSpecifiedPath(
         zuri_packager::PackageSpecifier requested(it->first, it->second);
         PendingSelection pendingSelection;
         pendingSelection.type = PendingSelection::Type::Transitive;
+        pendingSelection.id = tempo_utils::UUID::randomUUID().toString();
         pendingSelection.requestedSpecifier = requested;
         pendingSelection.target = specifier;
         m_pending.push(std::move(pendingSelection));
     }
-    m_packageUrls[specifier] = tempo_utils::Url::fromFilesystemPath(path);
+    m_packageSelections[specifier] = std::pair(id, tempo_utils::Url::fromFilesystemPath(path));
 
     return {};
 }
 tempo_utils::Status
 zuri_distributor::DependencySelector::dependTransitively(
+    const std::string &id,
     const zuri_packager::PackageSpecifier &target,
     const zuri_packager::PackageSpecifier &dependency)
 {
@@ -141,12 +154,13 @@ zuri_distributor::DependencySelector::dependTransitively(
     for (const auto &requested : packageDescriptor.dependencies) {
         PendingSelection pendingSelection;
         pendingSelection.type = PendingSelection::Type::Transitive;
+        pendingSelection.id = tempo_utils::UUID::randomUUID().toString();
         pendingSelection.requestedSpecifier = requested;
         pendingSelection.target = dependency;
         m_pending.push(std::move(pendingSelection));
     }
 
-    m_packageUrls[dependency] = packageDescriptor.url;
+    m_packageSelections[dependency] = std::pair(id, packageDescriptor.url);
 
     return {};
 }
@@ -160,16 +174,16 @@ zuri_distributor::DependencySelector::selectDependencies()
 
         switch (curr.type) {
             case PendingSelection::Type::Id:
-                TU_RETURN_IF_NOT_OK (dependOnLatestVersion(curr.requestedId, curr.shortcut));
+                TU_RETURN_IF_NOT_OK (dependOnLatestVersion(curr.id, curr.requestedId, curr.shortcut));
                 break;
             case PendingSelection::Type::Specifier:
-                TU_RETURN_IF_NOT_OK (dependOnSpecifiedVersion(curr.requestedSpecifier, curr.shortcut));
+                TU_RETURN_IF_NOT_OK (dependOnSpecifiedVersion(curr.id, curr.requestedSpecifier, curr.shortcut));
                 break;
             case PendingSelection::Type::Path:
-                TU_RETURN_IF_NOT_OK (dependOnSpecifiedPath(curr.requestedPath, curr.shortcut));
+                TU_RETURN_IF_NOT_OK (dependOnSpecifiedPath(curr.id, curr.requestedPath, curr.shortcut));
                 break;
             case PendingSelection::Type::Transitive:
-                TU_RETURN_IF_NOT_OK (dependTransitively(curr.target, curr.requestedSpecifier));
+                TU_RETURN_IF_NOT_OK (dependTransitively(curr.id, curr.target, curr.requestedSpecifier));
                 break;
             default:
                 return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
@@ -189,15 +203,16 @@ zuri_distributor::DependencySelector::calculateDependencyOrder()
 
     std::vector<Selection> dependencyOrder;
     for (const auto &dependency : resolutionOrder) {
-        auto entry = m_packageUrls.find(dependency.specifier);
-        if (entry == m_packageUrls.cend())
+        auto entry = m_packageSelections.find(dependency.specifier);
+        if (entry == m_packageSelections.cend())
             return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
                 "missing package url for {}", dependency.specifier.toString());
-        const auto &packageUrl = entry->second;
+        const auto &packageSelection = entry->second;
 
         Selection selection;
+        selection.id = packageSelection.first;
         selection.specifier = dependency.specifier;
-        selection.url = packageUrl;
+        selection.url = packageSelection.second;
         selection.shortcut = dependency.shortcut;
         dependencyOrder.push_back(std::move(selection));
     }
