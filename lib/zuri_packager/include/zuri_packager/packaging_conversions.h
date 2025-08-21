@@ -4,7 +4,6 @@
 #include <tempo_config/abstract_converter.h>
 #include <tempo_utils/status.h>
 
-#include "package_requirement.h"
 #include "package_specifier.h"
 
 namespace zuri_packager {

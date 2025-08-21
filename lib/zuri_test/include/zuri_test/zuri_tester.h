@@ -11,7 +11,6 @@
 #include <lyric_test/test_runner.h>
 #include <zuri_distributor/package_cache.h>
 #include <zuri_distributor/package_cache_loader.h>
-#include <zuri_packager/package_dependency.h>
 
 namespace zuri_test {
 

@@ -2,8 +2,6 @@
 #include <tempo_config/config_result.h>
 #include <zuri_packager/packaging_conversions.h>
 
-#include "zuri_packager/requirement_parser.h"
-
 zuri_packager::PackageIdParser::PackageIdParser()
 {
 }

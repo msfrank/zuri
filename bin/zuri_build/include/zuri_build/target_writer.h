@@ -4,7 +4,6 @@
 #include <lyric_build/lyric_metadata.h>
 #include <tempo_utils/tempdir_maker.h>
 #include <zuri_packager/package_specifier.h>
-#include <zuri_packager/package_dependency.h>
 #include <zuri_packager/package_writer.h>
 
 namespace zuri_build {

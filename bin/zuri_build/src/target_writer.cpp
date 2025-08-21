@@ -1,5 +1,7 @@
 
+#include <lyric_build/build_attrs.h>
 #include <lyric_build/build_result.h>
+#include <lyric_common/common_types.h>
 #include <lyric_object/lyric_object.h>
 #include <tempo_config/config_builder.h>
 #include <tempo_utils/directory_maker.h>
@@ -117,19 +119,24 @@ zuri_build::TargetWriter::writeModule(
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is not configured");
 
-    lyric_object::LyricObject object(content);
-    auto root = object.getObject();
-    for (int i = 0; i < root.numImports(); i++) {
-        auto import = root.getImport(i);
-        auto location = import.getImportLocation();
-        if (import.isSystemBootstrap()) {
-            // TODO: process bootstrap imports
-        } else if (location.getScheme() == "dev.zuri.pkg") {
-            auto specifier = zuri_packager::PackageSpecifier::fromAuthority(location.getAuthority());
-            TU_RETURN_IF_NOT_OK (addRequirement(specifier));
-        } else {
-            return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
-                "unhandled module scheme '{}' for import {}", location.getScheme(), location.toString());
+    std::string contentType;
+    TU_RETURN_IF_NOT_OK (metadata.getMetadata().parseAttr(lyric_build::kLyricBuildContentType, contentType));
+
+    if (contentType == lyric_common::kObjectContentType) {
+        lyric_object::LyricObject object(content);
+        auto root = object.getObject();
+        for (int i = 0; i < root.numImports(); i++) {
+            auto import = root.getImport(i);
+            auto location = import.getImportLocation();
+            if (import.isSystemBootstrap()) {
+                // TODO: process bootstrap imports
+            } else if (location.getScheme() == "dev.zuri.pkg") {
+                auto specifier = zuri_packager::PackageSpecifier::fromAuthority(location.getAuthority());
+                TU_RETURN_IF_NOT_OK (addRequirement(specifier));
+            } else {
+                return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                    "unhandled module scheme '{}' for import {}", location.getScheme(), location.toString());
+            }
         }
     }
 

@@ -8,7 +8,6 @@
 #include <lyric_build/task_hasher.h>
 #include <lyric_common/common_conversions.h>
 #include <lyric_common/common_types.h>
-#include <zuri_packager/package_attrs.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_config/parse_config.h>

@@ -16,19 +16,15 @@ set(ZURI_PACKAGER_INCLUDES
     include/zuri_packager/manifest_namespace.h
     include/zuri_packager/manifest_state.h
     include/zuri_packager/manifest_walker.h
-    include/zuri_packager/package_attrs.h
-    include/zuri_packager/package_dependency.h
     include/zuri_packager/package_extractor.h
     include/zuri_packager/package_reader.h
     include/zuri_packager/package_reader_loader.h
-    include/zuri_packager/package_requirement.h
     include/zuri_packager/packager_result.h
     include/zuri_packager/package_specifier.h
     include/zuri_packager/package_types.h
     include/zuri_packager/package_writer.h
     include/zuri_packager/packaging_conversions.h
-    include/zuri_packager/requirement_parser.h
-    )
+)
 set_target_properties(zuri_packager PROPERTIES PUBLIC_HEADER "${ZURI_PACKAGER_INCLUDES}")
 
 # generate flatbuffer files for manifest IDL
@@ -99,27 +95,17 @@ target_sources(zuri_packager PRIVATE
     src/manifest_namespace.cpp
     src/manifest_state.cpp
     src/manifest_walker.cpp
-    src/package_attrs.cpp
-    src/package_dependency.cpp
     src/package_extractor.cpp
     src/package_reader.cpp
     src/package_reader_loader.cpp
-    src/package_requirement.cpp
     src/packager_result.cpp
     src/package_specifier.cpp
     src/package_types.cpp
     src/package_writer.cpp
     src/packaging_conversions.cpp
-    src/requirement_parser.cpp
 
     include/zuri_packager/internal/manifest_reader.h
     src/internal/manifest_reader.cpp
-    include/zuri_packager/internal/version_spec.h
-    src/internal/version_spec.cpp
-    include/zuri_packager/internal/requirement_listener.h
-    src/internal/requirement_listener.cpp
-    include/zuri_packager/internal/tracing_error_listener.h
-    src/internal/tracing_error_listener.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/include/zuri_packager/generated/manifest.h
     ${CMAKE_CURRENT_BINARY_DIR}/include/zuri_packager/generated/manifest_schema.h

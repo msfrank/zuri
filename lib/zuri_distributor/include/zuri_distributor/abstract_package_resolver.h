@@ -3,8 +3,6 @@
 
 #include <tempo_utils/result.h>
 
-#include <zuri_packager/package_dependency.h>
-
 #include "dependency_set.h"
 
 namespace zuri_distributor {

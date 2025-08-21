@@ -2,7 +2,6 @@
 #define ZURI_DISTRIBUTOR_PACKAGE_CACHE_H
 
 #include <tempo_utils/result.h>
-#include <zuri_packager/package_dependency.h>
 #include <zuri_packager/package_reader.h>
 
 namespace zuri_distributor {

@@ -9,7 +9,6 @@
 #include <tempo_utils/memory_mapped_bytes.h>
 
 #include "manifest_state.h"
-#include "package_requirement.h"
 #include "package_specifier.h"
 #include "zuri_manifest.h"
 
