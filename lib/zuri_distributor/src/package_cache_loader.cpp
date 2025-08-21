@@ -72,7 +72,7 @@ zuri_distributor::PackageCacheLoader::loadModule(const lyric_common::ModuleLocat
             "failed to verify object");
 
     // return platform-specific LyricObject
-    TU_LOG_INFO << "loaded module at " << absolutePath;
+    TU_LOG_V << "loaded module at " << absolutePath;
     return Option(lyric_object::LyricObject(bytes));
 }
 
@@ -109,7 +109,7 @@ zuri_distributor::PackageCacheLoader::loadPlugin(
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "failed to retrieve interface for plugin {}", absolutePath.string());
 
-    TU_LOG_INFO << "loaded plugin " << absolutePath;
+    TU_LOG_V << "loaded plugin " << absolutePath;
     auto plugin = std::make_shared<const lyric_runtime::LibraryPlugin>(loader, iface);
     return Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>(plugin);
 }

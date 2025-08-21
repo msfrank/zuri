@@ -1,9 +1,12 @@
 
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <tempo_utils/tempdir_maker.h>
+#include <tempo_utils/unicode.h>
 #include <zuri_packager/package_reader_loader.h>
 #include <zuri_run/run_package_command.h>
 #include <zuri_tooling/package_manager.h>
+
+#include "zuri_run/log_proto_writer.h"
 
 tempo_utils::Status
 zuri_run::run_package_command(
@@ -54,6 +57,14 @@ zuri_run::run_package_command(
 
     // initialize the heap and interpreter state
     TU_RETURN_IF_NOT_OK (interpreterState->load(mainLocation));
+
+    // handle log protocol messages
+    auto *portMultiplexer = interpreterState->portMultiplexer();
+    auto logProtoUrl = tempo_utils::Url::fromString("dev.zuri.proto:log");
+    std::shared_ptr<lyric_runtime::DuplexPort> logPort;
+    TU_ASSIGN_OR_RETURN (logPort, portMultiplexer->registerPort(logProtoUrl));
+    LogProtoWriter logProtoWriter(false);
+    TU_RETURN_IF_NOT_OK (logPort->attach(&logProtoWriter));
 
     // run the program
     lyric_runtime::BytecodeInterpreter interp(interpreterState);

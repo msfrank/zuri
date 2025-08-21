@@ -9,6 +9,8 @@ add_library(ZuriRunRuntime STATIC
     src/ephemeral_session.cpp
     include/zuri_run/fragment_store.h
     src/fragment_store.cpp
+    include/zuri_run/log_proto_writer.h
+    src/log_proto_writer.cpp
     include/zuri_run/read_eval_print_loop.h
     src/read_eval_print_loop.cpp
     include/zuri_run/run_interactive_command.h
