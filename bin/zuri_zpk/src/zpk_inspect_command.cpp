@@ -1,4 +1,6 @@
 
+#include <stack>
+
 #include <tempo_command/command_help.h>
 #include <tempo_command/command_parser.h>
 #include <tempo_config/abstract_converter.h>

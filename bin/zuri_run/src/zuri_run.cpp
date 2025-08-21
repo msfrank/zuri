@@ -6,11 +6,51 @@
 #include <tempo_command/command_parser.h>
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
+#include <tempo_config/container_conversions.h>
 #include <tempo_config/workspace_config.h>
 #include <tempo_utils/uuid.h>
 #include <zuri_run/read_eval_print_loop.h>
+#include <zuri_run/run_interactive_command.h>
+#include <zuri_run/run_package_command.h>
+#include <zuri_run/run_result.h>
 #include <zuri_run/zuri_run.h>
 #include <zuri_tooling/zuri_config.h>
+
+struct MainPackageOrStdin {
+    enum class Type {
+        Invalid,
+        MainPackagePath,
+        Stdin,
+    };
+    Type type;
+    std::filesystem::path mainPackagePath;
+};
+
+class MainPackageOrStdinParser : public tempo_config::AbstractConverter<MainPackageOrStdin> {
+public:
+    tempo_utils::Status convertValue(
+        const tempo_config::ConfigNode &node,
+        MainPackageOrStdin &value) const override
+    {
+        value.type = MainPackageOrStdin::Type::Invalid;
+        if (node.isNil()) {
+            value.type = MainPackageOrStdin::Type::Stdin;
+            return {};
+        }
+        if (node.getNodeType() != tempo_config::ConfigNodeType::kValue)
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType,
+                "expected Value node but found {}", config_node_type_to_string(node.getNodeType()));
+        auto v = node.toValue().getValue();
+        if (v == "-") {
+            value.type = MainPackageOrStdin::Type::Stdin;
+            return {};
+        }
+        tempo_config::PathParser mainPackageParser;
+        TU_RETURN_IF_NOT_OK (mainPackageParser.convertValue(node, value.mainPackagePath));
+        value.type = MainPackageOrStdin::Type::MainPackagePath;
+        return {};
+    }
+};
 
 tempo_utils::Status
 zuri_run::zuri_run(int argc, const char *argv[])
@@ -22,8 +62,10 @@ zuri_run::zuri_run(int argc, const char *argv[])
     tempo_config::IntegerParser verboseParser(0);
     tempo_config::IntegerParser quietParser(0);
     tempo_config::BooleanParser silentParser(false);
-
-    tempo_config::StringParser sessionIdParser(std::string{});
+    tempo_config::StringParser sessionIdParser(tempo_utils::UUID::randomUUID().toString());
+    MainPackageOrStdinParser mainPackageOrStdinParser;
+    tempo_config::StringParser mainArgParser;
+    tempo_config::SeqTParser mainArgsParser(&mainArgParser);
 
     std::vector<tempo_command::Default> defaults = {
         {"workspaceRoot", workspaceRootParser.getDefault(),
@@ -39,7 +81,10 @@ zuri_run::zuri_run(int argc, const char *argv[])
             "Display warnings and errors only (specify twice for errors only)"},
         {"silent", silentParser.getDefault(),
             "Suppress all output"},
-        {"arguments", {}, "List of arguments to pass to the program", "ARGS"},
+        {"mainPackageOrStdin", {}, "Main package path, or '-' to run interactively",
+            "MAIN-PKG | '-'"},
+        {"mainArgs", {}, "List of arguments to pass to the program",
+            "ARGS"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
@@ -65,7 +110,8 @@ zuri_run::zuri_run(int argc, const char *argv[])
     };
 
     std::vector<tempo_command::Mapping> argMappings = {
-        {tempo_command::MappingType::ANY_INSTANCES, "arguments"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "mainPackageOrStdin"},
+        {tempo_command::MappingType::ANY_INSTANCES, "mainArgs"},
     };
 
     // parse argv array into a vector of tokens
@@ -162,9 +208,19 @@ zuri_run::zuri_run(int argc, const char *argv[])
         commandConfig, "distributionRoot"));
 
     // determine the session id
-    std::string sessionIdString;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionIdString, sessionIdParser,
+    std::string sessionId;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionId, sessionIdParser,
         commandConfig, "sessionId"));
+
+    //
+    MainPackageOrStdin mainPackageOrStdin;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(mainPackageOrStdin, mainPackageOrStdinParser,
+        commandConfig, "mainPackageOrStdin"));
+
+    //
+    std::vector<std::string> mainArgs;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(mainArgs, mainArgsParser,
+        commandConfig, "mainArgs"));
 
     // if distribution root is relative, then make it absolute
     if (!distributionRoot.empty()) {
@@ -188,49 +244,14 @@ zuri_run::zuri_run(int argc, const char *argv[])
             {}, distributionRoot));
     }
 
-    auto buildToolConfig = zuriConfig->getBuildToolConfig();
-
-    // construct the fragment store
-    auto fragmentStore = std::make_shared<FragmentStore>();
-
-    // initialize the parser
-    lyric_parser::ParserOptions parserOptions;
-    auto parser = std::make_unique<lyric_parser::LyricParser>(parserOptions);
-
-    // construct the loader chain used by the builder and interpreter
-    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
-    loaderChain.push_back(fragmentStore);
-    auto applicationLoader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
-
-    // construct the builder used to compile fragments
-    lyric_build::BuilderOptions builderOptions;
-    builderOptions.cacheMode = lyric_build::CacheMode::InMemory;
-    builderOptions.fallbackLoader = applicationLoader;
-    builderOptions.virtualFilesystem = fragmentStore;
-    auto builder = std::make_unique<lyric_build::LyricBuilder>(
-        std::filesystem::current_path(), buildToolConfig->getTaskSettings(), builderOptions);
-
-    // initialize the builder
-    TU_RETURN_IF_NOT_OK (builder->configure());
-
-    // construct the interpreter state
-    std::shared_ptr<lyric_runtime::InterpreterState> interpreterState;
-    TU_ASSIGN_OR_RETURN(interpreterState, lyric_runtime::InterpreterState::create(
-        builder->getBootstrapLoader(), applicationLoader));
-
-    // construct the session
-    if (sessionIdString.empty()) {
-        sessionIdString = tempo_utils::UUID::randomUUID().toString();
+    //
+    switch (mainPackageOrStdin.type) {
+        case MainPackageOrStdin::Type::MainPackagePath:
+            return run_package_command(zuriConfig, sessionId, mainPackageOrStdin.mainPackagePath, mainArgs);
+        case MainPackageOrStdin::Type::Stdin:
+            return run_interactive_command(zuriConfig, sessionId, mainArgs);
+        case MainPackageOrStdin::Type::Invalid:
+            return RunStatus::forCondition(RunCondition::kRunInvariant,
+                "invalid run target");
     }
-    auto ephemeralSession = std::make_shared<EphemeralSession>(sessionIdString,
-        std::move(parser), std::move(builder), fragmentStore, interpreterState);
-
-    // construct and configure the repl
-    zuri_run::ReadEvalPrintLoop repl(ephemeralSession);
-    TU_RETURN_IF_NOT_OK (repl.configure());
-
-    // hand over control to the repl
-    TU_RETURN_IF_NOT_OK (repl.run());
-
-    return repl.cleanup();
 }

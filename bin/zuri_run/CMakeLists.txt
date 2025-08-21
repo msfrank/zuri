@@ -11,6 +11,10 @@ add_library(ZuriRunRuntime STATIC
     src/fragment_store.cpp
     include/zuri_run/read_eval_print_loop.h
     src/read_eval_print_loop.cpp
+    include/zuri_run/run_interactive_command.h
+    src/run_interactive_command.cpp
+    include/zuri_run/run_package_command.h
+    src/run_package_command.cpp
     include/zuri_run/run_result.h
     src/run_result.cpp
     include/zuri_run/zuri_run.h

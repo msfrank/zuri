@@ -39,7 +39,7 @@ namespace zuri_packager {
     struct PrologueEntry {
         tu_uint8 version;                // prologue version, should be 1
         tu_uint32 flags;                 // prologue flags, should be 0
-        tu_uint32 bytecodeOffset;        // absolute offset to the assembly bytecode
+        tu_uint32 bytecodeOffset;        // absolute offset to the object bytecode
         tu_uint32 sectionSize;           // size of the section (prologue + bytecode + linkage table) in bytes
     };
 
