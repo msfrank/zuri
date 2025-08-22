@@ -123,6 +123,9 @@ zuri_test::ZuriTester::runModule(
     // resolve the main location
     options.mainLocation = origin.resolve(moduleLocation);
 
+    // set main arguments
+    options.mainArguments = m_options.mainArguments;
+
     // construct the dependency loader
     auto targetState = targetComputation.getState();
     lyric_build::BuildGeneration targetGen(targetState.getGeneration());

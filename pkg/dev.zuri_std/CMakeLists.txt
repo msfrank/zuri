@@ -8,6 +8,7 @@ add_subdirectory(plugin)
 # get file paths to each plugin
 get_directory_property(ZURI_STD_COLLECTIONS_PLUGIN_FILEPATH DIRECTORY plugin/collections PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_LOG_PLUGIN_FILEPATH DIRECTORY plugin/log PLUGIN_FILEPATH)
+get_directory_property(ZURI_STD_PROCESS_PLUGIN_FILEPATH DIRECTORY plugin/process PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_SYSTEM_PLUGIN_FILEPATH DIRECTORY plugin/system PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_TEXT_PLUGIN_FILEPATH DIRECTORY plugin/text PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_TIME_PLUGIN_FILEPATH DIRECTORY plugin/time PLUGIN_FILEPATH)
@@ -36,6 +37,7 @@ add_custom_command (
         ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
         std-collections-plugin
         std-log-plugin
+        std-process-plugin
         std-system-plugin
         std-text-plugin
         std-time-plugin

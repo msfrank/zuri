@@ -128,6 +128,11 @@ zuri_build::TargetWriter::writeModule(
         for (int i = 0; i < root.numImports(); i++) {
             auto import = root.getImport(i);
             auto location = import.getImportLocation();
+
+            // ignore relative imports
+            if (location.isRelative())
+                continue;
+
             if (import.isSystemBootstrap()) {
                 // TODO: process bootstrap imports
             } else if (location.getScheme() == "dev.zuri.pkg") {
@@ -142,6 +147,7 @@ zuri_build::TargetWriter::writeModule(
 
     auto modulesRoot = tempo_utils::UrlPath::fromString("/modules");
     auto fullModulePath = modulesRoot.traverse(modulePath.toRelative());
+    TU_LOG_V << "writing module " << fullModulePath;
 
     auto parentPath = fullModulePath.getInit();
     zuri_packager::EntryAddress parentEntry;
@@ -207,6 +213,8 @@ zuri_build::TargetWriter::writeTarget()
 
     std::filesystem::path packagePath;
     TU_ASSIGN_OR_RETURN (packagePath, m_priv->packageWriter->writePackage());
+
+    TU_LOG_V << "writing package to " << packagePath;
 
     m_priv.reset();
 

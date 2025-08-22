@@ -22,6 +22,14 @@
                         "artifactPath": "/log.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
                         "contentType": "application/vnd.lyric.plugin"
                     },
+                    "provide_plugin:/process": {
+                        "buildTarget": "fetch_external_file:/process"
+                    },
+                    "fetch_external_file:/process": {
+                        "filePath": "@ZURI_STD_PROCESS_PLUGIN_FILEPATH@",
+                        "artifactPath": "/process.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+                        "contentType": "application/vnd.lyric.plugin"
+                    },
                     "provide_plugin:/system": {
                         "buildTarget": "fetch_external_file:/system"
                     },
@@ -56,6 +64,7 @@
                 "libraryModules": [
                     "/collections",
                     "/log",
+                    "/process",
                     "/system",
                     "/text",
                     "/time"

@@ -203,6 +203,8 @@ zuri_build::CollectModulesTask::runTask(
     if (!m_collectTargets.empty())
         return {};
 
+    TU_LOG_V << "linking collected modules for " << getId().toString();
+
     // otherwise collection is done, so link all collected artifacts
     auto cache = buildState->getCache();
     auto generation = getGeneration();
@@ -212,6 +214,7 @@ zuri_build::CollectModulesTask::runTask(
         status = cache->linkArtifact(dstId, depId);
         if (status.notOk())
             return Option(status);
+        TU_LOG_V << "linked " << depId << " to " << dstId;
     }
 
     return Option(tempo_utils::Status{});

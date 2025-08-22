@@ -217,7 +217,7 @@ zuri_build::TargetBuilder::buildLibraryTarget(
         TU_ASSIGN_OR_RETURN (metadata, cache->loadMetadataFollowingLinks(artifactId));
         std::shared_ptr<const tempo_utils::ImmutableBytes> content;
         TU_ASSIGN_OR_RETURN (content, cache->loadContentFollowingLinks(artifactId));
-        targetWriter.writeModule(artifactId.getLocation().toPath(), metadata, content);
+        TU_RETURN_IF_NOT_OK (targetWriter.writeModule(artifactId.getLocation().toPath(), metadata, content));
     }
 
     return targetWriter.writeTarget();

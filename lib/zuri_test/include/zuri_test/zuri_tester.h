@@ -28,6 +28,7 @@ namespace zuri_test {
         absl::flat_hash_map<
             tempo_utils::Url,
             std::shared_ptr<lyric_test::BaseProtocolMock>> protocolMocks = {};
+        std::vector<std::string> mainArguments = {};
     };
 
     class ZuriTester {
