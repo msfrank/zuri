@@ -13,22 +13,35 @@
 #include <zuri_zpk/zpk_extract_command.h>
 #include <zuri_zpk/zpk_result.h>
 
+#include "zuri_packager/package_extractor.h"
+#include "zuri_packager/package_reader.h"
+
 tempo_utils::Status
 zuri_zpk::zpk_extract_command(
     std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig,
     tempo_command::TokenVector &tokens)
 {
+    tempo_config::PathParser extractionRootParser(std::filesystem::current_path());
+    tempo_config::PathParser workingRootParser(std::filesystem::path{});
     tempo_config::PathParser zpkFileParser;
 
     std::vector<tempo_command::Default> defaults = {
-        {"zpkFile", {}, "Package file to inspect", "FILE"},
+        {"extractionRoot", extractionRootParser.getDefault(),
+            "extraction directory", "DIR"},
+        {"workingRoot", workingRootParser.getDefault(),
+            "working directory", "DIR"},
+{"zpkFile", {}, "Package file to inspect", "FILE"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
+        {"extractionRoot", {"-o", "--extraction-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"workingRoot", {"-t", "--working-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
     };
 
     const std::vector<tempo_command::Mapping> optMappings = {
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "extractionRoot"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workingRoot"},
     };
 
     std::vector<tempo_command::Mapping> argMappings = {
@@ -68,9 +81,30 @@ zuri_zpk::zpk_extract_command(
     // construct command map
     tempo_config::ConfigMap commandMap(commandConfig);
 
+    std::filesystem::path extractionRoot;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(extractionRoot, extractionRootParser,
+        commandConfig, "extractionRoot"));
+
+    std::filesystem::path workingRoot;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(workingRoot, workingRootParser,
+        commandConfig, "workingRoot"));
+
     std::filesystem::path zpkFile;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(zpkFile, zpkFileParser,
         commandConfig, "zpkFile"));
+
+    std::shared_ptr<zuri_packager::PackageReader> reader;
+    TU_ASSIGN_OR_RETURN (reader, zuri_packager::PackageReader::open(zpkFile));
+
+    zuri_packager::PackageExtractorOptions extractorOptions;
+    extractorOptions.destinationRoot = extractionRoot;
+    extractorOptions.workingRoot = workingRoot;
+    zuri_packager::PackageExtractor extractor(reader, extractorOptions);
+    TU_RETURN_IF_NOT_OK (extractor.configure());
+
+    std::filesystem::path packagePath;
+    TU_ASSIGN_OR_RETURN (packagePath, extractor.extractPackage());
+    TU_CONSOLE_OUT << "extracted " << zpkFile << " to " << packagePath;
 
     return {};
 }
