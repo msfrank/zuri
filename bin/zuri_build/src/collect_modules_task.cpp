@@ -119,10 +119,9 @@ zuri_build::CollectModulesTask::collectModules(
 
         lyric_build::LyricMetadata objectMetadata;
         TU_ASSIGN_OR_RETURN (objectMetadata, cache->loadMetadataFollowingLinks(objectDepId));
-        auto objectMetaRoot = objectMetadata.getMetadata();
 
         lyric_common::ModuleLocation moduleLocation;
-        TU_RETURN_IF_NOT_OK (objectMetaRoot.parseAttr(lyric_build::kLyricBuildModuleLocation, moduleLocation));
+        TU_RETURN_IF_NOT_OK (objectMetadata.parseAttr(lyric_build::kLyricBuildModuleLocation, moduleLocation));
 
         // check whether an object already exists for the specified path
         auto objectDepPath = objectDepId.getLocation().toPath();
@@ -137,11 +136,10 @@ zuri_build::CollectModulesTask::collectModules(
         std::shared_ptr<const tempo_utils::ImmutableBytes> content;
         TU_ASSIGN_OR_RETURN (content, cache->loadContentFollowingLinks(objectDepId));
         lyric_object::LyricObject object(content);
-        auto objectRoot = object.getObject();
 
         // add unencountered relative imports to the list of modules needed
-        for (int i = 0; i < objectRoot.numImports(); i++) {
-            auto importLocation = objectRoot.getImport(i).getImportLocation();
+        for (int i = 0; i < object.numImports(); i++) {
+            auto importLocation = object.getImport(i).getImportLocation();
             if (importLocation.isRelative()) {
                 auto importPath = importLocation.getPath();
                 if (!m_artifactsToLink.contains(importPath)) {
@@ -151,13 +149,13 @@ zuri_build::CollectModulesTask::collectModules(
         }
 
         // check for dep plugin
-        if (!object.getObject().hasPlugin())
+        if (!object.hasPlugin())
             continue;
 
         std::vector<lyric_build::ArtifactId> pluginArtifacts;
 
         // find dep plugin
-        auto objectPluginLocation = object.getObject().getPlugin().getPluginLocation();
+        auto objectPluginLocation = object.getPlugin().getPluginLocation();
 
         lyric_build::MetadataWriter pluginFilterWriter;
         TU_RETURN_IF_NOT_OK (pluginFilterWriter.configure());

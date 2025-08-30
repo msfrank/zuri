@@ -98,11 +98,10 @@ zuri_zpk::zpk_inspect_command(
     // the zpk manifest
 
     auto manifest = reader->getManifest();
-    auto root = manifest.getManifest();
 
     std::stack<zuri_packager::EntryWalker> stack;
     std::vector<std::pair<tempo_utils::UrlPath,zuri_packager::EntryWalker>> entries;
-    stack.push(root.getRoot());
+    stack.push(manifest.getRoot());
     while (!stack.empty()) {
         auto entry = stack.top();
         stack.pop();

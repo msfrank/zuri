@@ -48,12 +48,41 @@ zuri_packager::ZuriManifest::getABI() const
     }
 }
 
-zuri_packager::ManifestWalker
-zuri_packager::ZuriManifest::getManifest() const
+zuri_packager::EntryWalker
+zuri_packager::ZuriManifest::getRoot() const
 {
-    if (!isValid())
+    return getEntry(tempo_utils::UrlPath::fromString("/"));
+}
+
+bool
+zuri_packager::ZuriManifest::hasEntry(const tempo_utils::UrlPath &entryPath) const
+{
+    auto *pathDescriptor = m_reader->findPath(entryPath.pathView());
+    if (pathDescriptor == nullptr)
+        return false;
+    auto *entryDescriptor = m_reader->getEntry(pathDescriptor->entry());
+    return entryDescriptor != nullptr;
+}
+
+zuri_packager::EntryWalker
+zuri_packager::ZuriManifest::getEntry(tu_uint32 offset) const
+{
+    return EntryWalker(m_reader, offset);
+}
+
+zuri_packager::EntryWalker
+zuri_packager::ZuriManifest::getEntry(const tempo_utils::UrlPath &entryPath) const
+{
+    auto *pathDescriptor = m_reader->findPath(entryPath.pathView());
+    if (pathDescriptor == nullptr)
         return {};
-    return ManifestWalker(m_reader);
+    return EntryWalker(m_reader, pathDescriptor->entry());
+}
+
+tu_uint32
+zuri_packager::ZuriManifest::numEntries() const
+{
+    return m_reader->numEntries();
 }
 
 std::shared_ptr<const zuri_packager::internal::ManifestReader>

@@ -3,9 +3,10 @@
 
 #include <span>
 
-#include <zuri_packager/manifest_walker.h>
-#include <zuri_packager/package_types.h>
 #include <tempo_utils/immutable_bytes.h>
+
+#include "entry_walker.h"
+#include "package_types.h"
 
 namespace zuri_packager {
 
@@ -21,7 +22,12 @@ namespace zuri_packager {
 
         ManifestVersion getABI() const;
 
-        ManifestWalker getManifest() const;
+        EntryWalker getRoot() const;
+
+        bool hasEntry(const tempo_utils::UrlPath &entryPath) const;
+        EntryWalker getEntry(tu_uint32 index) const;
+        EntryWalker getEntry(const tempo_utils::UrlPath &entryPath) const;
+        tu_uint32 numEntries() const;
 
         std::shared_ptr<const internal::ManifestReader> getReader() const;
         std::span<const tu_uint8> bytesView() const;

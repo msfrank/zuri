@@ -15,7 +15,6 @@ set(ZURI_PACKAGER_INCLUDES
     include/zuri_packager/manifest_entry.h
     include/zuri_packager/manifest_namespace.h
     include/zuri_packager/manifest_state.h
-    include/zuri_packager/manifest_walker.h
     include/zuri_packager/package_extractor.h
     include/zuri_packager/package_reader.h
     include/zuri_packager/package_reader_loader.h
@@ -94,7 +93,6 @@ target_sources(zuri_packager PRIVATE
     src/manifest_entry.cpp
     src/manifest_namespace.cpp
     src/manifest_state.cpp
-    src/manifest_walker.cpp
     src/package_extractor.cpp
     src/package_reader.cpp
     src/package_reader_loader.cpp

@@ -41,7 +41,7 @@ namespace zuri_packager {
         tu_uint32 m_index;
 
         EntryWalker(std::shared_ptr<const internal::ManifestReader> reader, tu_uint32 index);
-        friend class ManifestWalker;
+        friend class ZuriManifest;
 
         tu_uint32 findIndexForAttr(const tempo_schema::AttrKey &key) const;
 

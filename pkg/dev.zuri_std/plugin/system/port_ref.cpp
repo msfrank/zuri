@@ -215,7 +215,7 @@ port_receive(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 
     //
     auto *segment = currentCoro->peekSP();
-    auto object = segment->getObject().getObject();
+    auto object = segment->getObject();
     auto symbol = object.findSymbol(lyric_common::SymbolPath({"Future"}));
     TU_ASSERT (symbol.isValid());
     lyric_runtime::InterpreterStatus status;

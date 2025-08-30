@@ -22,7 +22,7 @@ std_time_now(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     auto *heapManager = state->heapManager();
 
     auto *segment = currentCoro->peekSP();
-    auto object = segment->getObject().getObject();
+    auto object = segment->getObject();
     auto symbol = object.findSymbol(lyric_common::SymbolPath({"Instant"}));
     TU_ASSERT (symbol.isValid());
 
@@ -71,7 +71,7 @@ std_time_parse_timezone(lyric_runtime::BytecodeInterpreter *interp, lyric_runtim
     auto *heapManager = state->heapManager();
 
     auto *segment = currentCoro->peekSP();
-    auto object = segment->getObject().getObject();
+    auto object = segment->getObject();
     auto symbol = object.findSymbol(lyric_common::SymbolPath({"Timezone"}));
     TU_ASSERT (symbol.isValid());
 

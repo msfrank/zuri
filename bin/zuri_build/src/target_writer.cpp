@@ -120,13 +120,12 @@ zuri_build::TargetWriter::writeModule(
             "target writer is not configured");
 
     std::string contentType;
-    TU_RETURN_IF_NOT_OK (metadata.getMetadata().parseAttr(lyric_build::kLyricBuildContentType, contentType));
+    TU_RETURN_IF_NOT_OK (metadata.parseAttr(lyric_build::kLyricBuildContentType, contentType));
 
     if (contentType == lyric_common::kObjectContentType) {
         lyric_object::LyricObject object(content);
-        auto root = object.getObject();
-        for (int i = 0; i < root.numImports(); i++) {
-            auto import = root.getImport(i);
+        for (int i = 0; i < object.numImports(); i++) {
+            auto import = object.getImport(i);
             auto location = import.getImportLocation();
 
             // ignore relative imports

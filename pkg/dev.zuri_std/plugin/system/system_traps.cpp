@@ -38,7 +38,7 @@ std_system_acquire(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::In
     auto *heapManager = state->heapManager();
 
     auto *segment = currentCoro->peekSP();
-    auto object = segment->getObject().getObject();
+    auto object = segment->getObject();
     auto symbol = object.findSymbol(lyric_common::SymbolPath({"Port"}));
     TU_ASSERT (symbol.isValid());
     lyric_runtime::InterpreterStatus status;
@@ -126,7 +126,7 @@ std_system_sleep(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto *heapManager = state->heapManager();
 
     auto *segment = currentCoro->peekSP();
-    auto object = segment->getObject().getObject();
+    auto object = segment->getObject();
     auto symbol = object.findSymbol(lyric_common::SymbolPath({"Future"}));
     TU_ASSERT (symbol.isValid());
 
@@ -187,7 +187,7 @@ std_system_spawn(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     auto *heapManager = state->heapManager();
 
     auto *segment = currentCoro->peekSP();
-    auto object = segment->getObject().getObject();
+    auto object = segment->getObject();
     auto symbol = object.findSymbol(lyric_common::SymbolPath({"Future"}));
     TU_ASSERT (symbol.isValid());
 

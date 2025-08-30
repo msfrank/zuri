@@ -162,7 +162,7 @@ work_queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
 
     // resolve the virtual table for Future
     auto *segment = currentCoro->peekSP();
-    auto object = segment->getObject().getObject();
+    auto object = segment->getObject();
     auto symbol = object.findSymbol(lyric_common::SymbolPath({"Future"}));
     TU_ASSERT (symbol.isValid());
     lyric_runtime::InterpreterStatus status;

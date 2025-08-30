@@ -122,8 +122,7 @@ zuri_packager::PackageExtractor::extractPackage()
     m_workdirPath = workdirMaker.getTempdir();
 
     auto manifest = m_reader->getManifest();
-    auto manifestRoot = manifest.getManifest();
-    auto rootEntry = manifestRoot.getEntry(tempo_utils::UrlPath::fromString("/"));
+    auto rootEntry = manifest.getEntry(tempo_utils::UrlPath::fromString("/"));
     TU_RETURN_IF_NOT_OK (extractRoot(rootEntry));
 
     auto destinationRoot = !m_options.destinationRoot.empty()? m_options.destinationRoot : std::filesystem::current_path();

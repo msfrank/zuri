@@ -132,12 +132,11 @@ get_file_entry_contents(
 tempo_utils::Result<tempo_utils::Slice>
 zuri_packager::PackageReader::readFileContents(const tempo_utils::UrlPath &entryPath, bool followSymlinks) const
 {
-    auto manifest = m_manifest.getManifest();
-    if (!manifest.hasEntry(entryPath))
+    if (!m_manifest.hasEntry(entryPath))
         return PackagerStatus::forCondition(PackagerCondition::kMissingEntry,
             "missing entry {}", entryPath.toString());
 
-    auto entry = manifest.getEntry(entryPath);
+    auto entry = m_manifest.getEntry(entryPath);
     switch (entry.getEntryType()) {
         case EntryType::File:
             return get_file_entry_contents(entry, m_contents);

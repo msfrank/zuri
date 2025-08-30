@@ -4,9 +4,6 @@
 #include <lyric_runtime/data_cell.h>
 #include <lyric_runtime/interpreter_state.h>
 #include <lyric_runtime/string_ref.h>
-#include <lyric_serde/patchset_state.h>
-#include <lyric_serde/patchset_change.h>
-#include <lyric_serde/patchset_value.h>
 #include <tempo_utils/unicode.h>
 
 #include "log_traps.h"
