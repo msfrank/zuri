@@ -141,7 +141,10 @@ work_queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
 }
 
 static void
-on_async_complete(lyric_runtime::Promise *promise)
+on_async_accept(
+    lyric_runtime::Promise *promise,
+    const lyric_runtime::Waiter *waiter,
+    lyric_runtime::InterpreterState *state)
 {
     // do nothing
 }
@@ -178,7 +181,7 @@ work_queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
     auto *fut = static_cast<FutureRef *>(ref.data.ref);
 
     //
-    auto promise = lyric_runtime::Promise::create(on_async_complete);
+    auto promise = lyric_runtime::Promise::create(on_async_accept);
 
     // register an async waiter
     uv_async_t *async = nullptr;

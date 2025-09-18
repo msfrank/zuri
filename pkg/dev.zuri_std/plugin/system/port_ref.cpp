@@ -191,7 +191,10 @@ complete_promise(
 }
 
 static void
-on_async_complete(lyric_runtime::Promise *promise)
+on_async_accept(
+    lyric_runtime::Promise *promise,
+    const lyric_runtime::Waiter *waiter,
+    lyric_runtime::InterpreterState *state)
 {
     auto *data = static_cast<ResolveData *>(promise->getData());
     TU_ASSERT (data->port->hasPending());
@@ -239,7 +242,7 @@ port_receive(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
     options.adapt = complete_promise;
     options.data = data;
     options.release = std::free;
-    auto promise = lyric_runtime::Promise::create(on_async_complete, options);
+    auto promise = lyric_runtime::Promise::create(on_async_accept, options);
 
     // register a waiter bound to the current task
     uv_async_t *async = nullptr;

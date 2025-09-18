@@ -104,7 +104,10 @@ std_system_get_result(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
 }
 
 static void
-on_sleep_accept(lyric_runtime::Promise *promise)
+on_sleep_accept(
+    lyric_runtime::Promise *promise,
+    const lyric_runtime::Waiter *waiter,
+    lyric_runtime::InterpreterState *state)
 {
     promise->complete(lyric_runtime::DataCell::nil());
 }
@@ -153,7 +156,10 @@ std_system_sleep(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
 }
 
 static void
-on_worker_complete(lyric_runtime::Promise *promise)
+on_worker_accept(
+    lyric_runtime::Promise *promise,
+    const lyric_runtime::Waiter *waiter,
+    lyric_runtime::InterpreterState *state)
 {
     auto *workerTask = static_cast<lyric_runtime::Task *>(promise->getData());
 
@@ -219,7 +225,7 @@ std_system_spawn(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
     //
     lyric_runtime::PromiseOptions options;
     options.data = workerTask;
-    auto promise = lyric_runtime::Promise::create(on_worker_complete, options);
+    auto promise = lyric_runtime::Promise::create(on_worker_accept, options);
 
     // register a waiter bound to the current task
     scheduler->registerWorker(workerTask, promise);

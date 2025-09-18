@@ -43,7 +43,7 @@ FutureRef::prepareFuture(std::shared_ptr<lyric_runtime::Promise> promise)
         return false;
 
     // if promise is already resolved then prepare fails
-    if (promise->getPromiseState() != lyric_runtime::PromiseState::Pending)
+    if (promise->getState() != lyric_runtime::Promise::State::Pending)
         return false;
 
     m_promise = promise;
@@ -55,9 +55,9 @@ void
 FutureRef::checkState()
 {
     // if the promise has been completed or rejected then mark the future as resolved and return
-    switch (m_promise->getPromiseState()) {
-        case lyric_runtime::PromiseState::Completed:
-        case lyric_runtime::PromiseState::Rejected:
+    switch (m_promise->getState()) {
+        case lyric_runtime::Promise::State::Completed:
+        case lyric_runtime::Promise::State::Rejected:
             m_state = FutureState::Resolved;
             break;
         default:
@@ -362,7 +362,10 @@ on_then_reachable(void *data)
 }
 
 static void
-on_future_complete(lyric_runtime::Promise *promise)
+on_future_accept(
+    lyric_runtime::Promise *promise,
+    const lyric_runtime::Waiter *waiter,
+    lyric_runtime::InterpreterState *state)
 {
     // this callback must exist but does nothing
 }
@@ -399,7 +402,7 @@ future_then(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
     options.release = std::free;
     options.reachable = on_then_reachable;
     options.data = data;
-    auto promise = lyric_runtime::Promise::create(on_future_complete, options);
+    auto promise = lyric_runtime::Promise::create(on_future_accept, options);
 
     // register an async handle and bind it to the promise
     uv_async_t *async = nullptr;
