@@ -61,22 +61,27 @@ private:
 
 tempo_utils::Status future_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status future_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status future_complete(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status future_reject(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status future_then(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 #endif // ZURI_STD_SYSTEM_FUTURE_REF_H

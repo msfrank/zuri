@@ -42,7 +42,7 @@ TEST_F(StdSystemSystem, EvaluateAwaitRejectedFuture)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(lyric_common::SymbolPath({"Internal"})))));
+        StatusRef(lyric_common::SymbolPath({"Internal"})))));
 }
 
 TEST_F(StdSystemSystem, EvaluateAwaitCancelledFuture)
@@ -55,7 +55,7 @@ TEST_F(StdSystemSystem, EvaluateAwaitCancelledFuture)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(lyric_common::SymbolPath({"Cancelled"})))));
+        StatusRef(lyric_common::SymbolPath({"Cancelled"})))));
 }
 
 TEST_F(StdSystemSystem, EvaluateAwaitDefaultForCompletedFuture)

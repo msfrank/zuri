@@ -13,7 +13,7 @@
 class WorkQueueRef : public lyric_runtime::BaseRef {
 
 public:
-    WorkQueueRef( const lyric_runtime::VirtualTable *vtable);
+    explicit WorkQueueRef( const lyric_runtime::VirtualTable *vtable);
     ~WorkQueueRef() override;
 
     lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
@@ -39,14 +39,17 @@ private:
 
 tempo_utils::Status work_queue_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status work_queue_push(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status work_queue_pop(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 #endif // ZURI_STD_SYSTEM_WORK_QUEUE_REF_H

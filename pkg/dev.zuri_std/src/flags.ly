@@ -46,6 +46,10 @@ defclass Flags[T] {
             BitwiseAnd()
             StoreData(present)
         }
-        if present == 0 then false else true
+        present == 0 then false else true
+    }
+
+    def ToInt(): Int {
+        this._bits
     }
 }

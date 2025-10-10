@@ -10,10 +10,12 @@
 
 tempo_utils::Status std_time_now(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status std_time_parse_timezone(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 #endif // ZURI_STD_TIME_TIME_TRAPS_H

@@ -37,18 +37,22 @@ private:
 
 tempo_utils::Status std_text_text_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status std_text_text_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status std_text_text_length(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status std_text_text_at(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 #endif // ZURI_STD_TEXT_TEXT_REF_H

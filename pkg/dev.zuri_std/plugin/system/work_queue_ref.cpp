@@ -107,22 +107,23 @@ WorkQueueRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-work_queue_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+work_queue_alloc(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
-    auto *currentCoro = state->currentCoro();
-
-    auto &frame = currentCoro->currentCallOrThrow();
-    const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
-
+    auto *currentCoro = state->currentCoro();
     auto ref = state->heapManager()->allocateRef<WorkQueueRef>(vtable);
     currentCoro->pushData(ref);
-
     return {};
 }
 
 tempo_utils::Status
-work_queue_push(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+work_queue_push(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -150,7 +151,10 @@ on_async_accept(
 }
 
 tempo_utils::Status
-work_queue_pop(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+work_queue_pop(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *unused)
 {
     auto *currentCoro = state->currentCoro();
     auto *segmentManager = state->segmentManager();

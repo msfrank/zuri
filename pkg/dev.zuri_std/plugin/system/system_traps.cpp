@@ -11,7 +11,10 @@
 #include "system_traps.h"
 
 tempo_utils::Status
-std_system_acquire(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_system_acquire(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *unused)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -67,7 +70,10 @@ std_system_acquire(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::In
 }
 
 tempo_utils::Status
-std_system_await(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_system_await(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
     auto *scheduler = state->systemScheduler();
@@ -85,7 +91,10 @@ std_system_await(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
 }
 
 tempo_utils::Status
-std_system_get_result(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_system_get_result(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -113,7 +122,10 @@ on_sleep_accept(
 }
 
 tempo_utils::Status
-std_system_sleep(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_system_sleep(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *unused)
 {
     auto *scheduler = state->systemScheduler();
     auto *currentCoro = state->currentCoro();
@@ -177,7 +189,10 @@ on_worker_accept(
 }
 
 tempo_utils::Status
-std_system_spawn(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_system_spawn(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *unused)
 {
     auto *scheduler = state->systemScheduler();
     auto *currentCoro = state->currentCoro();

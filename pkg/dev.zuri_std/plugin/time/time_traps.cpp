@@ -11,7 +11,10 @@
 #include "instant_ref.h"
 
 tempo_utils::Status
-std_time_now(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_now(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *unused)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -45,7 +48,10 @@ std_time_now(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 }
 
 tempo_utils::Status
-std_time_parse_timezone(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_parse_timezone(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *unused)
 {
     auto *currentCoro = state->currentCoro();
 

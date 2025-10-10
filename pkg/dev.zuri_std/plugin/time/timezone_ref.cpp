@@ -58,22 +58,23 @@ TimezoneRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-std_time_timezone_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_timezone_alloc(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
-    auto *currentCoro = state->currentCoro();
-
-    auto &frame = currentCoro->currentCallOrThrow();
-    const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
-
+    auto *currentCoro = state->currentCoro();
     auto ref = state->heapManager()->allocateRef<TimezoneRef>(vtable);
     currentCoro->pushData(ref);
-
     return {};
 }
 
 tempo_utils::Status
-std_time_timezone_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_timezone_ctor(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 

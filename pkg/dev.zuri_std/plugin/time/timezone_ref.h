@@ -11,7 +11,7 @@
 class TimezoneRef : public lyric_runtime::BaseRef {
 
 public:
-    TimezoneRef(const lyric_runtime::VirtualTable *vtable);
+    explicit TimezoneRef(const lyric_runtime::VirtualTable *vtable);
     ~TimezoneRef() override;
 
     lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
@@ -31,10 +31,12 @@ private:
 
 tempo_utils::Status std_time_timezone_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status std_time_timezone_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 #endif // ZURI_STD_TIME_TIMEZONE_REF_H

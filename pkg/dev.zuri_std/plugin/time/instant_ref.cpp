@@ -64,22 +64,23 @@ InstantRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-std_time_instant_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_instant_alloc(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
-    auto *currentCoro = state->currentCoro();
-
-    auto &frame = currentCoro->currentCallOrThrow();
-    const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
-
+    auto *currentCoro = state->currentCoro();
     auto ref = state->heapManager()->allocateRef<InstantRef>(vtable);
     currentCoro->pushData(ref);
-
     return {};
 }
 
 tempo_utils::Status
-std_time_instant_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_instant_ctor(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -93,7 +94,10 @@ std_time_instant_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime:
 }
 
 tempo_utils::Status
-std_time_instant_to_epoch_millis(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_time_instant_to_epoch_millis(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 

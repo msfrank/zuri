@@ -247,22 +247,23 @@ FutureRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-future_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+future_alloc(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
-    auto *currentCoro = state->currentCoro();
-
-    auto &frame = currentCoro->currentCallOrThrow();
-    const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
-
+    auto *currentCoro = state->currentCoro();
     auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
     currentCoro->pushData(ref);
-
     return {};
 }
 
 tempo_utils::Status
-future_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+future_ctor(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -276,7 +277,10 @@ future_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 }
 
 tempo_utils::Status
-future_complete(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+future_complete(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -295,7 +299,10 @@ future_complete(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
 }
 
 tempo_utils::Status
-future_reject(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+future_reject(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -371,7 +378,10 @@ on_future_accept(
 }
 
 tempo_utils::Status
-future_then(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+future_then(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *unused)
 {
     auto *currentCoro = state->currentCoro();
     auto *scheduler = state->systemScheduler();

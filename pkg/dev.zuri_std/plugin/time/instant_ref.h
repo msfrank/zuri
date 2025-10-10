@@ -11,7 +11,7 @@
 class InstantRef : public lyric_runtime::BaseRef {
 
 public:
-    InstantRef(const lyric_runtime::VirtualTable *vtable);
+    explicit InstantRef(const lyric_runtime::VirtualTable *vtable);
     ~InstantRef() override;
 
     lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
@@ -33,14 +33,17 @@ private:
 
 tempo_utils::Status std_time_instant_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status std_time_instant_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status std_time_instant_to_epoch_millis(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 #endif // ZURI_STD_TIME_INSTANT_REF_H

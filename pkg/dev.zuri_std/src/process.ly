@@ -37,7 +37,7 @@ definstance Process final {
     val ProgramMain: Url
     val Arguments: Vector[String]
 
-    init {
+    init() {
         set this.ProgramId = _GetProgramId()
         set this.ProgramMain = _GetProgramMain()
 

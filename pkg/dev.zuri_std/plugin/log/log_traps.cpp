@@ -11,7 +11,10 @@
 #include <tempo_utils/memory_bytes.h>
 
 tempo_utils::Status
-std_log_log(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+std_log_log(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
     auto *multiplexer = state->portMultiplexer();

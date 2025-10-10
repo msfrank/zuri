@@ -6,22 +6,23 @@
 #include "treeset_traps.h"
 
 tempo_utils::Status
-treeset_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_alloc(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
-    auto *currentCoro = state->currentCoro();
-
-    auto &frame = currentCoro->currentCallOrThrow();
-    const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
-
+    auto *currentCoro = state->currentCoro();
     auto ref = state->heapManager()->allocateRef<TreeSetRef>(vtable);
     currentCoro->pushData(ref);
-
     return {};
 }
 
 tempo_utils::Status
-treeset_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_ctor(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -43,7 +44,10 @@ treeset_ctor(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 }
 
 tempo_utils::Status
-treeset_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_size(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -59,7 +63,10 @@ treeset_size(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpre
 }
 
 tempo_utils::Status
-treeset_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_contains(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -76,7 +83,10 @@ treeset_contains(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inte
 }
 
 tempo_utils::Status
-treeset_add(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_add(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -94,7 +104,10 @@ treeset_add(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpret
 }
 
 tempo_utils::Status
-treeset_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_remove(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -112,7 +125,10 @@ treeset_remove(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interp
 }
 
 tempo_utils::Status
-treeset_replace(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_replace(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -130,7 +146,10 @@ treeset_replace(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
 }
 
 tempo_utils::Status
-treeset_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_clear(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -146,7 +165,10 @@ treeset_clear(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Interpr
 }
 
 tempo_utils::Status
-treeset_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_iterate(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *unused)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -171,22 +193,23 @@ treeset_iterate(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::Inter
 }
 
 tempo_utils::Status
-treeset_iterator_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_iterator_alloc(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
-    auto *currentCoro = state->currentCoro();
-
-    auto &frame = currentCoro->currentCallOrThrow();
-    const auto *vtable = frame.getVirtualTable();
     TU_ASSERT(vtable != nullptr);
-
+    auto *currentCoro = state->currentCoro();
     auto ref = state->heapManager()->allocateRef<TreeSetIterator>(vtable);
     currentCoro->pushData(ref);
-
     return {};
 }
 
 tempo_utils::Status
-treeset_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_iterator_valid(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 
@@ -203,7 +226,10 @@ treeset_iterator_valid(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime
 }
 
 tempo_utils::Status
-treeset_iterator_next(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state)
+treeset_iterator_next(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
 {
     auto *currentCoro = state->currentCoro();
 

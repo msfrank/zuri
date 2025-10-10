@@ -11,7 +11,7 @@
 class DatetimeRef : public lyric_runtime::BaseRef {
 
 public:
-    DatetimeRef(const lyric_runtime::VirtualTable *vtable);
+    explicit DatetimeRef(const lyric_runtime::VirtualTable *vtable);
     ~DatetimeRef() override;
 
     lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
@@ -34,10 +34,12 @@ private:
 
 tempo_utils::Status std_time_datetime_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status std_time_datetime_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state);
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
 
 #endif // ZURI_STD_TIME_DATETIME_REF_H
