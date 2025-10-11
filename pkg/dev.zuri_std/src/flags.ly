@@ -17,6 +17,11 @@ defclass Flags[T] {
         }
     }
 
+    init _Copy(intoFlags: IntoFlags[T], bits: Int) {
+        set this._intoFlags = intoFlags
+        set this._bits = bits
+    }
+
     def Set(element: T) {
         val value: Int = this._intoFlags.ToValue[T](element)
         @{

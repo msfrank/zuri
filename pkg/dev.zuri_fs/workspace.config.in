@@ -1,0 +1,37 @@
+{
+    "zuri": {
+        "build": {
+            "settings": {
+                "global": {
+                    "sourceBasePath": "src"
+                },
+                "tasks": {
+                    "provide_plugin:/file": {
+                        "buildTarget": "fetch_external_file:/file"
+                    },
+                    "fetch_external_file:/file": {
+                        "filePath": "@ZURI_FS_FILE_PLUGIN_FILEPATH@",
+                        "artifactPath": "/file.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+                        "contentType": "application/vnd.lyric.plugin"
+                    }
+                }
+            }
+        },
+        "imports": {
+            "std@zuri.dev": {
+                "type": "Path",
+                "path": "@ZURI_STD_PACKAGE_PATH@"
+            }
+        },
+        "targets": {
+            "dev.zuri_fs": {
+                "type": "Library",
+                "specifier": "fs-@PROJECT_VERSION@@zuri.dev",
+                "libraryModules": [
+                    "/access",
+                    "/file"
+                ]
+            }
+        }
+    }
+}

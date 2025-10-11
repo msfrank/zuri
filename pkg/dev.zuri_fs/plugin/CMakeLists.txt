@@ -1,0 +1,6 @@
+
+define_property(DIRECTORY PROPERTY PLUGIN_NAME)
+define_property(DIRECTORY PROPERTY PLUGIN_FILENAME)
+define_property(DIRECTORY PROPERTY PLUGIN_FILEPATH)
+
+add_subdirectory(file)

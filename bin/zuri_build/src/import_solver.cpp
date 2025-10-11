@@ -44,9 +44,20 @@ zuri_build::ImportSolver::addImport(
     const zuri_packager::PackageId &importId,
     std::shared_ptr<const zuri_tooling::ImportEntry> importEntry)
 {
-    zuri_packager::PackageSpecifier specifier(importId, importEntry->version);
-    TU_RETURN_IF_STATUS (m_selector->addDirectDependency(specifier, importId.toString()));
-    return {};
+    switch (importEntry->type) {
+        case zuri_tooling::ImportEntryType::Version: {
+            zuri_packager::PackageSpecifier specifier(importId, importEntry->version);
+            TU_RETURN_IF_STATUS (m_selector->addDirectDependency(specifier, importId.toString()));
+            return {};
+        }
+        case zuri_tooling::ImportEntryType::Path: {
+            TU_RETURN_IF_STATUS (m_selector->addDirectDependency(importEntry->path, importId.toString()));
+            return {};
+        }
+        default:
+            return BuildStatus::forCondition(BuildCondition::kBuildInvariant,
+                "cannot import '{}'; invalid import type", importId.toString());
+    }
 }
 
 tempo_utils::Status

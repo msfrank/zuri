@@ -7,8 +7,16 @@
 
 namespace zuri_tooling {
 
+    enum class ImportEntryType {
+        Invalid,
+        Version,
+        Path,
+    };
+
     struct ImportEntry {
+        ImportEntryType type;
         zuri_packager::PackageVersion version;
+        std::filesystem::path path;
     };
 
     class ImportStore {

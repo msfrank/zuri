@@ -8,11 +8,62 @@
 #include <zuri_tooling/tooling_conversions.h>
 
 tempo_utils::Status
-zuri_tooling::ImportEntryParser::convertValue(const tempo_config::ConfigNode &node, ImportEntry &importEntry) const
+zuri_tooling::ImportEntryParser::parseString(const tempo_config::ConfigValue &value, ImportEntry &importEntry) const
 {
     zuri_packager::PackageVersionParser versionParser;
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(importEntry.version, versionParser, node));
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(importEntry.version, versionParser, value));
     return {};
+}
+
+tempo_utils::Status
+zuri_tooling::ImportEntryParser::parseVersion(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const
+{
+    zuri_packager::PackageVersionParser versionParser;
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(importEntry.version, versionParser, map, "version"));
+    return {};
+}
+
+tempo_utils::Status
+zuri_tooling::ImportEntryParser::parsePath(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const
+{
+    tempo_config::PathParser pathParser;
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(importEntry.path, pathParser, map, "path"));
+    return {};
+}
+
+tempo_utils::Status
+zuri_tooling::ImportEntryParser::convertValue(const tempo_config::ConfigNode &node, ImportEntry &importEntry) const
+{
+    switch (node.getNodeType()) {
+        case tempo_config::ConfigNodeType::kValue:
+            return parseString(node.toValue(), importEntry);
+
+        case tempo_config::ConfigNodeType::kMap: {
+            auto importConfig = node.toMap();
+
+            // parse type
+            tempo_config::EnumTParser<ImportEntryType> importEntryTypeParser({
+                {"Version", ImportEntryType::Version},
+                {"Path", ImportEntryType::Path},
+            });
+            TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
+                importEntry.type, importEntryTypeParser, importConfig, "type"));
+
+            switch (importEntry.type) {
+                case ImportEntryType::Version:
+                    return parseVersion(importConfig, importEntry);
+                case ImportEntryType::Path:
+                    return parsePath(importConfig, importEntry);
+                default:
+                    return tempo_config::ConfigStatus::forCondition(
+                        tempo_config::ConfigCondition::kParseError, "invalid import entry type");
+            }
+        }
+
+        default:
+            return tempo_config::ConfigStatus::forCondition(
+                tempo_config::ConfigCondition::kParseError, "import entry config must be a string or map");
+    }
 }
 
 tempo_utils::Status
@@ -96,7 +147,8 @@ zuri_tooling::TargetEntryParser::convertValue(const tempo_config::ConfigNode &no
         case TargetEntryType::Package:
             return parsePackage(targetConfig, targetEntry);
         default:
-            return {};
+            return tempo_config::ConfigStatus::forCondition(
+                tempo_config::ConfigCondition::kParseError, "invalid target entry type");
     }
 }
 

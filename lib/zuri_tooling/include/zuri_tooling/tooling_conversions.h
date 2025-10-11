@@ -13,6 +13,10 @@ namespace zuri_tooling {
 
     class ImportEntryParser : public tempo_config::AbstractConverter<ImportEntry> {
     public:
+        tempo_utils::Status parseString(const tempo_config::ConfigValue &value, ImportEntry &importEntry) const;
+        tempo_utils::Status parseVersion(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const;
+        tempo_utils::Status parsePath(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const;
+
         tempo_utils::Status convertValue(const tempo_config::ConfigNode &node, ImportEntry &importEntry) const override;
     };
 

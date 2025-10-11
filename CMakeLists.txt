@@ -255,8 +255,19 @@ set(ZURI_PACKAGE_GROUP                      "dev.zuri")
 set(ZURI_STD_PACKAGE_NAME                   "std")
 set(ZURI_STD_PACKAGE_VERSION                "${PROJECT_VERSION}")
 set(ZURI_STD_PACKAGE_ID                     "${ZURI_PACKAGE_GROUP}_${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}")
+set(ZURI_STD_PACKAGE_ZPK                    "${ZURI_STD_PACKAGE_ID}.zpk")
 set(ZURI_STD_PACKAGE_AUTHORITY              "${ZURI_STD_PACKAGE_NAME}-${ZURI_STD_PACKAGE_VERSION}@zuri.dev")
 set(ZURI_STD_PACKAGE_URL                    "dev.zuri.pkg://${ZURI_STD_PACKAGE_AUTHORITY}")
+set(ZURI_STD_PACKAGE_PATH                   "${CMAKE_BINARY_DIR}/${ZURI_STD_PACKAGE_ZPK}")
+
+# zuri fs package
+set(ZURI_FS_PACKAGE_NAME                    "fs")
+set(ZURI_FS_PACKAGE_VERSION                 "${PROJECT_VERSION}")
+set(ZURI_FS_PACKAGE_ID                      "${ZURI_PACKAGE_GROUP}_${ZURI_FS_PACKAGE_NAME}-${ZURI_FS_PACKAGE_VERSION}")
+set(ZURI_FS_PACKAGE_ZPK                     "${ZURI_FS_PACKAGE_ID}.zpk")
+set(ZURI_FS_PACKAGE_AUTHORITY               "${ZURI_FS_PACKAGE_NAME}-${ZURI_FS_PACKAGE_VERSION}@zuri.dev")
+set(ZURI_FS_PACKAGE_URL                     "dev.zuri.pkg://${ZURI_FS_PACKAGE_AUTHORITY}")
+set(ZURI_FS_PACKAGE_PATH                    "${CMAKE_BINARY_DIR}/${ZURI_FS_PACKAGE_ZPK}")
 
 # special directory names
 set(ZURI_PACKAGES_DIR_NAME                  "zuri-packages-${PROJECT_VERSION_MAJOR}")
