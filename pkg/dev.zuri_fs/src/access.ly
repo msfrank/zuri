@@ -18,7 +18,9 @@ defenum Access {
     case OtherRead(4)
     case OtherWrite(2)
     case OtherExec(1)
+}
 
+definstance AccessInstance {
     impl IntoFlags[Access] {
         def ToValue(flag: Access): Int {
             flag.Value
@@ -31,8 +33,7 @@ defclass AccessMode final {
     val Mode: Flags[Access]
 
     init(mode: ...Access) {
-        using Access
-        val flags: Flags[Access] = Flags[Access]{}
+        val flags: Flags[Access] = Flags[Access]{intoFlags = AccessInstance}
         for access: Access in mode {
             flags.Set(access)
         }

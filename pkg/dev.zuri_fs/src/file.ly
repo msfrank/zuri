@@ -71,7 +71,7 @@ defclass File final {
         fut
     }
 
-    def Write(bytes: Bytes): Future[Int] {
+    def Write(bytes: Bytes, fileOffset: Int = -1): Future[Int] {
         val fut: Future[Int] = Future[Int]{}
         @{
             LoadData(fut)
@@ -80,10 +80,10 @@ defclass File final {
         fut
     }
 
-    def Close(): Status {
+    def Close(): Undef | Status {
         @{
             Trap("FS_FILE_CLOSE")
-            PushResult(typeof Status)
+            PushResult(typeof Undef | Status)
         }
     }
 }

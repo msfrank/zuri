@@ -32,6 +32,11 @@ public:
 
     tempo_utils::Status open(int flags, int mode, lyric_runtime::SystemScheduler *systemScheduler);
     tempo_utils::Status readAsync(int size, AbstractRef *fut, lyric_runtime::SystemScheduler *systemScheduler);
+    tempo_utils::Status writeAsync(
+        lyric_runtime::BytesRef *bytes,
+        tu_int64 offset,
+        AbstractRef *fut,
+        lyric_runtime::SystemScheduler *systemScheduler);
     tempo_utils::Status close(lyric_runtime::SystemScheduler *systemScheduler);
 
 protected:

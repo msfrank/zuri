@@ -37,4 +37,4 @@ set_target_properties(zuri-fs-package PROPERTIES
     )
 
 # add testing subdirectory
-#add_subdirectory(test)
+add_subdirectory(test)

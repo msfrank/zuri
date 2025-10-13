@@ -9,6 +9,8 @@
 
 #include "file_ref.h"
 
+#include <lyric_runtime/bytes_ref.h>
+
 FileRef::FileRef(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable),
       m_state(State::Initial)
@@ -79,11 +81,13 @@ FileRef::open(int flags, int mode, lyric_runtime::SystemScheduler *systemSchedul
         m_status = lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "failed to open file '{}': {}", m_path.string(), uv_strerror(ret));
-        return m_status;
+    } else {
+        m_file = ret;
+        m_state = State::Open;
     }
-    m_file = req.file;
-    m_state = State::Open;
-    return {};
+    uv_fs_req_cleanup(&req);
+
+    return m_status;
 }
 
 struct ReadContext {
@@ -149,6 +153,73 @@ FileRef::readAsync(int size, AbstractRef *fut, lyric_runtime::SystemScheduler *s
     return {};
 }
 
+struct WriteContext {
+    FileRef *file;
+    lyric_runtime::BytesRef *bytes;
+    uv_buf_t buf;
+    WriteContext(FileRef *file, lyric_runtime::BytesRef *bytes)
+    {
+        this->file = file;
+        this->bytes = bytes;
+        auto *data = (char *) bytes->getBytesData();
+        auto size = bytes->getBytesSize();
+        buf = uv_buf_init(data, size);
+    }
+};
+
+void
+write_context_free(void *data)
+{
+    delete static_cast<WriteContext *>(data);
+}
+
+void
+on_write_reachable(void *data)
+{
+    auto *ctx = static_cast<WriteContext *>(data);
+    ctx->file->setReachable();
+    ctx->bytes->setReachable();
+}
+
+static void
+on_write_accept(
+    lyric_runtime::Promise *promise,
+    const lyric_runtime::Waiter *waiter,
+    lyric_runtime::InterpreterState *state)
+{
+    auto *heapManager = state->heapManager();
+
+    auto ret = waiter->req->result;
+    if (ret >= 0) {
+        promise->complete(lyric_runtime::DataCell(static_cast<tu_int64>(ret)));
+    } else {
+        auto status = heapManager->allocateStatus(
+            tempo_utils::StatusCode::kInternal, uv_strerror(ret));
+        promise->reject(status);
+    }
+}
+
+tempo_utils::Status
+FileRef::writeAsync(
+    lyric_runtime::BytesRef *bytes,
+    tu_int64 offset,
+    AbstractRef *fut,
+    lyric_runtime::SystemScheduler *systemScheduler)
+{
+    auto *ctx = new WriteContext(this, bytes);
+
+    lyric_runtime::PromiseOptions options;
+    options.data = ctx;
+    options.reachable = on_write_reachable;
+    options.release = write_context_free;
+    auto promise = lyric_runtime::Promise::create(on_write_accept, options);
+
+    TU_RETURN_IF_NOT_OK (systemScheduler->registerWrite(m_file, ctx->buf, promise, offset));
+    fut->prepareFuture(promise);
+
+    return {};
+}
+
 tempo_utils::Status
 FileRef::close(lyric_runtime::SystemScheduler *systemScheduler)
 {
@@ -171,10 +242,12 @@ FileRef::close(lyric_runtime::SystemScheduler *systemScheduler)
         m_status = lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "failed to close file '{}': {}", m_path.string(), uv_strerror(ret));
-        return m_status;
+    } else {
+        m_state = State::Closed;
     }
-    m_state = State::Closed;
-    return {};
+    uv_fs_req_cleanup(&req);
+
+    return m_status;
 }
 
 void
@@ -215,8 +288,10 @@ fs_file_ctor(
     auto arg0 = frame.getArgument(0);
     TU_ASSERT (arg0.type == lyric_runtime::DataCellType::STRING);
     auto *str = arg0.data.str;
-    std::string path(str->getStringData(), str->getStringSize());
+    std::string_view s(str->getStringData(), str->getStringSize());
 
+    std::filesystem::path path(s);
+    path = std::filesystem::absolute(path);
     instance->setPath(path);
 
     return {};
@@ -232,12 +307,16 @@ fs_file_create(
     auto *systemScheduler = state->systemScheduler();
 
     auto &frame = currentCoro->currentCallOrThrow();
+    auto arg1 = frame.getArgument(1);
+    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::BOOL);
+    auto arg2 = frame.getArgument(2);
+    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::BOOL);
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
-    int flags = 0;
+    int flags = UV_FS_O_CREAT;
     int mode = 0644;
 
     lyric_runtime::DataCell canRead, canWrite;
@@ -249,7 +328,21 @@ fs_file_create(
         flags |= canWrite.data.b == true? UV_FS_O_WRONLY : 0;
     }
 
-    TU_RETURN_IF_NOT_OK (instance->open(flags, mode, systemScheduler));
+    if (arg1.data.b == true) {
+        flags |= UV_FS_O_EXCL;
+    }
+    if (arg2.data.b == true) {
+        flags |= UV_FS_O_TRUNC;
+    }
+
+    auto status = instance->open(flags, mode, systemScheduler);
+    if (status.notOk()) {
+        auto *heapManager = state->heapManager();
+        auto statusRef = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(statusRef));
+    } else {
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(receiver));
+    }
 
     return {};
 }
@@ -292,7 +385,14 @@ fs_file_open(
         flags |= UV_FS_O_TRUNC;
     }
 
-    TU_RETURN_IF_NOT_OK (instance->open(flags, mode, systemScheduler));
+    auto status = instance->open(flags, mode, systemScheduler);
+    if (status.notOk()) {
+        auto *heapManager = state->heapManager();
+        auto statusRef = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(statusRef));
+    } else {
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(receiver));
+    }
 
     return {};
 }
@@ -305,6 +405,7 @@ fs_file_read(
 {
     auto *currentCoro = state->currentCoro();
     auto *systemScheduler = state->systemScheduler();
+    auto *heapManager = state->heapManager();
 
     auto &frame = currentCoro->currentCallOrThrow();
 
@@ -315,12 +416,20 @@ fs_file_read(
     TU_ASSERT (frame.numArguments() == 1);
     auto arg0 = frame.getArgument(0);
     TU_ASSERT (arg0.type == lyric_runtime::DataCellType::I64);
-    auto size = static_cast<size_t>(arg0.data.i64);
 
     lyric_runtime::DataCell *data;
     TU_RETURN_IF_NOT_OK (currentCoro->peekData(&data));
     TU_ASSERT (data->type == lyric_runtime::DataCellType::REF);
     auto *fut = data->data.ref;
+
+    if (arg0.data.i64 < 0) {
+        auto status = heapManager->allocateStatus(tempo_utils::StatusCode::kInvalidArgument,
+            "invalid argument maxBytes; maxBytes cannot be negative");
+        auto promise = lyric_runtime::Promise::rejected(status);
+        fut->prepareFuture(promise);
+        return {};
+    }
+    auto size = static_cast<size_t>(arg0.data.i64);
 
     TU_RETURN_IF_NOT_OK (instance->readAsync(size, fut, systemScheduler));
 
@@ -335,6 +444,7 @@ fs_file_write(
 {
     auto *currentCoro = state->currentCoro();
     auto *systemScheduler = state->systemScheduler();
+    auto *heapManager = state->heapManager();
 
     auto &frame = currentCoro->currentCallOrThrow();
 
@@ -342,17 +452,35 @@ fs_file_write(
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
-    TU_ASSERT (frame.numArguments() == 1);
+    TU_ASSERT (frame.numArguments() == 2);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::I64);
-    auto size = static_cast<size_t>(arg0.data.i64);
+    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::BYTES);
+    auto *bytes = arg0.data.bytes;
+    auto arg1 = frame.getArgument(1);
+    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::I64);
+    auto offset = arg1.data.i64;
 
     lyric_runtime::DataCell *data;
     TU_RETURN_IF_NOT_OK (currentCoro->peekData(&data));
     TU_ASSERT (data->type == lyric_runtime::DataCellType::REF);
     auto *fut = data->data.ref;
 
-    TU_RETURN_IF_NOT_OK (instance->readAsync(size, fut, systemScheduler));
+    // ensure any negative offset is set to -1 specifically
+    if (offset < -1) {
+        offset = -1;
+    }
+
+    // reject the future if bytes argument is empty
+    auto size = bytes->getBytesSize();
+    if (size == 0) {
+        auto status = heapManager->allocateStatus(tempo_utils::StatusCode::kInvalidArgument,
+            "invalid argument bytes; bytes is empty");
+        auto promise = lyric_runtime::Promise::rejected(status);
+        fut->prepareFuture(promise);
+        return {};
+    }
+
+    TU_RETURN_IF_NOT_OK (instance->writeAsync(bytes, offset, fut, systemScheduler));
 
     return {};
 }
@@ -372,7 +500,14 @@ fs_file_close(
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
-    TU_RETURN_IF_NOT_OK (instance->close(systemScheduler));
+    auto status = instance->close(systemScheduler);
+    if (status.notOk()) {
+        auto *heapManager = state->heapManager();
+        auto statusRef = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(statusRef));
+    } else {
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(lyric_runtime::DataCell::undef()));
+    }
 
     return {};
 }
