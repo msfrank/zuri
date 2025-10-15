@@ -28,18 +28,6 @@ TreeMapRef::initialize(const TreeMapComparator &cmp)
     m_cmp = cmp;
 }
 
-lyric_runtime::DataCell
-TreeMapRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-TreeMapRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 TreeMapRef::toString() const
 {
@@ -231,18 +219,6 @@ TreeMapIterator::TreeMapIterator(
     TU_ASSERT (m_map != nullptr);
     m_iter = map->begin();
     m_gen = map->generation();
-}
-
-lyric_runtime::DataCell
-TreeMapIterator::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-TreeMapIterator::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
 }
 
 std::string

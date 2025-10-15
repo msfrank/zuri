@@ -18,18 +18,6 @@ VectorRef::~VectorRef()
     m_seq.clear();
 }
 
-lyric_runtime::DataCell
-VectorRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-VectorRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 VectorRef::toString() const
 {
@@ -165,18 +153,6 @@ VectorIterator::VectorIterator(
     TU_ASSERT (m_vector != nullptr);
     m_iter = vector->begin();
     m_gen = vector->generation();
-}
-
-lyric_runtime::DataCell
-VectorIterator::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-VectorIterator::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
 }
 
 std::string

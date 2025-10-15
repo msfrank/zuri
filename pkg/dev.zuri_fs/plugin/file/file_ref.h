@@ -14,8 +14,6 @@ public:
     explicit FileRef(const lyric_runtime::VirtualTable *vtable);
     ~FileRef() override;
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     enum class State {
@@ -37,11 +35,8 @@ public:
         tu_int64 offset,
         AbstractRef *fut,
         lyric_runtime::SystemScheduler *systemScheduler);
+    tempo_utils::Status truncateAsync(tu_int64 size, AbstractRef *fut, lyric_runtime::SystemScheduler *systemScheduler);
     tempo_utils::Status close(lyric_runtime::SystemScheduler *systemScheduler);
-
-protected:
-    void setMembersReachable() override;
-    void clearMembersReachable() override;
 
 private:
     std::filesystem::path m_path;
@@ -66,6 +61,11 @@ tempo_utils::Status fs_file_create(
     const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status fs_file_open(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
+
+tempo_utils::Status fs_file_open_or_create(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);

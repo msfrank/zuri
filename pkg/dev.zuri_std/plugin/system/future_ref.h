@@ -24,10 +24,6 @@ public:
     explicit FutureRef(const lyric_runtime::VirtualTable *vtable);
     ~FutureRef() override;
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(
-        const lyric_runtime::DataCell &field,
-        const lyric_runtime::DataCell &value) override;
     bool prepareFuture(std::shared_ptr<lyric_runtime::Promise> promise) override;
     bool awaitFuture(lyric_runtime::SystemScheduler *systemScheduler) override;
     bool resolveFuture(lyric_runtime::DataCell &result) override;

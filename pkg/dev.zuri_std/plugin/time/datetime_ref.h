@@ -14,18 +14,12 @@ public:
     explicit DatetimeRef(const lyric_runtime::VirtualTable *vtable);
     ~DatetimeRef() override;
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     absl::CivilSecond getCivilSecond() const;
     void setCivilSecond(absl::CivilSecond cs);
     absl::Duration getSubseconds() const;
     void setSubseconds(absl::Duration ss);
-
-protected:
-    void setMembersReachable() override;
-    void clearMembersReachable() override;
 
 private:
     absl::CivilSecond m_cs;

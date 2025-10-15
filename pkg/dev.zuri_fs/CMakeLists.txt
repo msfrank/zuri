@@ -4,6 +4,7 @@ add_subdirectory(plugin)
 
 # get file paths to each plugin
 get_directory_property(ZURI_FS_FILE_PLUGIN_FILEPATH DIRECTORY plugin/file PLUGIN_FILEPATH)
+get_directory_property(ZURI_FS_PATH_PLUGIN_FILEPATH DIRECTORY plugin/path PLUGIN_FILEPATH)
 
 # create the workspace config file used to build package
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/workspace.config.in ${CMAKE_CURRENT_BINARY_DIR}/workspace.config @ONLY)
@@ -27,6 +28,7 @@ add_custom_command (
         ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
         zuri-std-package
         fs-file-plugin
+        fs-path-plugin
     )
 
 # define custom target and target properties for consuming fs

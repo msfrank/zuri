@@ -14,16 +14,10 @@ public:
     explicit TimezoneRef(const lyric_runtime::VirtualTable *vtable);
     ~TimezoneRef() override;
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     absl::TimeZone getTimeZone() const;
     void setTimeZone(absl::TimeZone tz);
-
-protected:
-    void setMembersReachable() override;
-    void clearMembersReachable() override;
 
 private:
     absl::TimeZone m_tz;

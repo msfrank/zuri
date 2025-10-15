@@ -3,7 +3,7 @@
 
 import from "//std@zuri.dev/system" { Future }
 import from "//std@zuri.dev/flags" { Flags, IntoFlags }
-import from "/access" { AccessMode }
+import from "/permission" { Permission, Permissions }
 
 defenum FileMode {
 
@@ -34,13 +34,16 @@ defclass File final {
 
     def Create(
         mode: FileMode,
-        named createExclusive: Bool = false,
-        named truncate: Bool = false
+        permissions: Permissions = Permissions.Default{},
+        named truncate: Bool = false,
+        named append: Bool = false
     ): File | Status {
         @{
             LoadData(mode.CanRead)
             PopResult()
             LoadData(mode.CanWrite)
+            PopResult()
+            LoadData(permissions.Mode.ToInt())
             PopResult()
             Trap("FS_FILE_CREATE")
             PushResult(typeof File | Status)
@@ -49,8 +52,9 @@ defclass File final {
 
     def Open(
         mode: FileMode,
-        named createIfMissing: Bool = false,
-        named truncate: Bool = false
+        named truncate: Bool = false,
+        named append: Bool = false,
+        named noFollow: Bool = false
     ): File | Status {
         @{
             LoadData(mode.CanRead)
@@ -58,6 +62,25 @@ defclass File final {
             LoadData(mode.CanWrite)
             PopResult()
             Trap("FS_FILE_OPEN")
+            PushResult(typeof File | Status)
+        }
+    }
+
+    def OpenOrCreate(
+        mode: FileMode,
+        permissions: Permissions = Permissions.Default{},
+        named truncate: Bool = false,
+        named append: Bool = false,
+        named noFollow: Bool = false
+    ): File | Status {
+        @{
+            LoadData(mode.CanRead)
+            PopResult()
+            LoadData(mode.CanWrite)
+            PopResult()
+            LoadData(permissions.Mode.ToInt())
+            PopResult()
+            Trap("FS_FILE_OPEN_OR_CREATE")
             PushResult(typeof File | Status)
         }
     }

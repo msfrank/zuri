@@ -19,18 +19,6 @@ FutureRef::~FutureRef()
     TU_LOG_INFO << "free" << FutureRef::toString();
 }
 
-lyric_runtime::DataCell
-FutureRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-FutureRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 bool
 FutureRef::prepareFuture(std::shared_ptr<lyric_runtime::Promise> promise)
 {

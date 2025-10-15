@@ -15,8 +15,6 @@ public:
     TextRef(const lyric_runtime::VirtualTable *vtable, const UChar *data, int32_t size);
     ~TextRef() override;
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     lyric_runtime::DataCell textAt(int index) const;
@@ -25,10 +23,6 @@ public:
     const UChar *getTextData() const;
     int32_t getTextSize() const;
     bool setTextData(const char *data, int32_t size);
-
-protected:
-    void setMembersReachable() override;
-    void clearMembersReachable() override;
 
 private:
     UChar *m_data;

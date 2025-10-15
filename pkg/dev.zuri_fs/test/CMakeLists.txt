@@ -5,8 +5,9 @@ include(GoogleTest)
 # define unit tests
 
 set(TEST_CASES
-    access_tests.cpp
     file_tests.cpp
+    path_tests.cpp
+    permission_tests.cpp
     )
 
 # define test suite driver

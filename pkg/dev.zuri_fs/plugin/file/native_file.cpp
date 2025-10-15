@@ -5,11 +5,12 @@
 #include "file_ref.h"
 #include "native_file.h"
 
-std::array<lyric_runtime::NativeTrap,7> kFsFileTraps = {{
+std::array<lyric_runtime::NativeTrap,8> kFsFileTraps = {{
     {fs_file_alloc, "FS_FILE_ALLOC", 0},
     {fs_file_ctor, "FS_FILE_CTOR", 0},
     {fs_file_create, "FS_FILE_CREATE", 0},
     {fs_file_open, "FS_FILE_OPEN", 0},
+    {fs_file_open_or_create, "FS_FILE_OPEN_OR_CREATE", 0},
     {fs_file_read, "FS_FILE_READ", 0},
     {fs_file_write, "FS_FILE_WRITE", 0},
     {fs_file_close, "FS_FILE_CLOSE", 0},

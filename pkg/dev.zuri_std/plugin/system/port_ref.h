@@ -23,8 +23,6 @@ public:
         std::shared_ptr<lyric_runtime::DuplexPort> port);
     ~PortRef() override;
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     std::shared_ptr<lyric_runtime::DuplexPort> duplexPort();

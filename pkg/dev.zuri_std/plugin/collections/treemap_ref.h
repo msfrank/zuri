@@ -39,10 +39,6 @@ public:
 
     void initialize(const TreeMapComparator &cmp);
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(
-        const lyric_runtime::DataCell &field,
-        const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     bool contains(const lyric_runtime::DataCell &key) const;
@@ -77,8 +73,6 @@ public:
         const lyric_runtime::VirtualTable *vtable,
         TreeMapRef *map);
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     bool valid();

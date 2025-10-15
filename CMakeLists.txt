@@ -321,7 +321,7 @@ add_subdirectory(share)
 add_custom_command(
     OUTPUT ${EMPTY_CPP}
     COMMAND cmake -E touch ${EMPTY_CPP}
-)
+    )
 
 add_executable(zuri_testsuite ${EMPTY_CPP})
 target_link_libraries(zuri_testsuite
@@ -332,7 +332,8 @@ target_link_libraries(zuri_testsuite
     ZuriPackagerTestSuite
     ZuriToolingTestSuite
     ZuriStdPackageTestSuite
-)
+    ZuriFsPackageTestSuite
+    )
 gtest_discover_tests(zuri_testsuite)
 
 

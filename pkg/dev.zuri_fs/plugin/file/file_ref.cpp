@@ -22,18 +22,6 @@ FileRef::~FileRef()
     TU_LOG_V << "free FileRef" << FileRef::toString();
 }
 
-lyric_runtime::DataCell
-FileRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-FileRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 FileRef::toString() const
 {
@@ -221,6 +209,12 @@ FileRef::writeAsync(
 }
 
 tempo_utils::Status
+FileRef::truncateAsync(tu_int64 size, AbstractRef *fut, lyric_runtime::SystemScheduler *systemScheduler)
+{
+    return {};
+}
+
+tempo_utils::Status
 FileRef::close(lyric_runtime::SystemScheduler *systemScheduler)
 {
     switch (m_state) {
@@ -250,18 +244,10 @@ FileRef::close(lyric_runtime::SystemScheduler *systemScheduler)
     return m_status;
 }
 
-void
-FileRef::setMembersReachable()
-{
-}
-
-void
-FileRef::clearMembersReachable()
-{
-}
-
 tempo_utils::Status
-fs_file_alloc(lyric_runtime::BytecodeInterpreter *interp, lyric_runtime::InterpreterState *state,
+fs_file_alloc(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
 {
     TU_ASSERT(vtable != nullptr);
@@ -307,32 +293,41 @@ fs_file_create(
     auto *systemScheduler = state->systemScheduler();
 
     auto &frame = currentCoro->currentCallOrThrow();
-    auto arg1 = frame.getArgument(1);
-    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (frame.numArguments() == 4);
     auto arg2 = frame.getArgument(2);
     TU_ASSERT (arg2.type == lyric_runtime::DataCellType::BOOL);
+    auto arg3 = frame.getArgument(3);
+    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::BOOL);
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
-    int flags = UV_FS_O_CREAT;
-    int mode = 0644;
+    int flags = UV_FS_O_CREAT | UV_FS_O_EXCL;
+    int mode = 0;
+
+    lyric_runtime::DataCell permissions;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(permissions));
+    TU_ASSERT (permissions.type == lyric_runtime::DataCellType::I64);
+    mode = static_cast<int>(permissions.data.i64);
 
     lyric_runtime::DataCell canRead, canWrite;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(canWrite));
+    TU_ASSERT (canWrite.type == lyric_runtime::DataCellType::BOOL);
     TU_RETURN_IF_NOT_OK (currentCoro->popData(canRead));
+    TU_ASSERT (canRead.type == lyric_runtime::DataCellType::BOOL);
+
     if (canRead.data.b == true) {
         flags |= canWrite.data.b == true? UV_FS_O_RDWR : UV_FS_O_RDONLY;
     } else {
         flags |= canWrite.data.b == true? UV_FS_O_WRONLY : 0;
     }
 
-    if (arg1.data.b == true) {
-        flags |= UV_FS_O_EXCL;
-    }
     if (arg2.data.b == true) {
         flags |= UV_FS_O_TRUNC;
+    }
+    if (arg3.data.b == true) {
+        flags |= UV_FS_O_APPEND;
     }
 
     auto status = instance->open(flags, mode, systemScheduler);
@@ -357,17 +352,20 @@ fs_file_open(
     auto *systemScheduler = state->systemScheduler();
 
     auto &frame = currentCoro->currentCallOrThrow();
+    TU_ASSERT (frame.numArguments() == 4);
     auto arg1 = frame.getArgument(1);
     TU_ASSERT (arg1.type == lyric_runtime::DataCellType::BOOL);
     auto arg2 = frame.getArgument(2);
     TU_ASSERT (arg2.type == lyric_runtime::DataCellType::BOOL);
+    auto arg3 = frame.getArgument(3);
+    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::BOOL);
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
     int flags = 0;
-    int mode = 0644;
+    int mode = 0;
 
     lyric_runtime::DataCell canRead, canWrite;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(canWrite));
@@ -379,10 +377,77 @@ fs_file_open(
     }
 
     if (arg1.data.b == true) {
-        flags |= UV_FS_O_CREAT;
+        flags |= UV_FS_O_TRUNC;
     }
     if (arg2.data.b == true) {
+        flags |= UV_FS_O_APPEND;
+    }
+    if (arg3.data.b == true) {
+        flags |= UV_FS_O_NOFOLLOW;
+    }
+
+    auto status = instance->open(flags, mode, systemScheduler);
+    if (status.notOk()) {
+        auto *heapManager = state->heapManager();
+        auto statusRef = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(statusRef));
+    } else {
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(receiver));
+    }
+
+    return {};
+}
+
+tempo_utils::Status
+fs_file_open_or_create(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
+{
+    auto *currentCoro = state->currentCoro();
+    auto *systemScheduler = state->systemScheduler();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+    TU_ASSERT (frame.numArguments() == 5);
+    auto arg2 = frame.getArgument(2);
+    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::BOOL);
+    auto arg3 = frame.getArgument(3);
+    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::BOOL);
+    auto arg4 = frame.getArgument(4);
+    TU_ASSERT (arg4.type == lyric_runtime::DataCellType::BOOL);
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<FileRef *>(receiver.data.ref);
+
+    int flags = UV_FS_O_CREAT;
+    int mode = 0;
+
+    lyric_runtime::DataCell permissions;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(permissions));
+    TU_ASSERT (permissions.type == lyric_runtime::DataCellType::I64);
+    mode = static_cast<int>(permissions.data.i64);
+
+    lyric_runtime::DataCell canRead, canWrite;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(canWrite));
+    TU_ASSERT (canWrite.type == lyric_runtime::DataCellType::BOOL);
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(canRead));
+    TU_ASSERT (canRead.type == lyric_runtime::DataCellType::BOOL);
+
+    if (canRead.data.b == true) {
+        flags |= canWrite.data.b == true? UV_FS_O_RDWR : UV_FS_O_RDONLY;
+    } else {
+        flags |= canWrite.data.b == true? UV_FS_O_WRONLY : 0;
+    }
+
+    if (arg2.data.b == true) {
         flags |= UV_FS_O_TRUNC;
+    }
+    if (arg3.data.b == true) {
+        flags |= UV_FS_O_APPEND;
+    }
+    if (arg4.data.b == true) {
+        flags |= UV_FS_O_NOFOLLOW;
     }
 
     auto status = instance->open(flags, mode, systemScheduler);

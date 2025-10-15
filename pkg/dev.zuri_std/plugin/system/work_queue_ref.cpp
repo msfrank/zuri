@@ -20,18 +20,6 @@ WorkQueueRef::~WorkQueueRef()
     TU_LOG_INFO << "free" << WorkQueueRef::toString();
 }
 
-lyric_runtime::DataCell
-WorkQueueRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-WorkQueueRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 WorkQueueRef::toString() const
 {

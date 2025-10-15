@@ -17,18 +17,6 @@ TimezoneRef::~TimezoneRef()
     TU_LOG_INFO << "free TimezoneRef" << TimezoneRef::toString();
 }
 
-lyric_runtime::DataCell
-TimezoneRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-TimezoneRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 TimezoneRef::toString() const
 {
@@ -45,16 +33,6 @@ void
 TimezoneRef::setTimeZone(absl::TimeZone tz)
 {
     m_tz = tz;
-}
-
-void
-TimezoneRef::setMembersReachable()
-{
-}
-
-void
-TimezoneRef::clearMembersReachable()
-{
 }
 
 tempo_utils::Status

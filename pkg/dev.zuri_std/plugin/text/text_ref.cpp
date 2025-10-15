@@ -30,18 +30,6 @@ TextRef::~TextRef()
     delete[] m_data;
 }
 
-lyric_runtime::DataCell
-TextRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-TextRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 TextRef::toString() const
 {
@@ -112,16 +100,6 @@ TextRef::setTextData(const char *data, tu_int32 size)
     }
 
     return true;
-}
-
-void
-TextRef::setMembersReachable()
-{
-}
-
-void
-TextRef::clearMembersReachable()
-{
 }
 
 tempo_utils::Status

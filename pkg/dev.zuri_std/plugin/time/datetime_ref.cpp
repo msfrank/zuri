@@ -19,18 +19,6 @@ DatetimeRef::~DatetimeRef()
     TU_LOG_INFO << "free DatetimeRef" << DatetimeRef::toString();
 }
 
-lyric_runtime::DataCell
-DatetimeRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-DatetimeRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 DatetimeRef::toString() const
 {
@@ -59,16 +47,6 @@ void
 DatetimeRef::setSubseconds(absl::Duration ss)
 {
     m_ss = ss;
-}
-
-void
-DatetimeRef::setMembersReachable()
-{
-}
-
-void
-DatetimeRef::clearMembersReachable()
-{
 }
 
 tempo_utils::Status

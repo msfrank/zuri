@@ -7,7 +7,7 @@
 #include <tempo_test/tempo_test.h>
 #include <zuri_test/zuri_tester.h>
 
-class FsAccess : public ::testing::Test {
+class FsPermission : public ::testing::Test {
 protected:
     std::unique_ptr<zuri_test::ZuriTester> tester;
 
@@ -20,13 +20,13 @@ protected:
     }
 };
 
-TEST_F(FsAccess, EvaluateSetAndCheckFlags)
+TEST_F(FsPermission, EvaluateSetAndCheck)
 {
     auto result = tester->runModule(R"(
-        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/access" ...
+        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/permission" ...
 
-        val access: AccessMode = AccessMode{UserRead, UserWrite}
-        access.Mode.Contains(UserRead)
+        val perms: Permissions = Permissions{UserRead, UserWrite}
+        perms.Mode.Contains(UserRead)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(

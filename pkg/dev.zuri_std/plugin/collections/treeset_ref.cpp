@@ -25,18 +25,6 @@ TreeSetRef::initialize(const TreeSetComparator &cmp)
     m_cmp = cmp;
 }
 
-lyric_runtime::DataCell
-TreeSetRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-TreeSetRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 TreeSetRef::toString() const
 {
@@ -208,18 +196,6 @@ TreeSetIterator::TreeSetIterator(
     TU_ASSERT (m_set != nullptr);
     m_iter = set->begin();
     m_gen = set->generation();
-}
-
-lyric_runtime::DataCell
-TreeSetIterator::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-TreeSetIterator::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
 }
 
 std::string

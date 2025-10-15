@@ -17,18 +17,6 @@ InstantRef::~InstantRef()
     TU_LOG_INFO << "free InstantRef" << InstantRef::toString();
 }
 
-lyric_runtime::DataCell
-InstantRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-InstantRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 InstantRef::toString() const
 {
@@ -51,16 +39,6 @@ lyric_runtime::DataCell
 InstantRef::toEpochMillis() const
 {
     return lyric_runtime::DataCell(static_cast<tu_int64>(absl::ToUnixMillis(m_instant)));
-}
-
-void
-InstantRef::setMembersReachable()
-{
-}
-
-void
-InstantRef::clearMembersReachable()
-{
 }
 
 tempo_utils::Status

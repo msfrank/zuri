@@ -52,18 +52,6 @@ PortRef::~PortRef()
     TU_LOG_INFO << "free" << PortRef::toString();
 }
 
-lyric_runtime::DataCell
-PortRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-PortRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 PortRef::toString() const
 {

@@ -29,18 +29,6 @@ HashMapRef::initialize(const HashMapEq &eq)
     m_eq = eq;
 }
 
-lyric_runtime::DataCell
-HashMapRef::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-HashMapRef::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
-}
-
 std::string
 HashMapRef::toString() const
 {
@@ -206,18 +194,6 @@ HashMapIterator::HashMapIterator(
     TU_ASSERT (m_map != nullptr);
     m_iter = map->begin();
     m_gen = map->generation();
-}
-
-lyric_runtime::DataCell
-HashMapIterator::getField(const lyric_runtime::DataCell &field) const
-{
-    return {};
-}
-
-lyric_runtime::DataCell
-HashMapIterator::setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value)
-{
-    return {};
 }
 
 std::string

@@ -34,8 +34,6 @@ public:
 
     void initialize(const TreeSetComparator &cmp);
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     bool contains(const lyric_runtime::DataCell &value) const;
@@ -69,8 +67,6 @@ public:
         const lyric_runtime::VirtualTable *vtable,
         TreeSetRef *set);
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     bool iteratorValid() override;

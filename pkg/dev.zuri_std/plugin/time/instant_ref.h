@@ -14,18 +14,12 @@ public:
     explicit InstantRef(const lyric_runtime::VirtualTable *vtable);
     ~InstantRef() override;
 
-    lyric_runtime::DataCell getField(const lyric_runtime::DataCell &field) const override;
-    lyric_runtime::DataCell setField(const lyric_runtime::DataCell &field, const lyric_runtime::DataCell &value) override;
     std::string toString() const override;
 
     absl::Time getInstant() const;
     void setInstant(absl::Time instant);
 
     lyric_runtime::DataCell toEpochMillis() const;
-
-protected:
-    void setMembersReachable() override;
-    void clearMembersReachable() override;
 
 private:
     absl::Time m_instant;

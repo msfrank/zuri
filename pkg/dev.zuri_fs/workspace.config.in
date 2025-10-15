@@ -13,6 +13,14 @@
                         "filePath": "@ZURI_FS_FILE_PLUGIN_FILEPATH@",
                         "artifactPath": "/file.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
                         "contentType": "application/vnd.lyric.plugin"
+                    },
+                    "provide_plugin:/path": {
+                        "buildTarget": "fetch_external_file:/path"
+                    },
+                    "fetch_external_file:/path": {
+                        "filePath": "@ZURI_FS_PATH_PLUGIN_FILEPATH@",
+                        "artifactPath": "/path.@ZURI_PLATFORM_ID@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+                        "contentType": "application/vnd.lyric.plugin"
                     }
                 }
             }
@@ -28,8 +36,9 @@
                 "type": "Library",
                 "specifier": "fs-@PROJECT_VERSION@@zuri.dev",
                 "libraryModules": [
-                    "/access",
-                    "/file"
+                    "/file",
+                    "/path",
+                    "/permission",
                 ]
             }
         }
