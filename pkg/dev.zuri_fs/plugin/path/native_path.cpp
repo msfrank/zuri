@@ -5,9 +5,15 @@
 #include "native_path.h"
 #include "path_ref.h"
 
-std::array<lyric_runtime::NativeTrap,3> kFsPathTraps = {{
+std::array<lyric_runtime::NativeTrap,9> kFsPathTraps = {{
     {fs_path_alloc, "FS_PATH_ALLOC", 0},
     {fs_path_ctor, "FS_PATH_CTOR", 0},
+    {fs_path_parent, "FS_PATH_PARENT", 0},
+    {fs_path_file_name, "FS_PATH_FILE_NAME", 0},
+    {fs_path_file_stem, "FS_PATH_FILE_STEM", 0},
+    {fs_path_file_extension, "FS_PATH_FILE_EXTENSION", 0},
+    {fs_path_is_absolute, "FS_PATH_IS_ABSOLUTE", 0},
+    {fs_path_is_relative, "FS_PATH_IS_RELATIVE", 0},
     {fs_path_to_string, "FS_PATH_TO_STRING", 0},
 }};
 

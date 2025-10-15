@@ -17,6 +17,15 @@ public:
     std::filesystem::path getPath() const;
     void setPath(const std::filesystem::path &path);
 
+    bool isAbsolute() const;
+    bool isRelative() const;
+
+    std::filesystem::path getFileName() const;
+    std::filesystem::path getFileStem() const;
+    std::string getFileExtension() const;
+
+    std::filesystem::path getParentPath() const;
+
 private:
     std::filesystem::path m_path;
 };
@@ -27,6 +36,36 @@ tempo_utils::Status fs_path_alloc(
     const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status fs_path_ctor(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
+
+tempo_utils::Status fs_path_parent(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
+
+tempo_utils::Status fs_path_file_name(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
+
+tempo_utils::Status fs_path_file_stem(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
+
+tempo_utils::Status fs_path_file_extension(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
+
+tempo_utils::Status fs_path_is_absolute(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
+
+tempo_utils::Status fs_path_is_relative(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);

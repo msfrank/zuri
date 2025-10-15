@@ -22,6 +22,48 @@ defstruct Path {
         }
     }
 
+    def Parent(): Path {
+        @{
+            Trap("FS_PATH_PARENT")
+            PushResult(typeof Path)
+        }
+    }
+
+    def FileName(): Path {
+        @{
+            Trap("FS_PATH_FILE_NAME")
+            PushResult(typeof Path)
+        }
+    }
+
+    def FileStem(): Path {
+        @{
+            Trap("FS_PATH_FILE_STEM")
+            PushResult(typeof Path)
+        }
+    }
+
+    def FileExtension(): String {
+        @{
+            Trap("FS_PATH_FILE_EXTENSION")
+            PushResult(typeof Path)
+        }
+    }
+
+    def IsAbsolute(): Bool {
+        @{
+            Trap("FS_PATH_IS_ABSOLUTE")
+            PushResult(typeof Bool)
+        }
+    }
+
+    def IsRelative(): Bool {
+        @{
+            Trap("FS_PATH_IS_RELATIVE")
+            PushResult(typeof Bool)
+        }
+    }
+
     def ToString(): String {
         @{
             Trap("FS_PATH_TO_STRING")

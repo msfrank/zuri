@@ -34,3 +34,83 @@ TEST_F(FsPath, EvaluateCurrentPath)
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
     DataCellString(path.string()))));
 }
+
+TEST_F(FsPath, EvaluateIsAbsolute)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/path" ...
+
+        val path = Path{"/parent/filename.txt"}
+        path.IsAbsolute() and not path.IsRelative()
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+    DataCellBool(true))));
+}
+
+TEST_F(FsPath, EvaluateIsRelative)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/path" ...
+
+        val path = Path{"filename.txt"}
+        path.IsRelative() and not path.IsAbsolute()
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+    DataCellBool(true))));
+}
+
+TEST_F(FsPath, EvaluateFileName)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/path" ...
+
+        val path = Path{"/parent/filename.txt"}
+        path.FileName().ToString()
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+    DataCellString("filename.txt"))));
+}
+
+TEST_F(FsPath, EvaluateFileStem)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/path" ...
+
+        val path = Path{"/parent/filename.txt"}
+        path.FileStem().ToString()
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+    DataCellString("filename"))));
+}
+
+TEST_F(FsPath, EvaluateFileExtension)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/path" ...
+
+        val path = Path{"/parent/filename.txt"}
+        path.FileExtension()
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+    DataCellString(".txt"))));
+}
+
+TEST_F(FsPath, EvaluateParent)
+{
+    std::filesystem::path path("/parent/filename.txt");
+
+    auto result = tester->runModule(absl::StrFormat(R"(
+        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/path" ...
+
+        val path = Path{"%s"}
+        path.Parent().ToString()
+    )", path.string()));
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+    DataCellString(path.parent_path().string()))));
+}
