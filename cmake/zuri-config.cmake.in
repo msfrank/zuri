@@ -4,12 +4,23 @@ if (NOT TARGET zuri::zuri)
   include(${CMAKE_CURRENT_LIST_DIR}/zuri-targets.cmake)
 endif ()
 
-# zuri packages
+# zuri package group
+set(ZURI_PACKAGE_GROUP                  "@ZURI_PACKAGE_GROUP@")
+
+# zuri std package
 set(ZURI_STD_PACKAGE_ID                 "@ZURI_STD_PACKAGE_ID@")
 set(ZURI_STD_PACKAGE_AUTHORITY          "@ZURI_STD_PACKAGE_AUTHORITY@")
 set(ZURI_STD_PACKAGE_URL                "@ZURI_STD_PACKAGE_URL@")
+set(ZURI_STD_PACKAGE_ZPK                "@ZURI_STD_PACKAGE_ZPK@")
+
+# zuri fs package
+set(ZURI_FS_PACKAGE_ID                  "@ZURI_FS_PACKAGE_ID@")
+set(ZURI_FS_PACKAGE_AUTHORITY           "@ZURI_FS_PACKAGE_AUTHORITY@")
+set(ZURI_FS_PACKAGE_URL                 "@ZURI_FS_PACKAGE_URL@")
+set(ZURI_FS_PACKAGE_ZPK                 "@ZURI_FS_PACKAGE_ZPK@")
 
 # absolute paths
+set(ZURI_INSTALL_DISTRIBUTION_ROOT      "@PACKAGE_DISTRIBUTION_ROOT@")
 set(ZURI_INSTALL_PACKAGES_DIR           "@PACKAGE_PACKAGES_DIR_PREFIX@")
 set(ZURI_INSTALL_DOC_DIR                "@PACKAGE_DOC_DIR_PREFIX@")
 set(ZURI_INSTALL_CONFIG_DIR             "@PACKAGE_CONFIG_DIR_PREFIX@")

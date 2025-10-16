@@ -18,6 +18,12 @@ zuri_distributor::PackageCacheLoader::PackageCacheLoader(std::shared_ptr<Package
     TU_ASSERT (m_packageCache != nullptr);
 }
 
+std::shared_ptr<zuri_distributor::PackageCache>
+zuri_distributor::PackageCacheLoader::getPackageCache() const
+{
+    return m_packageCache;
+}
+
 tempo_utils::Result<std::filesystem::path>
 zuri_distributor::PackageCacheLoader::findModule(
     const lyric_common::ModuleLocation &location,

@@ -29,6 +29,13 @@ defstruct Path {
         }
     }
 
+    def Resolve(parts: ... Path | String): Path {
+        @{
+            Trap("FS_PATH_RESOLVE")
+            PushResult(typeof Path)
+        }
+    }
+
     def FileName(): Path {
         @{
             Trap("FS_PATH_FILE_NAME")

@@ -20,6 +20,13 @@ PathRef::~PathRef()
     TU_LOG_V << "free PathRef" << PathRef::toString();
 }
 
+bool
+PathRef::utf8Value(std::string &utf8) const
+{
+    utf8 = m_path.string();
+    return true;
+}
+
 std::string
 PathRef::toString() const
 {
@@ -146,6 +153,53 @@ fs_path_parent(
     ref->setPath(path);
 
     TU_RETURN_IF_NOT_OK (currentCoro->pushData(parent));
+
+    return {};
+}
+
+tempo_utils::Status
+fs_path_resolve(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable)
+{
+    auto *currentCoro = state->currentCoro();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+
+    auto path = instance->getPath();
+
+    for (int i = 0; i < frame.numRest(); i++) {
+        auto part = frame.getRest(i);
+        std::string utf8;
+        switch (part.type) {
+            case lyric_runtime::DataCellType::STRING: {
+                part.data.str->utf8Value(utf8);
+                break;
+            }
+            case lyric_runtime::DataCellType::REF: {
+                part.data.ref->utf8Value(utf8);
+                break;
+            }
+            default:
+                break;
+        }
+        if (!utf8.empty()) {
+            path /= utf8;
+        }
+    }
+
+    auto base = instance->getPath();
+    path = path.lexically_normal();
+
+    auto resolve = state->heapManager()->allocateRef<PathRef>(instance->getVirtualTable());
+    auto *ref = static_cast<PathRef *>(resolve.data.ref);
+    ref->setPath(path);
+
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(resolve));
 
     return {};
 }

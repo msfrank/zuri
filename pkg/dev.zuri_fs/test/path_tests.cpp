@@ -114,3 +114,17 @@ TEST_F(FsPath, EvaluateParent)
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
     DataCellString(path.parent_path().string()))));
 }
+
+TEST_F(FsPath, EvaluateResolve)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/path" ...
+
+        val path = Path{"/parent/"}
+        val resolved = path.Resolve("foo/bar", "../newname.txt")
+        resolved.ToString()
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
+    DataCellString("/parent/foo/newname.txt"))));
+}

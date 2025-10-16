@@ -45,5 +45,8 @@ set_target_properties(zuri-std-package PROPERTIES
     ZURI_PKG_SPECIFIER "std-${PROJECT_VERSION}@zuri.dev"
     )
 
+# install zpk file
+install(FILES ${ZURI_STD_PACKAGE_PATH} DESTINATION ${PACKAGES_DIR_PREFIX})
+
 # add testing subdirectory
 add_subdirectory(test)

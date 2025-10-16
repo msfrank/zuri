@@ -11,6 +11,12 @@ zuri_distributor::PackageCache::PackageCache(const std::filesystem::path &cacheD
     TU_ASSERT (!m_cacheDirectory.empty());
 }
 
+std::filesystem::path
+zuri_distributor::PackageCache::getCacheDirectory() const
+{
+    return m_cacheDirectory;
+}
+
 bool
 zuri_distributor::PackageCache::containsPackage(const zuri_packager::PackageSpecifier &specifier) const
 {

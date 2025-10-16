@@ -13,6 +13,8 @@ namespace zuri_distributor {
     public:
         explicit PackageCacheLoader(std::shared_ptr<PackageCache> packageCache);
 
+        std::shared_ptr<PackageCache> getPackageCache() const;
+
         tempo_utils::Result<bool> hasModule(
             const lyric_common::ModuleLocation &location) const override;
         tempo_utils::Result<Option<lyric_object::LyricObject>> loadModule(

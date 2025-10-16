@@ -38,5 +38,8 @@ set_target_properties(zuri-fs-package PROPERTIES
     ZURI_PKG_SPECIFIER "fs-${PROJECT_VERSION}@zuri.dev"
     )
 
+# install zpk file
+install(FILES ${ZURI_FS_PACKAGE_PATH} DESTINATION ${PACKAGES_DIR_PREFIX})
+
 # add testing subdirectory
 add_subdirectory(test)

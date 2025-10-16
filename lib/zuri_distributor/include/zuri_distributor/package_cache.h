@@ -14,6 +14,8 @@ namespace zuri_distributor {
         static tempo_utils::Result<std::shared_ptr<PackageCache>> open(
             const std::filesystem::path &cacheDirectory);
 
+        std::filesystem::path getCacheDirectory() const;
+
         bool containsPackage(const zuri_packager::PackageSpecifier &specifier) const;
 
         tempo_utils::Result<Option<std::filesystem::path>> resolvePackage(

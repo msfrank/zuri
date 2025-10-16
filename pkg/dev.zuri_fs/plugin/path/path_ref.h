@@ -12,6 +12,7 @@ public:
     explicit PathRef(const lyric_runtime::VirtualTable *vtable);
     ~PathRef() override;
 
+    bool utf8Value(std::string &utf8) const override;
     std::string toString() const override;
 
     std::filesystem::path getPath() const;
@@ -41,6 +42,11 @@ tempo_utils::Status fs_path_ctor(
     const lyric_runtime::VirtualTable *vtable);
 
 tempo_utils::Status fs_path_parent(
+    lyric_runtime::BytecodeInterpreter *interp,
+    lyric_runtime::InterpreterState *state,
+    const lyric_runtime::VirtualTable *vtable);
+
+tempo_utils::Status fs_path_resolve(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
