@@ -218,7 +218,8 @@ zuri_distributor::PackageFetcher::requestFile(
 
     fetch->handle = curl_easy_init();
     curl_easy_setopt(fetch->handle, CURLOPT_PRIVATE, fetch.get());
-    curl_easy_setopt(fetch->handle, CURLOPT_URL, url.uriView());
+    auto urlString = url.toString();
+    curl_easy_setopt(fetch->handle, CURLOPT_URL, urlString.c_str());
 
     // configure callbacks
     curl_easy_setopt(fetch->handle, CURLOPT_HEADERFUNCTION, header_callback);
