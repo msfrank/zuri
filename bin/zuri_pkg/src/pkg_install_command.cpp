@@ -80,9 +80,8 @@ zuri_pkg::pkg_install_command(
     tempo_config::BooleanParser dryRunParser(false);
 
     std::vector<tempo_command::Default> defaults = {
-        {"dryRun", dryRunParser.getDefault(),
-            "Display what would be installed but make no changes"},
-        {"packages", {}, "Packages to install", "PACKAGE"},
+        {"dryRun", "Display what would be installed but make no changes"},
+        {"packages", "Packages to install", "PACKAGE"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
@@ -119,8 +118,7 @@ zuri_pkg::pkg_install_command(
         }
     }
 
-    // initialize the command config from defaults
-    tempo_command::CommandConfig commandConfig = tempo_command::command_config_from_defaults(defaults);
+    tempo_command::CommandConfig commandConfig;
 
     // convert options to config
     TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));

@@ -24,21 +24,14 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
     tempo_config::BooleanParser silentParser(false);
 
     std::vector<tempo_command::Default> defaults = {
-        {"workspaceRoot", workspaceRootParser.getDefault(),
-            "Load config from workspace", "DIR"},
-        {"distributionRoot", distributionRootParser.getDefault(),
-            "Specify an alternative distribution root directory", "DIR"},
-        {"manageSystem", manageSystemParser.getDefault(),
-            "Manage system cache"},
-        {"colorizeOutput", colorizeOutputParser.getDefault(),
-            "Display colorized output"},
-        {"verbose", verboseParser.getDefault(),
-            "Display verbose output (specify twice for even more verbose output)"},
-        {"quiet", quietParser.getDefault(),
-            "Display warnings and errors only (specify twice for errors only)"},
-        {"silent", silentParser.getDefault(),
-            "Suppress all output"},
-        {"arguments", {}, "List of arguments to pass to the program", "ARGS"},
+        {"workspaceRoot", "Load config from workspace", "DIR"},
+        {"distributionRoot", "Specify an alternative distribution root directory", "DIR"},
+        {"manageSystem", "Manage system cache"},
+        {"colorizeOutput", "Display colorized output"},
+        {"verbose", "Display verbose output (specify twice for even more verbose output)"},
+        {"quiet", "Display warnings and errors only (specify twice for errors only)"},
+        {"silent", "Suppress all output"},
+        {"arguments", "List of arguments to pass to the program", "ARGS"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
@@ -99,8 +92,7 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
         }
     }
 
-    // initialize the command config from defaults
-    tempo_command::CommandConfig commandConfig = command_config_from_defaults(defaults);
+    tempo_command::CommandConfig commandConfig;
 
     // convert options to config
     TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));

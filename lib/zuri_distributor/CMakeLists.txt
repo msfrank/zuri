@@ -7,6 +7,8 @@ add_library(zuri_distributor SHARED)
 add_library(zuri::zuri_distributor ALIAS zuri_distributor)
 
 set(ZURI_DISTRIBUTOR_INCLUDES
+    include/zuri_distributor/abstract_package_resolver.h
+    include/zuri_distributor/abstract_readonly_package_cache.h
     include/zuri_distributor/dependency_selector.h
     include/zuri_distributor/dependency_set.h
     include/zuri_distributor/distributor_result.h
@@ -16,6 +18,7 @@ set(ZURI_DISTRIBUTOR_INCLUDES
     include/zuri_distributor/package_cache_database.h
     include/zuri_distributor/package_fetcher.h
     include/zuri_distributor/static_package_resolver.h
+    include/zuri_distributor/tiered_package_cache.h
 )
 set_target_properties(zuri_distributor PROPERTIES PUBLIC_HEADER "${ZURI_DISTRIBUTOR_INCLUDES}")
 
@@ -25,10 +28,11 @@ target_sources(zuri_distributor PRIVATE
     src/distributor_result.cpp
     src/http_package_resolver.cpp
     src/package_cache.cpp
-    src/package_cache_loader.cpp
     src/package_cache_database.cpp
+    src/package_cache_loader.cpp
     src/package_fetcher.cpp
     src/static_package_resolver.cpp
+    src/tiered_package_cache.cpp
     )
 
 # set the library version

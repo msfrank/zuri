@@ -26,11 +26,9 @@ zuri_zpk::zpk_extract_command(
     tempo_config::PathParser zpkFileParser;
 
     std::vector<tempo_command::Default> defaults = {
-        {"extractionRoot", extractionRootParser.getDefault(),
-            "extraction directory", "DIR"},
-        {"workingRoot", workingRootParser.getDefault(),
-            "working directory", "DIR"},
-{"zpkFile", {}, "Package file to inspect", "FILE"},
+        {"extractionRoot", "extraction directory", "DIR"},
+        {"workingRoot", "working directory", "DIR"},
+        {"zpkFile", "Package file to inspect", "FILE"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
@@ -69,8 +67,7 @@ zuri_zpk::zpk_extract_command(
         }
     }
 
-    // initialize the command config from defaults
-    tempo_command::CommandConfig commandConfig = tempo_command::command_config_from_defaults(defaults);
+    tempo_command::CommandConfig commandConfig;
 
     // convert options to config
     TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));

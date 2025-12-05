@@ -11,9 +11,9 @@ namespace zuri_distributor {
 
     class PackageCacheLoader : public lyric_runtime::AbstractLoader {
     public:
-        explicit PackageCacheLoader(std::shared_ptr<PackageCache> packageCache);
+        explicit PackageCacheLoader(std::shared_ptr<AbstractReadonlyPackageCache> readonlyPackageCache);
 
-        std::shared_ptr<PackageCache> getPackageCache() const;
+        std::shared_ptr<AbstractReadonlyPackageCache> getPackageCache() const;
 
         tempo_utils::Result<bool> hasModule(
             const lyric_common::ModuleLocation &location) const override;
@@ -24,7 +24,7 @@ namespace zuri_distributor {
             const lyric_object::PluginSpecifier &specifier) override;
 
     private:
-        std::shared_ptr<PackageCache> m_packageCache;
+        std::shared_ptr<AbstractReadonlyPackageCache> m_readonlyPackageCache;
 
         tempo_utils::Result<std::filesystem::path> findModule(
             const lyric_common::ModuleLocation &location,

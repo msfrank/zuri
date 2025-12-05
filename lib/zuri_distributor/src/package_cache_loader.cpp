@@ -12,16 +12,17 @@
 #include <zuri_distributor/distributor_result.h>
 #include <zuri_distributor/package_cache_loader.h>
 
-zuri_distributor::PackageCacheLoader::PackageCacheLoader(std::shared_ptr<PackageCache> packageCache)
-    : m_packageCache(std::move(packageCache))
+zuri_distributor::PackageCacheLoader::PackageCacheLoader(
+    std::shared_ptr<AbstractReadonlyPackageCache> readonlyPackageCache)
+    : m_readonlyPackageCache(std::move(readonlyPackageCache))
 {
-    TU_ASSERT (m_packageCache != nullptr);
+    TU_ASSERT (m_readonlyPackageCache != nullptr);
 }
 
-std::shared_ptr<zuri_distributor::PackageCache>
+std::shared_ptr<zuri_distributor::AbstractReadonlyPackageCache>
 zuri_distributor::PackageCacheLoader::getPackageCache() const
 {
-    return m_packageCache;
+    return m_readonlyPackageCache;
 }
 
 tempo_utils::Result<std::filesystem::path>
@@ -36,7 +37,7 @@ zuri_distributor::PackageCacheLoader::findModule(
         return std::filesystem::path{};
 
     Option<std::filesystem::path> pathOption;
-    TU_ASSIGN_OR_RETURN (pathOption, m_packageCache->resolvePackage(specifier));
+    TU_ASSIGN_OR_RETURN (pathOption, m_readonlyPackageCache->resolvePackage(specifier));
     if (pathOption.isEmpty())
         return std::filesystem::path{};
 

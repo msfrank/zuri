@@ -38,26 +38,17 @@ zuri_build::zuri_build(int argc, const char *argv[])
     tempo_config::BooleanParser silentParser(false);
 
     std::vector<tempo_command::Default> defaults = {
-        {"workspaceRoot", workspaceRootParser.getDefault(),
-            "Specify an alternative workspace root directory", "DIR"},
-        {"workspaceConfigFile", workspaceConfigFileParser.getDefault(),
-            "Specify an alternative workspace config file", "FILE"},
-        {"buildRoot", buildRootParser.getDefault(),
-            "Specify an alternative build root directory", "DIR"},
-        {"installRoot", installRootParser.getDefault(),
-            "Specify an alternative install root directory", "DIR"},
-        {"distributionRoot", distributionRootParser.getDefault(),
-            "Specify an alternative distribution root directory", "DIR"},
-        {"jobParallelism", {}, "Number of build worker threads", "COUNT"},
-        {"colorizeOutput", colorizeOutputParser.getDefault(),
-            "Display colorized output"},
-        {"verbose", verboseParser.getDefault(),
-            "Display verbose output (specify twice for even more verbose output)"},
-        {"quiet", quietParser.getDefault(),
-            "Display warnings and errors only (specify twice for errors only)"},
-        {"silent", silentParser.getDefault(),
-            "Suppress all output"},
-        {"targets", {}, "Build targets to compute", "TARGET"},
+        {"workspaceRoot", "Specify an alternative workspace root directory", "DIR"},
+        {"workspaceConfigFile", "Specify an alternative workspace config file", "FILE"},
+        {"buildRoot", "Specify an alternative build root directory", "DIR"},
+        {"installRoot", "Specify an alternative install root directory", "DIR"},
+        {"distributionRoot", "Specify an alternative distribution root directory", "DIR"},
+        {"jobParallelism", "Number of build worker threads", "COUNT"},
+        {"colorizeOutput", "Display colorized output"},
+        {"verbose", "Display verbose output (specify twice for even more verbose output)"},
+        {"quiet", "Display warnings and errors only (specify twice for errors only)"},
+        {"silent", "Suppress all output"},
+        {"targets", "Build targets to compute", "TARGET"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
@@ -117,8 +108,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
         }
     }
 
-    // initialize the command config from defaults
-    tempo_command::CommandConfig commandConfig = tempo_command::command_config_from_defaults(defaults);
+    tempo_command::CommandConfig commandConfig;
 
     // convert options to config
     TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));

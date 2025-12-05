@@ -1,0 +1,69 @@
+name: build-package.yml
+on:
+  workflow_call:
+    inputs:
+      build_type:
+        required: true
+        type: string
+      build_runner:
+        required: true
+        type: string
+      conan_profile:
+        required: true
+        type: string
+      install_dependencies_script:
+        required: false
+        type: string
+    secrets:
+      CONAN_CLIENT_CERT:
+        required: true
+      CONAN_CLIENT_KEY:
+        required: true
+      CONAN_CREDENTIALS_JSON:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+  attestations: write
+
+env:
+  ACTIONS_STEP_DEBUG: true
+
+jobs:
+
+  build-package:
+    name: Build Zuri package
+    runs-on: ${{ inputs.build_runner }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        if: ${{ inputs.install_dependencies_script != '' }}
+        run: ${{ inputs.install_dependencies_script }}
+
+      - name: Setup Conan
+        uses: conan-io/setup-conan@v1
+        id: setup-conan
+        with:
+          config_urls: 'https://github.com/msfrank/conan-config.git'
+
+      - name: Configure conan client cert and credentials
+        env:
+          CONAN_CLIENT_CERT: ${{ secrets.CONAN_CLIENT_CERT }}
+          CONAN_CLIENT_KEY: ${{ secrets.CONAN_CLIENT_KEY }}
+          CONAN_CREDENTIALS_JSON: ${{ secrets.CONAN_CREDENTIALS_JSON }}
+        run: |
+          echo "$CONAN_CLIENT_CERT" > /tmp/client.crt
+          echo "$CONAN_CLIENT_KEY" > /tmp/client.key
+          echo "$CONAN_CREDENTIALS_JSON" > ${{steps.setup-conan.outputs.conan-home}}/credentials.json
+
+      - name: Create package
+        run: |
+          conan create --profile ${{ inputs.conan_profile }} --remote conan.s10y.co .
+
+      - name: Upload package
+        run: |
+          conan upload --remote conan.s10y.co -c 'zuri/*:*'

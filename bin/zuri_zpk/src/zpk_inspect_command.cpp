@@ -26,9 +26,8 @@ zuri_zpk::zpk_inspect_command(
     tempo_config::BooleanParser displayAllParser(false);
 
     std::vector<tempo_command::Default> defaults = {
-        {"displayAll", displayAllParser.getDefault(),
-            "Display all information (overrides individual display flags)"},
-        {"zpkFile", {}, "Package file to inspect", "FILE"},
+        {"displayAll", "Display all information (overrides individual display flags)"},
+        {"zpkFile", "Package file to inspect", "FILE"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
@@ -65,8 +64,7 @@ zuri_zpk::zpk_inspect_command(
         }
     }
 
-    // initialize the command config from defaults
-    tempo_command::CommandConfig commandConfig = tempo_command::command_config_from_defaults(defaults);
+    tempo_command::CommandConfig commandConfig;
 
     // convert options to config
     TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));

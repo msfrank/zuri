@@ -25,37 +25,38 @@ zuri_tooling::PackageManager::configure()
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "'packages' section is missing from config");
 
-    std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
-
-    auto distributionRoot = m_zuriConfig->getDistributionRoot();
-    auto distributionPackagesRoot = distributionRoot / "lib" / "zuri-packages-0";
-    auto systemPackageCache = distributionPackagesRoot / "system";
-    if (std::filesystem::exists(systemPackageCache)) {
-        TU_ASSIGN_OR_RETURN (m_dcache, zuri_distributor::PackageCache::open(systemPackageCache));
-        loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(m_dcache));
-    }
-
-    auto userRoot = m_zuriConfig->getUserRoot();
-    auto userPackagesRoot = userRoot / "zuri-packages-0";
-    if (std::filesystem::exists(userPackagesRoot)) {
-        TU_ASSIGN_OR_RETURN (m_ucache, zuri_distributor::PackageCache::openOrCreate(
-            userPackagesRoot, "user"));
-        loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(m_ucache));
-    }
+    std::vector<std::shared_ptr<zuri_distributor::AbstractReadonlyPackageCache>> packageCaches;
 
     if (!m_buildRoot.empty()) {
         if (!std::filesystem::exists(m_buildRoot))
             return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
                 "build root '{}' does not exist", m_buildRoot.string());
-        TU_ASSIGN_OR_RETURN (m_icache, zuri_distributor::PackageCache::openOrCreate(
-            m_buildRoot, "imports"));
-        loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(m_icache));
         TU_ASSIGN_OR_RETURN (m_tcache, zuri_distributor::PackageCache::openOrCreate(
             m_buildRoot, "targets"));
-        loaderChain.push_back(std::make_shared<zuri_distributor::PackageCacheLoader>(m_tcache));
+        packageCaches.push_back(m_tcache);
+        TU_ASSIGN_OR_RETURN (m_icache, zuri_distributor::PackageCache::openOrCreate(
+            m_buildRoot, "imports"));
+        packageCaches.push_back(m_icache);
     }
 
-    m_loader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
+    auto userRoot = m_zuriConfig->getUserRoot();
+    auto userPackagesRoot = userRoot / ZURI_PACKAGES_DIR_NAME;
+    if (std::filesystem::exists(userPackagesRoot)) {
+        TU_ASSIGN_OR_RETURN (m_ucache, zuri_distributor::PackageCache::openOrCreate(
+            userPackagesRoot, "user"));
+        packageCaches.push_back(m_ucache);
+    }
+
+    auto distributionRoot = m_zuriConfig->getDistributionRoot();
+    auto distributionPackagesRoot = distributionRoot / PACKAGES_DIR_PREFIX;
+    auto systemPackageCache = distributionPackagesRoot / "system";
+    if (std::filesystem::exists(systemPackageCache)) {
+        TU_ASSIGN_OR_RETURN (m_dcache, zuri_distributor::PackageCache::open(systemPackageCache));
+        packageCaches.push_back(m_dcache);
+    }
+
+    m_tieredCache = std::make_shared<zuri_distributor::TieredPackageCache>(packageCaches);
+    m_loader = std::make_shared<zuri_distributor::PackageCacheLoader>(m_tieredCache);
 
     return {};
 }
@@ -82,6 +83,12 @@ std::shared_ptr<zuri_distributor::PackageCache>
 zuri_tooling::PackageManager::getTcache() const
 {
     return m_tcache;
+}
+
+std::shared_ptr<zuri_distributor::TieredPackageCache>
+zuri_tooling::PackageManager::getTieredCache() const
+{
+    return m_tieredCache;
 }
 
 std::shared_ptr<lyric_runtime::AbstractLoader>

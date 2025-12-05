@@ -2,9 +2,9 @@
 #define ZURI_TOOLING_PACKAGE_MANAGER_H
 
 #include <lyric_runtime/abstract_loader.h>
-#include <lyric_runtime/chain_loader.h>
-#include <tempo_utils/result.h>
 #include <zuri_distributor/package_cache.h>
+#include <zuri_distributor/package_cache_loader.h>
+#include <zuri_distributor/tiered_package_cache.h>
 
 #include "zuri_config.h"
 
@@ -20,6 +20,7 @@ namespace zuri_tooling {
         std::shared_ptr<zuri_distributor::PackageCache> getUcache() const;
         std::shared_ptr<zuri_distributor::PackageCache> getIcache() const;
         std::shared_ptr<zuri_distributor::PackageCache> getTcache() const;
+        std::shared_ptr<zuri_distributor::TieredPackageCache> getTieredCache() const;
         std::shared_ptr<lyric_runtime::AbstractLoader> getLoader() const;
 
     private:
@@ -30,7 +31,8 @@ namespace zuri_tooling {
         std::shared_ptr<zuri_distributor::PackageCache> m_ucache;
         std::shared_ptr<zuri_distributor::PackageCache> m_icache;
         std::shared_ptr<zuri_distributor::PackageCache> m_tcache;
-        std::shared_ptr<lyric_runtime::ChainLoader> m_loader;
+        std::shared_ptr<zuri_distributor::TieredPackageCache> m_tieredCache;
+        std::shared_ptr<zuri_distributor::PackageCacheLoader> m_loader;
     };
 }
 
