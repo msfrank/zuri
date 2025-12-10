@@ -40,16 +40,6 @@ class Zuri(ConanFile):
 
     exports = ('meta/*',)
 
-    exports_sources = (
-        'CMakeLists.txt',
-        'bin/*',
-        'cmake/*',
-        'lib/*',
-        'meta/*',
-        'pkg/*',
-        'share/*',
-        )
-
     requires = (
         'lyric/0.0.1',
         'tempo/0.0.1',
@@ -68,6 +58,17 @@ class Zuri(ConanFile):
         'sqlite/3.49.2@timbre',
         'uv/1.51.0@timbre',
         )
+
+    def export_sources(self):
+        copy(self, "CMakeLists.txt", self.recipe_folder, self.export_sources_folder)
+        copy(self, "*", join(self.recipe_folder, 'bin'), join(self.export_sources_folder, 'bin'))
+        copy(self, "*", join(self.recipe_folder, 'cmake'), join(self.export_sources_folder, 'cmake'))
+        copy(self, "*", join(self.recipe_folder, 'doc'), join(self.export_sources_folder, 'doc'))
+        copy(self, "*", join(self.recipe_folder, 'docker'), join(self.export_sources_folder, 'docker'))
+        copy(self, "*", join(self.recipe_folder, 'lib'), join(self.export_sources_folder, 'lib'))
+        copy(self, "*", join(self.recipe_folder, 'meta'), join(self.export_sources_folder, 'meta'))
+        copy(self, "*", join(self.recipe_folder, 'pkg'), join(self.export_sources_folder, 'pkg'))
+        copy(self, "*", join(self.recipe_folder, 'share'), join(self.export_sources_folder, 'share'))
 
     def _get_meta(self, key):
         return load(self, join(self.recipe_folder, "meta", key))
