@@ -67,8 +67,14 @@ jobs:
 
       - name: Create package
         run: |
-          conan create --profile ${{ inputs.conan_profile }} --remote conan.s10y.co .
+          conan remote enable develop
+          conan remote enable build
+          conan create -cc core:non_interactive=True --profile ${{ inputs.conan_profile }} -b missing:zuri .
 
       - name: Upload package
         run: |
-          conan upload --remote conan.s10y.co -c 'zuri/*:*'
+          conan upload -cc core:non_interactive=True --remote build -c 'zuri/*:*'
+
+      - name: Remove outdated revisions
+        run: |
+          conan remove -cc core:non_interactive=True --remote build -c 'zuri/*:*#!latest'

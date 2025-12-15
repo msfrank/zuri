@@ -1,0 +1,85 @@
+name: promote-package.yml
+on:
+  workflow_call:
+    inputs:
+      build_runner:
+        required: true
+        type: string
+      conan_profile:
+        required: true
+        type: string
+    secrets:
+      CONAN_CLIENT_CERT:
+        required: true
+      CONAN_CLIENT_KEY:
+        required: true
+      CONAN_CREDENTIALS_JSON:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+  attestations: write
+
+env:
+  ACTIONS_STEP_DEBUG: true
+
+jobs:
+
+  build-package:
+    name: Promote Zuri package
+    runs-on: ${{ inputs.build_runner }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Conan
+        uses: conan-io/setup-conan@v1
+        id: setup-conan
+        with:
+          config_urls: 'https://github.com/msfrank/conan-config.git'
+
+      - name: Configure Conan storage
+        id: configure-conan-storage
+        env:
+          CONAN_HOME_BIN: ${{ steps.setup-conan.outputs.conan-home }}/bin
+        run: |
+          sudo python3 $CONAN_HOME_BIN/make_conan_storage --owner $USER --output-path /tmp/conan_storage_path
+          echo "storage-path=$(cat /tmp/conan_storage_path)" >> "$GITHUB_OUTPUT"
+
+      - name: Configure Conan global.conf
+        env:
+          CONAN_HOME_BIN: ${{ steps.setup-conan.outputs.conan-home }}/bin
+          CONAN_CLIENT_CERT: ${{ secrets.CONAN_CLIENT_CERT }}
+          CONAN_CLIENT_KEY: ${{ secrets.CONAN_CLIENT_KEY }}
+          CONAN_CREDENTIALS_JSON: ${{ secrets.CONAN_CREDENTIALS_JSON }}
+        run: |
+          python3 $CONAN_HOME_BIN/generate_global_conf \
+            --conan-home ${{ steps.setup-conan.outputs.conan-home }} \
+            ${{ steps.configure-conan-storage.outputs.storage-path }}
+
+      - name: Get recipe parameters
+        id: get-parameters
+        run: |
+          RECIPE=$(conan inspect -cc core:non_interactive=True -f json .)
+          NAME=$(echo $RECIPE | jq -Mr '.name')
+          VERSION=$(echo $RECIPE | jq -Mr '.version')
+          echo "package-name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "package-version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "package-ref=$NAME/$VERSION#latest" >> "$GITHUB_OUTPUT"
+
+      - name: Download package from build remote
+        run: |
+          conan remote enable build
+          conan download -cc core:non_interactive=True --remote build '${{ steps.get-parameters.outputs.package-ref }}'
+
+
+      - name: Upload package to integ remote
+        run: |
+          conan remote enable integ
+          conan upload -cc core:non_interactive=True --remote integ -c '${{ steps.get-parameters.outputs.package-ref }}'
+
+      - name: Remove outdated revisions
+        run: |
+          conan remove -cc core:non_interactive=True --remote integ -c 'zuri/*:*#!latest'
