@@ -73,7 +73,7 @@ jobs:
         run: |
           conan remote enable develop
           conan remote enable build
-          conan create -cc core:non_interactive=True --profile ${{ inputs.conan_profile }} -b missing:zuri .
+          conan create -cc core:non_interactive=True --profile ${{ inputs.conan_profile }} -b missing:& .
 
       - name: Upload package
         run: |
