@@ -69,6 +69,7 @@ jobs:
         run: |
           conan remote enable develop
           conan remote enable build
+          conan remote auth '*'
           conan create -cc core:non_interactive=True --profile ${{ inputs.conan_profile }} -b 'missing:&' .
 
       - name: Upload package
