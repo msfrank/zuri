@@ -50,27 +50,30 @@ jobs:
         with:
           config_urls: 'https://github.com/msfrank/conan-config.git'
 
-      - name: Configure conan storage directory
-        run: |
-          sudo mkdir -p /var/conan_packages
-          sudo chown runner /var/conan_packages
-
-      - name: Configure conan client cert and credentials
+      - name: Configure Conan storage
+        id: configure-conan-storage
         env:
+          CONAN_HOME_BIN: ${{ steps.setup-conan.outputs.conan-home }}/bin
+        run: |
+          sudo python3 $CONAN_HOME_BIN/make_conan_storage --owner $USER --output-path /tmp/conan_storage_path
+          echo "storage-path=$(cat /tmp/conan_storage_path)" >> "$GITHUB_OUTPUT"
+
+      - name: Configure Conan global.conf
+        env:
+          CONAN_HOME_BIN: ${{ steps.setup-conan.outputs.conan-home }}/bin
           CONAN_CLIENT_CERT: ${{ secrets.CONAN_CLIENT_CERT }}
           CONAN_CLIENT_KEY: ${{ secrets.CONAN_CLIENT_KEY }}
           CONAN_CREDENTIALS_JSON: ${{ secrets.CONAN_CREDENTIALS_JSON }}
         run: |
-          echo "$CONAN_CLIENT_CERT" > /tmp/client.crt
-          echo "$CONAN_CLIENT_KEY" > /tmp/client.key
-          echo "$CONAN_CREDENTIALS_JSON" > ${{steps.setup-conan.outputs.conan-home}}/credentials.json
+          python3 $CONAN_HOME_BIN/generate_global_conf \
+            --conan-home ${{ steps.setup-conan.outputs.conan-home }} \
+            ${{ steps.configure-conan-storage.outputs.storage-path }}
 
       - name: Create package
         run: |
           conan remote enable develop
           conan remote enable build
-          conan remote auth '*'
-          conan create -cc core:non_interactive=True --profile ${{ inputs.conan_profile }} -b 'missing:&' .
+          conan create -cc core:non_interactive=True --profile ${{ inputs.conan_profile }} -b missing:zuri .
 
       - name: Upload package
         run: |
