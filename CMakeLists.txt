@@ -177,7 +177,7 @@ find_package(antlr REQUIRED)
 find_package(CURL REQUIRED)
 
 # find required Openssl dependency
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL REQUIRED CONFIG)
 
 # find required Uv dependency
 find_package(uv REQUIRED)
