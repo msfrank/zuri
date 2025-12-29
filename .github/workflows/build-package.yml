@@ -71,7 +71,7 @@ jobs:
 
       - name: Create package
         run: |
-          conan remote enable develop
+          #conan remote enable develop
           conan remote enable build
           conan create -cc core:non_interactive=True --profile ${{ inputs.conan_profile }} -b 'missing:&' .
 
