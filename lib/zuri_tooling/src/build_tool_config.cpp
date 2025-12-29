@@ -28,11 +28,6 @@ zuri_tooling::BuildToolConfig::configure()
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_waitTimeout, waitTimeoutParser,
         m_buildMap, "waitTimeout"));
 
-    // set the bootstrap directory if it was provided
-    tempo_config::PathParser bootstrapDirectoryParser(std::filesystem::path{});
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_bootstrapDirectory, bootstrapDirectoryParser,
-        m_buildMap, "bootstrapDirectory"));
-
     // construct the task settings if it was provided
     auto settingsMap = m_buildMap.mapAt("settings").toMap();
     if (settingsMap.getNodeType() == tempo_config::ConfigNodeType::kMap) {
@@ -46,12 +41,6 @@ lyric_build::CacheMode
 zuri_tooling::BuildToolConfig::getCacheMode() const
 {
     return m_cacheMode;
-}
-
-std::filesystem::path
-zuri_tooling::BuildToolConfig::getBootstrapDirectory() const
-{
-    return m_bootstrapDirectory;
 }
 
 absl::Duration

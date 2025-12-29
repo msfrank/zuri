@@ -37,8 +37,7 @@ zuri_run::run_package_command(
     TU_ASSIGN_OR_RETURN (packageReaderLoader, zuri_packager::PackageReaderLoader::create(reader, tempRoot));
 
     // construct the bootstrap loader
-    auto bootstrapDirectory = buildConfig->getBootstrapDirectory();
-    auto bootstrapLoader = std::make_shared<lyric_bootstrap::BootstrapLoader>(bootstrapDirectory);
+    auto bootstrapLoader = std::make_shared<lyric_bootstrap::BootstrapLoader>();
 
     // construct the package manager
     zuri_tooling::PackageManager packageManager(zuriConfig);

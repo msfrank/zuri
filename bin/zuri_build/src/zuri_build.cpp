@@ -244,11 +244,9 @@ zuri_build::zuri_build(int argc, const char *argv[])
 
     lyric_build::BuilderOptions builderOptions;
 
-    // set build root for builder
+    // set builder options
     builderOptions.buildRoot = buildRoot;
-
     builderOptions.cacheMode = buildToolConfig->getCacheMode();
-    builderOptions.bootstrapDirectory = buildToolConfig->getBootstrapDirectory();
     builderOptions.waitTimeout = buildToolConfig->getWaitTimeout();
 
     // determine the job parallelism

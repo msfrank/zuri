@@ -15,7 +15,6 @@ namespace zuri_tooling {
         tempo_utils::Status configure();
 
         lyric_build::CacheMode getCacheMode() const;
-        std::filesystem::path getBootstrapDirectory() const;
         absl::Duration getWaitTimeout() const;
         int getJobParallelism() const;
         lyric_build::TaskSettings getTaskSettings() const;
@@ -24,7 +23,6 @@ namespace zuri_tooling {
         tempo_config::ConfigMap m_buildMap;
 
         lyric_build::CacheMode m_cacheMode;
-        std::filesystem::path m_bootstrapDirectory;
         absl::Duration m_waitTimeout;
         int m_jobParallelism;
         lyric_build::TaskSettings m_taskSettings;
