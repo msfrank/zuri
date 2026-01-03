@@ -39,19 +39,17 @@ zuri_tooling::PackageManager::configure()
         packageCaches.push_back(m_icache);
     }
 
-    auto userRoot = m_zuriConfig->getUserRoot();
-    auto userPackagesRoot = userRoot / ZURI_PACKAGES_DIR_NAME;
-    if (std::filesystem::exists(userPackagesRoot)) {
-        TU_ASSIGN_OR_RETURN (m_ucache, zuri_distributor::PackageCache::openOrCreate(
-            userPackagesRoot, "user"));
+    auto home = m_zuriConfig->getHome();
+    auto userPackagesDirectory = home.getPackagesDirectory();
+    if (std::filesystem::exists(userPackagesDirectory)) {
+        TU_ASSIGN_OR_RETURN (m_ucache, zuri_distributor::PackageCache::open(userPackagesDirectory));
         packageCaches.push_back(m_ucache);
     }
 
-    auto distributionRoot = m_zuriConfig->getDistributionRoot();
-    auto distributionPackagesRoot = distributionRoot / PACKAGES_DIR_PREFIX;
-    auto systemPackageCache = distributionPackagesRoot / "system";
-    if (std::filesystem::exists(systemPackageCache)) {
-        TU_ASSIGN_OR_RETURN (m_dcache, zuri_distributor::PackageCache::open(systemPackageCache));
+    auto distribution = m_zuriConfig->getDistribution();
+    auto systemPackagesDirectory = distribution.getPackagesDirectory();
+    if (std::filesystem::exists(systemPackagesDirectory)) {
+        TU_ASSIGN_OR_RETURN (m_dcache, zuri_distributor::PackageCache::open(systemPackagesDirectory));
         packageCaches.push_back(m_dcache);
     }
 

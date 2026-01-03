@@ -8,13 +8,13 @@
 #include <zuri_tooling/zuri_config.h>
 
 zuri_tooling::ZuriConfig::ZuriConfig(
-    const std::filesystem::path &distributionRoot,
-    const std::filesystem::path &userRoot,
+    const Distribution &distribution,
+    const Home &home,
     const std::filesystem::path &workspaceConfigFile,
     const tempo_config::ConfigMap &zuriMap,
     const tempo_config::ConfigMap &vendorMap)
-    : m_distributionRoot(distributionRoot),
-      m_userRoot(userRoot),
+    : m_distribution(distribution),
+      m_home(home),
       m_workspaceConfigFile(workspaceConfigFile),
       m_zuriMap(zuriMap),
       m_vendorMap(vendorMap)
@@ -55,8 +55,8 @@ load_env_override_vendor_config()
 
 static tempo_utils::Status
 configure_program_config_options(
-    const std::filesystem::path &distributionRoot,
-    const std::filesystem::path &userRoot,
+    const zuri_tooling::Distribution &distribution,
+    const zuri_tooling::Home &home,
     tempo_config::ProgramConfigOptions &programConfigOptions)
 {
     // load override config if present
@@ -72,13 +72,13 @@ configure_program_config_options(
     programConfigOptions.overrideVendorConfigMap = overrideVendorConfig;
 
     // set the distribution paths
-    programConfigOptions.distConfigDirectoryPath = distributionRoot / CONFIG_DIR_PREFIX;
-    programConfigOptions.distVendorConfigDirectoryPath = distributionRoot / VENDOR_CONFIG_DIR_PREFIX;
+    programConfigOptions.distConfigDirectoryPath = distribution.getConfigDirectory();
+    programConfigOptions.distVendorConfigDirectoryPath = distribution.getVendorConfigDirectory();
 
     // set the user paths
-    if (!userRoot.empty()) {
-        programConfigOptions.userConfigDirectoryPath = userRoot / tempo_config::kDefaultConfigDirectoryName;
-        programConfigOptions.userVendorConfigDirectoryPath = userRoot / tempo_config::kDefaultVendorConfigDirectoryName;
+    if (home.isValid()) {
+        programConfigOptions.userConfigDirectoryPath = home.getConfigDirectory();
+        programConfigOptions.userVendorConfigDirectoryPath = home.getVendorConfigDirectory();
     }
 
     return {};
@@ -86,8 +86,8 @@ configure_program_config_options(
 
 static tempo_utils::Status
 configure_workspace_config_options(
-    const std::filesystem::path &distributionRoot,
-    const std::filesystem::path &userRoot,
+    const zuri_tooling::Distribution &distribution,
+    const zuri_tooling::Home &home,
     tempo_config::WorkspaceConfigOptions &workspaceConfigOptions)
 {
     // load override config if present
@@ -103,13 +103,13 @@ configure_workspace_config_options(
     workspaceConfigOptions.overrideVendorConfigMap = overrideVendorConfig;
 
     // set the distribution paths
-    workspaceConfigOptions.distConfigDirectoryPath = distributionRoot / CONFIG_DIR_PREFIX;
-    workspaceConfigOptions.distVendorConfigDirectoryPath = distributionRoot / VENDOR_CONFIG_DIR_PREFIX;
+    workspaceConfigOptions.distConfigDirectoryPath = distribution.getConfigDirectory();
+    workspaceConfigOptions.distVendorConfigDirectoryPath = distribution.getVendorConfigDirectory();
 
     // set the user paths
-    if (!userRoot.empty()) {
-        workspaceConfigOptions.userConfigDirectoryPath = userRoot / tempo_config::kDefaultConfigDirectoryName;
-        workspaceConfigOptions.userVendorConfigDirectoryPath = userRoot / tempo_config::kDefaultVendorConfigDirectoryName;
+    if (home.isValid()) {
+        workspaceConfigOptions.userConfigDirectoryPath = home.getConfigDirectory();
+        workspaceConfigOptions.userVendorConfigDirectoryPath = home.getVendorConfigDirectory();
     }
 
     return {};
@@ -118,21 +118,14 @@ configure_workspace_config_options(
 /**
  * Load zuri config from the system distribution.
  *
- * @param distributionRootOverride Override the auto-detected distribution root.
- * @return
+ * @param distribution The system distribution.
+ * @return The Zuri configuration.
  */
 tempo_utils::Result<std::shared_ptr<zuri_tooling::ZuriConfig>>
-zuri_tooling::ZuriConfig::forSystem(const std::filesystem::path &distributionRootOverride)
+zuri_tooling::ZuriConfig::forSystem(const Distribution &distribution)
 {
-    std::filesystem::path distributionRoot = !distributionRootOverride.empty()?
-        distributionRootOverride : std::filesystem::path(DISTRIBUTION_ROOT);
-    if (!std::filesystem::exists(distributionRoot))
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "distribution root '{}' does not exist", distributionRoot.string());
-
     tempo_config::ProgramConfigOptions programConfigOptions;
-    TU_RETURN_IF_NOT_OK (configure_program_config_options(
-        distributionRoot, {}, programConfigOptions));
+    TU_RETURN_IF_NOT_OK (configure_program_config_options(distribution, {}, programConfigOptions));
 
     std::shared_ptr<tempo_config::ProgramConfig> programConfig;
     TU_ASSIGN_OR_RETURN (programConfig, tempo_config::ProgramConfig::load(programConfigOptions));
@@ -141,7 +134,7 @@ zuri_tooling::ZuriConfig::forSystem(const std::filesystem::path &distributionRoo
     auto vendorMap = programConfig->getVendorConfig();
 
     auto zuriConfig = std::shared_ptr<ZuriConfig>(new ZuriConfig(
-        distributionRoot, {}, {}, applicationMap, vendorMap));
+        distribution, {}, {}, applicationMap, vendorMap));
     TU_RETURN_IF_NOT_OK (zuriConfig->configure());
 
     return zuriConfig;
@@ -150,31 +143,17 @@ zuri_tooling::ZuriConfig::forSystem(const std::filesystem::path &distributionRoo
 /**
  * Load zuri config for the user.
  *
- * @param userHomeOverride Override the auto-detected user home directory.
- * @param distributionRootOverride Override the auto-detected distribution root.
- * @return
+ * @param home The user home.
+ * @param distribution The system distribution.
+ * @return The Zuri configuration.
  */
 tempo_utils::Result<std::shared_ptr<zuri_tooling::ZuriConfig>>
 zuri_tooling::ZuriConfig::forUser(
-    const std::filesystem::path &userHomeOverride,
-    const std::filesystem::path &distributionRootOverride)
+    const Home &home,
+    const Distribution &distribution)
 {
-    std::filesystem::path distributionRoot = !distributionRootOverride.empty()?
-        distributionRootOverride : std::filesystem::path(DISTRIBUTION_ROOT);
-    if (!std::filesystem::exists(distributionRoot))
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "distribution root '{}' does not exist", distributionRoot.string());
-
-    std::filesystem::path userHome = !userHomeOverride.empty()?
-        userHomeOverride : tempo_utils::get_user_home_directory();
-    auto userRoot = userHome / kDefaultUserDirectoryName;
-    if (!std::filesystem::exists(userRoot)) {
-        userRoot.clear();
-    }
-
     tempo_config::ProgramConfigOptions programConfigOptions;
-    TU_RETURN_IF_NOT_OK (configure_program_config_options(
-        distributionRoot, userRoot, programConfigOptions));
+    TU_RETURN_IF_NOT_OK (configure_program_config_options(distribution, home, programConfigOptions));
 
     std::shared_ptr<tempo_config::ProgramConfig> programConfig;
     TU_ASSIGN_OR_RETURN (programConfig, tempo_config::ProgramConfig::load(programConfigOptions));
@@ -183,7 +162,7 @@ zuri_tooling::ZuriConfig::forUser(
     auto vendorMap = programConfig->getVendorConfig();
 
     auto zuriConfig = std::shared_ptr<ZuriConfig>(new ZuriConfig(
-        distributionRoot, userRoot, {}, applicationMap, vendorMap));
+        distribution, home, {}, applicationMap, vendorMap));
     TU_RETURN_IF_NOT_OK (zuriConfig->configure());
 
     return zuriConfig;
@@ -193,32 +172,18 @@ zuri_tooling::ZuriConfig::forUser(
  * Load zuri config from the specified workspace.config file.
  *
  * @param workspaceConfigFile The path to the workspace.config file.
- * @param userHomeOverride Override the auto-detected user home directory.
- * @param distributionRootOverride Override the auto-detected distribution root.
- * @return
+ * @param home The user home.
+ * @param distribution The system distribution.
+ * @return The Zuri configuration.
  */
 tempo_utils::Result<std::shared_ptr<zuri_tooling::ZuriConfig>>
 zuri_tooling::ZuriConfig::forWorkspace(
     const std::filesystem::path &workspaceConfigFile,
-    const std::filesystem::path &userHomeOverride,
-    const std::filesystem::path &distributionRootOverride)
+    const Home &home,
+    const Distribution &distribution)
 {
-    std::filesystem::path distributionRoot = !distributionRootOverride.empty()?
-        distributionRootOverride : std::filesystem::path(DISTRIBUTION_ROOT);
-    if (!std::filesystem::exists(distributionRoot))
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "distribution root '{}' does not exist", distributionRoot.string());
-
-    std::filesystem::path userHome = !userHomeOverride.empty()?
-        userHomeOverride : tempo_utils::get_user_home_directory();
-    auto userRoot = userHome / kDefaultUserDirectoryName;
-    if (!std::filesystem::exists(userRoot)) {
-        userRoot.clear();
-    }
-
     tempo_config::WorkspaceConfigOptions workspaceConfigOptions;
-    TU_RETURN_IF_NOT_OK (configure_workspace_config_options(
-        distributionRoot, userRoot, workspaceConfigOptions));
+    TU_RETURN_IF_NOT_OK (configure_workspace_config_options(distribution, home, workspaceConfigOptions));
 
     std::shared_ptr<tempo_config::WorkspaceConfig> workspaceConfig;
     TU_ASSIGN_OR_RETURN (workspaceConfig, tempo_config::WorkspaceConfig::load(
@@ -228,7 +193,7 @@ zuri_tooling::ZuriConfig::forWorkspace(
     auto vendorMap = workspaceConfig->getVendorConfig();
 
     auto zuriConfig = std::shared_ptr<ZuriConfig>(new ZuriConfig(
-        distributionRoot, userRoot, workspaceConfigFile, applicationMap, vendorMap));
+        distribution, home, workspaceConfigFile, applicationMap, vendorMap));
     TU_RETURN_IF_NOT_OK (zuriConfig->configure());
 
     return zuriConfig;
@@ -259,7 +224,7 @@ zuri_tooling::ZuriConfig::configure()
     tempo_config::ConfigMap ucacheMap;
     tempo_config::ConfigMap icacheMap;
     tempo_config::ConfigMap tcacheMap;
-    if (!m_userRoot.empty()) {
+    if (!m_home.isValid()) {
         ucacheMap = m_zuriMap.mapAt("ucache").toMap();
     }
     if (!m_workspaceConfigFile.empty()) {
@@ -279,16 +244,16 @@ zuri_tooling::ZuriConfig::configure()
     return {};
 }
 
-std::filesystem::path
-zuri_tooling::ZuriConfig::getDistributionRoot() const
+zuri_tooling::Distribution
+zuri_tooling::ZuriConfig::getDistribution() const
 {
-    return m_distributionRoot;
+    return m_distribution;
 }
 
-std::filesystem::path
-zuri_tooling::ZuriConfig::getUserRoot() const
+zuri_tooling::Home
+zuri_tooling::ZuriConfig::getHome() const
 {
-    return m_userRoot;
+    return m_home;
 }
 
 std::filesystem::path

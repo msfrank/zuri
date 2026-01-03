@@ -46,6 +46,9 @@ target_link_libraries(ZuriBuildRuntime
 # build zuri-build program
 add_executable(zuri-build src/main.cpp)
 
+# ensure all output directories are created
+add_dependencies(zuri-build make-output-directories)
+
 set_target_properties(zuri-build PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${ZURI_BUILD_BIN_DIR}
     INSTALL_RPATH_USE_LINK_PATH TRUE

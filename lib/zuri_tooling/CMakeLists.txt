@@ -9,6 +9,8 @@ add_library(zuri::zuri_tooling ALIAS zuri_tooling)
 set(ZURI_TOOLING_INCLUDES
     include/zuri_tooling/build_graph.h
     include/zuri_tooling/build_tool_config.h
+    include/zuri_tooling/distribution.h
+    include/zuri_tooling/home.h
     include/zuri_tooling/import_store.h
     include/zuri_tooling/package_manager.h
     include/zuri_tooling/package_store.h
@@ -22,6 +24,8 @@ set_target_properties(zuri_tooling PROPERTIES PUBLIC_HEADER "${ZURI_TOOLING_INCL
 target_sources(zuri_tooling PRIVATE
     src/build_graph.cpp
     src/build_tool_config.cpp
+    src/distribution.cpp
+    src/home.cpp
     src/import_store.cpp
     src/package_manager.cpp
     src/package_store.cpp
@@ -57,8 +61,18 @@ target_include_directories(zuri_tooling PUBLIC
 # make private headers visible internally
 target_include_directories(zuri_tooling PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src)
 
+set(RELATIVE_LIB_DIR "$<PATH:RELATIVE_PATH,${ZURI_RUNTIME_LIB_DIR},${ZURI_RUNTIME_BIN_DIR}>")
+set(RELATIVE_PACKAGES_DIR "$<PATH:RELATIVE_PATH,${ZURI_RUNTIME_PACKAGES_DIR},${ZURI_RUNTIME_BIN_DIR}>")
+set(RELATIVE_CONFIG_DIR "$<PATH:RELATIVE_PATH,${ZURI_RUNTIME_CONFIG_DIR},${ZURI_RUNTIME_BIN_DIR}>")
+set(RELATIVE_VENDOR_CONFIG_DIR "$<PATH:RELATIVE_PATH,${ZURI_RUNTIME_VENDOR_CONFIG_DIR},${ZURI_RUNTIME_BIN_DIR}>")
+
 target_compile_definitions(zuri_tooling PRIVATE
+    "PROJECT_VERSION_MAJOR=\"${PROJECT_VERSION_MAJOR}\""
     "DISTRIBUTION_ROOT=\"${DISTRIBUTION_ROOT}\""
+    "RELATIVE_LIB_DIR=\"${RELATIVE_LIB_DIR}\""
+    "RELATIVE_PACKAGES_DIR=\"${RELATIVE_PACKAGES_DIR}\""
+    "RELATIVE_CONFIG_DIR=\"${RELATIVE_CONFIG_DIR}\""
+    "RELATIVE_VENDOR_CONFIG_DIR=\"${RELATIVE_VENDOR_CONFIG_DIR}\""
     "CONFIG_DIR_PREFIX=\"${CONFIG_DIR_PREFIX}\""
     "PACKAGES_DIR_PREFIX=\"${PACKAGES_DIR_PREFIX}\""
     "ZURI_PACKAGES_DIR_NAME=\"${ZURI_PACKAGES_DIR_NAME}\""

@@ -11,7 +11,9 @@ namespace zuri_distributor {
     class PackageCache : public AbstractReadonlyPackageCache {
     public:
         static tempo_utils::Result<std::shared_ptr<PackageCache>> openOrCreate(
-            const std::filesystem::path &distributionRoot,
+            const std::filesystem::path &cacheDirectory);
+        static tempo_utils::Result<std::shared_ptr<PackageCache>> openOrCreate(
+            const std::filesystem::path &cacheRoot,
             std::string_view cacheName);
         static tempo_utils::Result<std::shared_ptr<PackageCache>> open(
             const std::filesystem::path &cacheDirectory);

@@ -27,11 +27,11 @@ zuri_build::zuri_build(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::current_path());
     tempo_config::PathParser workspaceConfigFileParser(std::filesystem::path{});
-    tempo_config::PathParser distributionRootParser(std::filesystem::path{});
     tempo_config::PathParser buildRootParser(std::filesystem::path{});
     tempo_config::PathParser installRootParser(std::filesystem::path{});
     tempo_config::StringParser targetNameParser;
     tempo_config::SeqTParser targetsParser(&targetNameParser, {});
+    tempo_config::BooleanParser noHomeParser(false);
     tempo_config::BooleanParser colorizeOutputParser(false);
     tempo_config::IntegerParser verboseParser(0);
     tempo_config::IntegerParser quietParser(0);
@@ -40,9 +40,9 @@ zuri_build::zuri_build(int argc, const char *argv[])
     std::vector<tempo_command::Default> defaults = {
         {"workspaceRoot", "Specify an alternative workspace root directory", "DIR"},
         {"workspaceConfigFile", "Specify an alternative workspace config file", "FILE"},
+        {"noHome", "ignore Zuri home"},
         {"buildRoot", "Specify an alternative build root directory", "DIR"},
         {"installRoot", "Specify an alternative install root directory", "DIR"},
-        {"distributionRoot", "Specify an alternative distribution root directory", "DIR"},
         {"jobParallelism", "Number of build worker threads", "COUNT"},
         {"colorizeOutput", "Display colorized output"},
         {"verbose", "Display verbose output (specify twice for even more verbose output)"},
@@ -54,9 +54,9 @@ zuri_build::zuri_build(int argc, const char *argv[])
     const std::vector<tempo_command::Grouping> groupings = {
         {"workspaceRoot", {"-W", "--workspace-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"workspaceConfigFile", {"--workspace-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"noHome", {"--no-home"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"buildRoot", {"-B", "--build-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"installRoot", {"-I", "--install-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"distributionRoot", {"--distribution-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"jobParallelism", {"-J", "--job-parallelism"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
@@ -69,9 +69,9 @@ zuri_build::zuri_build(int argc, const char *argv[])
     const std::vector<tempo_command::Mapping> optMappings = {
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceConfigFile"},
+        {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "buildRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "installRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "distributionRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "jobParallelism"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
         {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
@@ -170,6 +170,11 @@ zuri_build::zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceConfigFile, workspaceConfigFileParser,
         commandConfig, "workspaceConfigFile"));
 
+    // determine whether to load home
+    bool noHome;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(noHome, noHomeParser,
+        commandConfig, "noHome"));
+
     // determine the build root
     std::filesystem::path buildRoot;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(buildRoot, buildRootParser,
@@ -180,25 +185,33 @@ zuri_build::zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(installRoot, installRootParser,
         commandConfig, "installRoot"));
 
-    // determine the distribution root
-    std::filesystem::path distributionRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(distributionRoot, distributionRootParser,
-        commandConfig, "distributionRoot"));
-
     // determine the list of targets
     std::vector<std::string> targets;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(targets, targetsParser,
         commandConfig, "targets"));
 
-    // if distribution root is relative, then make it absolute
-    if (!distributionRoot.empty()) {
-        if (distributionRoot.is_relative()) {
-            auto executableDir = std::filesystem::path(argv[0]).parent_path();
-            distributionRoot = executableDir / distributionRoot;
+    // load the distribution
+    zuri_tooling::Distribution distribution;
+    TU_ASSIGN_OR_RETURN (distribution, zuri_tooling::Distribution::load());
+
+    TU_LOG_V << "distribution bin dir: " << distribution.getBinDirectory();
+    TU_LOG_V << "distribution lib dir: " << distribution.getLibDirectory();
+    TU_LOG_V << "distribution packages dir: " << distribution.getPackagesDirectory();
+    TU_LOG_V << "distribution config dir: " << distribution.getConfigDirectory();
+    TU_LOG_V << "distribution vendor-config dir: " << distribution.getVendorConfigDirectory();
+
+    // open the home if needed
+    zuri_tooling::Home home;
+    if (!noHome) {
+        TU_ASSIGN_OR_RETURN (home, zuri_tooling::Home::open(/* ignoreMissing= */ true));
+        if (home.isValid()) {
+            TU_LOG_V << "home packages dir: " << home.getPackagesDirectory();
+            TU_LOG_V << "home config dir: " << home.getConfigDirectory();
+            TU_LOG_V << "home vendor-config dir: " << home.getVendorConfigDirectory();
+        } else {
+            TU_LOG_V << "no home found";
         }
     }
-
-    TU_LOG_V << "using distribution root " << distributionRoot;
 
     // load zuri config
     std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
@@ -206,7 +219,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
         TU_ASSIGN_OR_RETURN (workspaceConfigFile, tempo_config::find_workspace_config(workspaceRoot));
     }
     TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forWorkspace(
-        workspaceConfigFile, {}, distributionRoot));
+        workspaceConfigFile, home, distribution));
 
     // if build root was not defined in commandConfig, then default to subdirectory of the workspace root
     if (buildRoot.empty()) {

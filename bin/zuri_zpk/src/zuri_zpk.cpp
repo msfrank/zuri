@@ -17,7 +17,7 @@ tempo_utils::Status
 zuri_zpk::zuri_zpk(int argc, const char *argv[])
 {
     tempo_config::PathParser workspaceRootParser(std::filesystem::path{});
-    tempo_config::PathParser distributionRootParser(DISTRIBUTION_ROOT);
+    tempo_config::BooleanParser noHomeParser(false);
     tempo_config::BooleanParser manageSystemParser(false);
     tempo_config::BooleanParser colorizeOutputParser(false);
     tempo_config::IntegerParser verboseParser(0);
@@ -26,7 +26,7 @@ zuri_zpk::zuri_zpk(int argc, const char *argv[])
 
     std::vector<tempo_command::Default> defaults = {
         {"workspaceRoot", "Load config from workspace", "DIR"},
-        {"distributionRoot", "Specify an alternative distribution root directory", "DIR"},
+        {"noHome", "ignore Zuri home"},
         {"colorizeOutput", "Display colorized output"},
         {"verbose", "Display verbose output (specify twice for even more verbose output)"},
         {"quiet", "Display warnings and errors only (specify twice for errors only)"},
@@ -35,7 +35,7 @@ zuri_zpk::zuri_zpk(int argc, const char *argv[])
 
     const std::vector<tempo_command::Grouping> groupings = {
         {"workspaceRoot", {"-W", "--workspace-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"distributionRoot", {"--distribution-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"noHome", {"--no-home"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
@@ -55,7 +55,7 @@ zuri_zpk::zuri_zpk(int argc, const char *argv[])
 
     const std::vector<tempo_command::Mapping> optMappings = {
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "distributionRoot"},
+        {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
         {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
         {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
@@ -141,25 +141,37 @@ zuri_zpk::zuri_zpk(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceRoot, workspaceRootParser,
         commandConfig, "workspaceRoot"));
 
-    // determine the distribution root
-    std::filesystem::path distributionRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(distributionRoot, distributionRootParser,
-        commandConfig, "distributionRoot"));
+    // determine whether to load home
+    bool noHome;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(noHome, noHomeParser,
+        commandConfig, "noHome"));
 
-    // if distribution root is relative, then make it absolute
-    if (!distributionRoot.empty()) {
-        if (distributionRoot.is_relative()) {
-            auto executableDir = std::filesystem::path(argv[0]).parent_path();
-            distributionRoot = executableDir / distributionRoot;
+    // load the distribution
+    zuri_tooling::Distribution distribution;
+    TU_ASSIGN_OR_RETURN (distribution, zuri_tooling::Distribution::load());
+
+    TU_LOG_V << "distribution bin dir: " << distribution.getBinDirectory();
+    TU_LOG_V << "distribution lib dir: " << distribution.getLibDirectory();
+    TU_LOG_V << "distribution packages dir: " << distribution.getPackagesDirectory();
+    TU_LOG_V << "distribution config dir: " << distribution.getConfigDirectory();
+    TU_LOG_V << "distribution vendor-config dir: " << distribution.getVendorConfigDirectory();
+
+    // open the home if needed
+    zuri_tooling::Home home;
+    if (!noHome) {
+        TU_ASSIGN_OR_RETURN (home, zuri_tooling::Home::open(/* ignoreMissing= */ true));
+        if (home.isValid()) {
+            TU_LOG_V << "home packages dir: " << home.getPackagesDirectory();
+            TU_LOG_V << "home config dir: " << home.getConfigDirectory();
+            TU_LOG_V << "home vendor-config dir: " << home.getVendorConfigDirectory();
+        } else {
+            TU_LOG_V << "no home found";
         }
     }
 
-    TU_LOG_V << "using distribution root " << distributionRoot;
-
     // load zuri config
     std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
-    TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(
-        {}, distributionRoot));
+    TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(home, distribution));
 
     switch (selected) {
         case Extract:

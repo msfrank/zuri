@@ -8,16 +8,18 @@
 #include <tempo_config/config_types.h>
 #include <tempo_utils/result.h>
 
+#include "build_tool_config.h"
+#include "distribution.h"
+#include "home.h"
 #include "import_store.h"
 #include "package_store.h"
 #include "target_store.h"
-#include "build_tool_config.h"
 
 namespace zuri_tooling {
 
     constexpr const char * const kEnvOverrideConfigName = "ZURI_OVERRIDE_CONFIG";
     constexpr const char * const kEnvOverrideVendorConfigName = "ZURI_OVERRIDE_VENDOR_CONFIG";
-    constexpr const char * const kDefaultUserDirectoryName = ".zuri";
+    constexpr const char * const kEnvHomeName = "ZURI_HOME";
 
     /**
      *
@@ -26,17 +28,18 @@ namespace zuri_tooling {
 
     public:
         static tempo_utils::Result<std::shared_ptr<ZuriConfig>> forSystem(
-            const std::filesystem::path &distributionRootOverride = {});
+            const Distribution &distribution);
         static tempo_utils::Result<std::shared_ptr<ZuriConfig>> forUser(
-            const std::filesystem::path &userHomeOverride = {},
-            const std::filesystem::path &distributionRootOverride = {});
+            const Home &home,
+            const Distribution &distribution);
         static tempo_utils::Result<std::shared_ptr<ZuriConfig>> forWorkspace(
             const std::filesystem::path &workspaceConfigFile,
-            const std::filesystem::path &userHomeOverride = {},
-            const std::filesystem::path &distributionRootOverride = {});
+            const Home &home,
+            const Distribution &distribution);
 
-        std::filesystem::path getDistributionRoot() const;
-        std::filesystem::path getUserRoot() const;
+        Distribution getDistribution() const;
+        Home getHome() const;
+
         std::filesystem::path getWorkspaceRoot() const;
         std::filesystem::path getWorkspaceConfigFile() const;
 
@@ -46,8 +49,8 @@ namespace zuri_tooling {
         std::shared_ptr<BuildToolConfig> getBuildToolConfig() const;
 
     private:
-        std::filesystem::path m_distributionRoot;
-        std::filesystem::path m_userRoot;
+        Distribution m_distribution;
+        Home m_home;
         std::filesystem::path m_workspaceConfigFile;
         tempo_config::ConfigMap m_zuriMap;
         tempo_config::ConfigMap m_vendorMap;
@@ -58,8 +61,8 @@ namespace zuri_tooling {
         std::shared_ptr<BuildToolConfig> m_buildToolConfig;
 
         ZuriConfig(
-            const std::filesystem::path &distributionRoot,
-            const std::filesystem::path &userRoot,
+            const Distribution &distribution,
+            const Home &home,
             const std::filesystem::path &workspaceConfigFile,
             const tempo_config::ConfigMap &zuriMap,
             const tempo_config::ConfigMap &vendorMap);

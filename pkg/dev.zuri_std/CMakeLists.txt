@@ -23,7 +23,6 @@ add_custom_command (
         --workspace-config-file ${CMAKE_CURRENT_BINARY_DIR}/workspace.config
         -B ${CMAKE_CURRENT_BINARY_DIR}
         -I ${CMAKE_BINARY_DIR}
-        --distribution-root ${ZURI_BUILD_OUTPUT_ROOT}
         "dev.zuri_std"
     WORKING_DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -46,7 +45,7 @@ set_target_properties(zuri-std-package PROPERTIES
     )
 
 # install zpk file
-install(FILES ${ZURI_STD_PACKAGE_PATH} DESTINATION ${PACKAGES_DIR_PREFIX})
+install(FILES ${ZURI_STD_PACKAGE_PATH} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/zpk)
 
 # add testing subdirectory
 add_subdirectory(test)

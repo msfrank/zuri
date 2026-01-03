@@ -46,8 +46,11 @@ target_link_libraries(ZuriRunRuntime
     ${PROFILER_LIBS}
     )
 
-# build zuri program
+# build zuri-run program
 add_executable(zuri-run src/main.cpp)
+
+# ensure all output directories are created
+add_dependencies(zuri-run make-output-directories)
 
 set_target_properties(zuri-run PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${ZURI_BUILD_BIN_DIR}

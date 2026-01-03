@@ -71,7 +71,7 @@ public:
 
 tempo_utils::Status
 zuri_pkg::pkg_install_command(
-    const std::filesystem::path &distributionRoot,
+    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig,
     bool manageSystem,
     tempo_command::TokenVector &tokens)
 {
@@ -128,11 +128,6 @@ zuri_pkg::pkg_install_command(
 
     // construct command map
     tempo_config::ConfigMap commandMap(commandConfig);
-
-    // load zuri config
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
-    TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(
-        {}, distributionRoot));
 
     // construct and configure the package manager
     auto packageManager = std::make_shared<zuri_tooling::PackageManager>(zuriConfig);

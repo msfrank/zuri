@@ -103,19 +103,27 @@ zuri_distributor::PackageCache::removePackage(const zuri_packager::PackageSpecif
 }
 
 tempo_utils::Result<std::shared_ptr<zuri_distributor::PackageCache>>
+zuri_distributor::PackageCache::openOrCreate(const std::filesystem::path &cacheDirectory)
+{
+    auto cacheRoot = cacheDirectory.parent_path();
+    auto cacheName = cacheDirectory.filename();
+    return openOrCreate(cacheRoot, cacheName.string());
+}
+
+tempo_utils::Result<std::shared_ptr<zuri_distributor::PackageCache>>
 zuri_distributor::PackageCache::openOrCreate(
-    const std::filesystem::path &distributionRoot,
+    const std::filesystem::path &cacheRoot,
     std::string_view cacheName)
 {
-    auto packageCachePath = distributionRoot / cacheName;
+    auto packageCachePath = cacheRoot / cacheName;
     if (std::filesystem::exists(packageCachePath))
         return open(packageCachePath);
 
-    if (!std::filesystem::is_directory(distributionRoot))
+    if (!std::filesystem::is_directory(cacheRoot))
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
-            "distribution root {} does not exist", distributionRoot.string());
+            "package cache root {} does not exist", cacheRoot.string());
 
-    tempo_utils::TempdirMaker cacheTempDir(distributionRoot, absl::StrCat(cacheName, ".XXXXXXXX"));
+    tempo_utils::TempdirMaker cacheTempDir(cacheRoot, absl::StrCat(cacheName, ".XXXXXXXX"));
     TU_RETURN_IF_NOT_OK (cacheTempDir.getStatus());
 
     std::error_code ec;

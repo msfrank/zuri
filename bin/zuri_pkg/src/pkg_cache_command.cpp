@@ -6,7 +6,7 @@
 
 tempo_utils::Status
 zuri_pkg::pkg_cache_command(
-    const std::filesystem::path &distributionRoot,
+    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig,
     bool manageSystem,
     tempo_command::TokenVector &tokens)
 {
