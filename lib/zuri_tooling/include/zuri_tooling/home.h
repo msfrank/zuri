@@ -13,6 +13,7 @@ namespace zuri_tooling {
         Home(
             const std::filesystem::path &homeDirectory,
             const std::filesystem::path &packagesDirectory,
+            const std::filesystem::path &environmentsDirectory,
             const std::filesystem::path &configDirectory,
             const std::filesystem::path &vendorConfigDirectory);
         Home(const Home &other);
@@ -21,6 +22,7 @@ namespace zuri_tooling {
 
         std::filesystem::path getHomeDirectory() const;
         std::filesystem::path getPackagesDirectory() const;
+        std::filesystem::path getEnvironmentsDirectory() const;
         std::filesystem::path getConfigDirectory() const;
         std::filesystem::path getVendorConfigDirectory() const;
 
@@ -32,6 +34,7 @@ namespace zuri_tooling {
         struct Priv {
             std::filesystem::path homeDirectory;
             std::filesystem::path packagesDirectory;
+            std::filesystem::path environmentsDirectory;
             std::filesystem::path configDirectory;
             std::filesystem::path vendorConfigDirectory;
         };

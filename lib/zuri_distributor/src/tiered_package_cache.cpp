@@ -1,10 +1,11 @@
 
 #include <absl/strings/str_split.h>
+
+#include <tempo_config/config_utils.h>
 #include <tempo_utils/tempdir_maker.h>
 #include <zuri_distributor/distributor_result.h>
+#include <zuri_distributor/package_cache.h>
 #include <zuri_distributor/tiered_package_cache.h>
-
-#include "zuri_distributor/package_cache.h"
 
 zuri_distributor::TieredPackageCache::TieredPackageCache(
     const std::vector<std::shared_ptr<AbstractReadonlyPackageCache>> &packageCaches)
@@ -23,6 +24,19 @@ zuri_distributor::TieredPackageCache::containsPackage(const zuri_packager::Packa
             return true;
     }
     return false;
+}
+
+tempo_utils::Result<Option<tempo_config::ConfigMap>>
+zuri_distributor::TieredPackageCache::describePackage(const zuri_packager::PackageSpecifier &specifier) const
+{
+    Option<std::filesystem::path> pathOption;
+    TU_ASSIGN_OR_RETURN (pathOption, resolvePackage(specifier));
+    if (pathOption.isEmpty())
+        return Option<tempo_config::ConfigMap>{};
+    tempo_config::ConfigMap packageConfig;
+    TU_ASSIGN_OR_RETURN (packageConfig, tempo_config::read_config_map_file(
+        pathOption.getValue() / "package.config"));
+    return Option(packageConfig);
 }
 
 tempo_utils::Result<Option<std::filesystem::path>>

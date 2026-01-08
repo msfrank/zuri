@@ -151,3 +151,112 @@ zuri_packager::RequirementsMapParser::convertValue(
 
     return {};
 }
+
+zuri_packager::LibrariesNeededParser::LibrariesNeededParser()
+{
+}
+
+zuri_packager::LibrariesNeededParser::LibrariesNeededParser(
+    const LibrariesNeeded &librariesNeededDefault)
+    : m_default(librariesNeededDefault)
+{
+}
+
+tempo_utils::Status
+zuri_packager::LibrariesNeededParser::convertValue(
+    const tempo_config::ConfigNode &node,
+    LibrariesNeeded &librariesNeeded) const
+{
+    if (node.isNil()) {
+        if (m_default.isEmpty())
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kMissingValue,
+                "missing required librariesNeeded map");
+        librariesNeeded = m_default.getValue();
+        return {};
+    }
+
+    if (node.getNodeType() != tempo_config::ConfigNodeType::kMap)
+        return tempo_config::ConfigStatus::forCondition(
+            tempo_config::ConfigCondition::kWrongType, "librariesNeeded must be a map");
+
+    LibrariesNeeded needed;
+
+    auto map = node.toMap();
+    for (auto mapIt = map.mapBegin(); mapIt != map.mapEnd(); ++mapIt) {
+        auto &librarySource = mapIt->first;
+        if (librarySource.empty())
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kParseError,
+                "librariesNeeded contains invalid entry; key is empty");
+
+        if (mapIt->second.getNodeType() != tempo_config::ConfigNodeType::kSeq)
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kParseError,
+                "librariesNeeded value for {} must be a seq", librarySource);
+        auto seq = mapIt->second.toSeq();
+
+        absl::flat_hash_set<std::string> libraryNames;
+        for (auto seqIt = seq.seqBegin(); seqIt != seq.seqEnd(); ++seqIt) {
+            if (seqIt->getNodeType() != tempo_config::ConfigNodeType::kValue)
+                return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kParseError,
+                    "librariesNeeded value for {} contains member with invalid type", librarySource);
+            libraryNames.insert(seqIt->toValue().getValue());
+        }
+
+        if (librarySource == "$SYSTEM$") {
+            needed.addSystemLibraries(libraryNames);
+        } else if (librarySource == "$DISTRIBUTION$") {
+            needed.addDistributionLibraries(libraryNames);
+        } else {
+            auto packageId = PackageId::fromString(librarySource);
+            if (!packageId.isValid())
+                return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kParseError,
+                    "librariesNeeded key '{}' is not a invalid packageId", librarySource);
+            needed.addPackageLibraries(packageId, libraryNames);
+        }
+    }
+
+    librariesNeeded = needed;
+
+    return {};
+}
+
+zuri_packager::LibrariesProvidedParser::LibrariesProvidedParser()
+{
+}
+
+zuri_packager::LibrariesProvidedParser::LibrariesProvidedParser(
+    const LibrariesProvided &librariesProvidedDefault)
+    : m_default(librariesProvidedDefault)
+{
+}
+
+tempo_utils::Status
+zuri_packager::LibrariesProvidedParser::convertValue(
+    const tempo_config::ConfigNode &node,
+    LibrariesProvided &librariesProvided) const
+{
+    if (node.isNil()) {
+        if (m_default.isEmpty())
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kMissingValue,
+                "missing required librariesProvided seq");
+        librariesProvided = m_default.getValue();
+        return {};
+    }
+
+    if (node.getNodeType() != tempo_config::ConfigNodeType::kSeq)
+        return tempo_config::ConfigStatus::forCondition(
+            tempo_config::ConfigCondition::kWrongType, "librariesProvided must be a seq");
+    auto seq = node.toSeq();
+
+    LibrariesProvided provided;
+
+    for (auto it = seq.seqBegin(); it != seq.seqEnd(); ++it) {
+        if (it->getNodeType() != tempo_config::ConfigNodeType::kValue)
+            return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kParseError,
+                "librariesProvided contains member with invalid type");
+        provided.addLibrary(it->toValue().getValue());
+    }
+
+    librariesProvided = provided;
+
+    return {};
+}

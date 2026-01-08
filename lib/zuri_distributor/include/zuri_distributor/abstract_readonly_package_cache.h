@@ -22,6 +22,14 @@ namespace zuri_distributor {
          * @param specifier
          * @return
          */
+        virtual tempo_utils::Result<Option<tempo_config::ConfigMap>> describePackage(
+            const zuri_packager::PackageSpecifier &specifier) const = 0;
+
+        /**
+         *
+         * @param specifier
+         * @return
+         */
         virtual tempo_utils::Result<Option<std::filesystem::path>> resolvePackage(
             const zuri_packager::PackageSpecifier &specifier) const = 0;
     };

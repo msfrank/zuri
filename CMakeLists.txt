@@ -274,20 +274,20 @@ set(ZURI_FS_PACKAGE_PATH                    "${CMAKE_BINARY_DIR}/${ZURI_FS_PACKA
 
 # special directory names
 set(ZURI_PACKAGES_DIR_NAME                  "zuri-packages-${PROJECT_VERSION_MAJOR}")
+set(ZURI_ENVIRONMENTS_DIR_NAME              "zuri-environments-${PROJECT_VERSION_MAJOR}")
 set(ZURI_HOME_DIR_NAME                      "zuri-${PROJECT_VERSION_MAJOR}")
 
 # root and prefixes
 set(DISTRIBUTION_ROOT                       "${CMAKE_INSTALL_PREFIX}")
 set(CONFIG_DIR_PREFIX                       "zuri-${PROJECT_VERSION_MAJOR}/config")
-set(VENDOR_CONFIG_DIR_PREFIX                "zuri-${PROJECT_VERSION_MAJOR}/vendor-config")
 set(DOC_DIR_PREFIX                          "doc/zuri-${PROJECT_VERSION}")
 
 # runtime paths
 set(ZURI_RUNTIME_BIN_DIR                    "${CMAKE_INSTALL_BINDIR}")
 set(ZURI_RUNTIME_LIB_DIR                    "${CMAKE_INSTALL_LIBDIR}")
 set(ZURI_RUNTIME_PACKAGES_DIR               "${CMAKE_INSTALL_LOCALSTATEDIR}/${ZURI_PACKAGES_DIR_NAME}")
+set(ZURI_RUNTIME_ENVIRONMENTS_DIR           "${CMAKE_INSTALL_LOCALSTATEDIR}/${ZURI_ENVIRONMENTS_DIR_NAME}")
 set(ZURI_RUNTIME_CONFIG_DIR                 "${CMAKE_INSTALL_SYSCONFDIR}/${CONFIG_DIR_PREFIX}")
-set(ZURI_RUNTIME_VENDOR_CONFIG_DIR          "${CMAKE_INSTALL_SYSCONFDIR}/${VENDOR_CONFIG_DIR_PREFIX}")
 set(ZURI_RUNTIME_DOC_DIR                    "${CMAKE_INSTALL_DATAROOTDIR}/${DOC_DIR_PREFIX}")
 
 # build paths
@@ -296,7 +296,6 @@ set(ZURI_BUILD_BIN_DIR                      "${ZURI_BUILD_OUTPUT_ROOT}/${ZURI_RU
 set(ZURI_BUILD_LIB_DIR                      "${ZURI_BUILD_OUTPUT_ROOT}/${ZURI_RUNTIME_LIB_DIR}")
 set(ZURI_BUILD_PACKAGES_DIR                 "${ZURI_BUILD_OUTPUT_ROOT}/${ZURI_RUNTIME_PACKAGES_DIR}")
 set(ZURI_BUILD_CONFIG_DIR                   "${ZURI_BUILD_OUTPUT_ROOT}/${ZURI_RUNTIME_CONFIG_DIR}")
-set(ZURI_BUILD_VENDOR_CONFIG_DIR            "${ZURI_BUILD_OUTPUT_ROOT}/${ZURI_RUNTIME_VENDOR_CONFIG_DIR}")
 set(ZURI_BUILD_DOC_DIR                      "${ZURI_BUILD_OUTPUT_ROOT}/${ZURI_RUNTIME_DOC_DIR}")
 
 # test paths
@@ -320,7 +319,6 @@ add_custom_target(make-output-directories
         ${ZURI_BUILD_LIB_DIR}
         ${ZURI_BUILD_PACKAGES_DIR}
         ${ZURI_BUILD_CONFIG_DIR}
-        ${ZURI_BUILD_VENDOR_CONFIG_DIR}
         ${ZURI_BUILD_DOC_DIR}
     )
 
@@ -375,7 +373,6 @@ configure_package_config_file(
     PATH_VARS
       DISTRIBUTION_ROOT
       CONFIG_DIR_PREFIX
-      VENDOR_CONFIG_DIR_PREFIX
       DOC_DIR_PREFIX
     )
 

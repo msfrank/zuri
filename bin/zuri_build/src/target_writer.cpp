@@ -1,21 +1,32 @@
 
+#include <filesystem>
+
+#include <LIEF/MachO.hpp>
+#include <LIEF/ELF.hpp>
+
 #include <lyric_build/build_attrs.h>
 #include <lyric_build/build_result.h>
 #include <lyric_common/common_types.h>
 #include <lyric_object/lyric_object.h>
 #include <tempo_config/config_builder.h>
+#include <tempo_config/parse_config.h>
 #include <tempo_utils/directory_maker.h>
 #include <tempo_utils/log_message.h>
 #include <tempo_utils/memory_bytes.h>
 #include <zuri_build/target_writer.h>
 
+#include "zuri_packager/packaging_conversions.h"
+
 zuri_build::TargetWriter::TargetWriter(
+    std::shared_ptr<zuri_tooling::PackageManager> packageManager,
     const std::filesystem::path &installRoot,
     const zuri_packager::PackageSpecifier &specifier)
-    : m_installRoot(installRoot),
+    : m_packageManager(packageManager),
+      m_installRoot(installRoot),
       m_specifier(specifier),
       m_priv(std::make_unique<Priv>())
 {
+    TU_ASSERT (m_packageManager != nullptr);
     TU_ASSERT (!m_installRoot.empty());
     TU_ASSERT (m_specifier.isValid());
 }
@@ -104,6 +115,77 @@ zuri_build::TargetWriter::addRequirement(const zuri_packager::PackageSpecifier &
     return {};
 }
 
+inline std::string
+make_relative_rpath(
+    const tempo_utils::UrlPath &pluginFile,
+    const tempo_utils::UrlPath &libDirectory,
+    std::string_view originName)
+{
+    auto pluginFilePath = pluginFile.toFilesystemPath("/");
+    pluginFilePath.replace_filename(originName);
+    auto libDirectoryPath = libDirectory.toFilesystemPath("/");
+    return pluginFilePath.lexically_relative(libDirectoryPath);
+}
+
+tempo_utils::Result<
+    std::pair<
+        std::shared_ptr<const tempo_utils::ImmutableBytes>,
+        zuri_build::TargetWriter::PluginInfo>>
+zuri_build::TargetWriter::rewritePlugin(const tempo_utils::UrlPath &path, std::span<const tu_uint8> content)
+{
+    std::filesystem::path pluginName(path.getHead().getPart());
+    auto pluginExtension = pluginName.extension();
+    std::vector pluginData(content.begin(), content.end());
+
+    auto distributionLibPath = tempo_utils::UrlPath::fromString("/distribution/lib");
+    auto libPath = tempo_utils::UrlPath::fromString("/lib");
+
+    PluginInfo pluginInfo;
+    pluginInfo.path = path;
+
+    if (pluginExtension == ".dylib") {
+        // load the Mach-O binary
+        auto fatBinary = LIEF::MachO::Parser::parse(pluginData);
+        auto dso = fatBinary->at(0);
+
+        // record all dependencies
+        for (const auto &library : dso->libraries()) {
+            pluginInfo.libraries.insert(library.name());
+        }
+        // clear existing rpath commands
+        for (auto &rpath : dso->rpaths()) {
+            dso->remove(rpath);
+        }
+
+        // add the rpath for the distribution/lib directory
+        auto distributionLibRpathCommand = LIEF::MachO::RPathCommand::create(
+            make_relative_rpath(path, distributionLibPath, "@loader_path"));
+        dso->add(*distributionLibRpathCommand);
+
+        // add the rpath for the lib directory
+        auto libRpathCommand = LIEF::MachO::RPathCommand::create(
+            make_relative_rpath(path, libPath, "@loader_path"));
+        dso->add(*libRpathCommand);
+
+        // write the new content
+        std::vector<tu_uint8> rewrittenContent;
+        LIEF::MachO::Builder::write(*fatBinary, rewrittenContent);
+        auto rewrittenBytes = std::static_pointer_cast<const tempo_utils::ImmutableBytes>(
+            tempo_utils::MemoryBytes::create(std::move(rewrittenContent)));
+
+        std::pair p(rewrittenBytes, pluginInfo);
+
+        return p;
+    }
+
+    if (pluginExtension == ".so") {
+
+    }
+
+    return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+        "unsupported DSO type");
+}
+
 using perms = std::filesystem::perms;
 
 tempo_utils::Status
@@ -118,6 +200,9 @@ zuri_build::TargetWriter::writeModule(
     if (m_priv->packageWriter == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is not configured");
+
+    auto modulesRoot = tempo_utils::UrlPath::fromString("/modules");
+    auto fullModulePath = modulesRoot.traverse(modulePath.toRelative());
 
     std::string contentType;
     TU_RETURN_IF_NOT_OK (metadata.parseAttr(lyric_build::kLyricBuildContentType, contentType));
@@ -142,18 +227,104 @@ zuri_build::TargetWriter::writeModule(
                     "unhandled module scheme '{}' for import {}", location.getScheme(), location.toString());
             }
         }
+    } else if (contentType == lyric_common::kPluginContentType) {
+        std::pair<std::shared_ptr<const tempo_utils::ImmutableBytes>,PluginInfo> p;
+        TU_ASSIGN_OR_RETURN (p, rewritePlugin(fullModulePath, content->getSpan()));
+        m_priv->plugins[p.second.path] = std::move(p.second);
+        content = std::move(p.first);
+    } else {
+        return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+            "unhandled module content '{}' for {}", contentType, fullModulePath.toString());
     }
 
-    auto modulesRoot = tempo_utils::UrlPath::fromString("/modules");
-    auto fullModulePath = modulesRoot.traverse(modulePath.toRelative());
-    TU_LOG_V << "writing module " << fullModulePath;
+    TU_LOG_V << "writing " << fullModulePath;
 
     auto parentPath = fullModulePath.getInit();
-    zuri_packager::EntryAddress parentEntry;
-    TU_ASSIGN_OR_RETURN (parentEntry, m_priv->packageWriter->makeDirectory(parentPath, true));
+    TU_RETURN_IF_STATUS (m_priv->packageWriter->makeDirectory(parentPath, true));
+    TU_RETURN_IF_STATUS (m_priv->packageWriter->putFile(fullModulePath, content));
 
-    zuri_packager::EntryAddress moduleEntry;
-    TU_ASSIGN_OR_RETURN (moduleEntry, m_priv->packageWriter->putFile(fullModulePath, content));
+    return {};
+}
+
+tempo_utils::Status
+zuri_build::TargetWriter::determineLibrariesNeeded()
+{
+    auto tieredCache = m_packageManager->getTieredCache();
+
+    // build map of libraries available based on system, distribution, and package requirements
+    absl::flat_hash_map<std::string,std::string> librariesAvailable;
+
+    // add explicitly declared system libraries
+    for (const auto &libraryName : m_systemLibNames) {
+        if (librariesAvailable.contains(libraryName))
+            return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                "duplicate library {}; already provided by $SYSTEM$", libraryName);
+        librariesAvailable[libraryName] = "$SYSTEM$";
+    }
+
+    // add libraries from distribution lib directories
+    for (const auto &distributionLibDirectory : m_distributionLibDirectories) {
+        std::filesystem::directory_iterator it(distributionLibDirectory);
+        for (const auto &entry : it) {
+            if (!entry.is_regular_file())
+                continue;
+            auto libraryName = entry.path().filename().string();
+            if (!libraryName.starts_with("lib"))
+                continue;
+            if (librariesAvailable.contains(libraryName))
+                return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                    "duplicate library {}; already provided by {}",
+                    libraryName, librariesAvailable.at(libraryName));
+            librariesAvailable[libraryName] = "$DISTRIBUTION$";
+        }
+    }
+
+    // add libraries which are provided by package requirements
+    for (const auto &entry : m_priv->requirements) {
+        auto specifier = zuri_packager::PackageSpecifier(entry.first, entry.second);
+
+        Option<tempo_config::ConfigMap> packageConfigOption;
+        TU_ASSIGN_OR_RETURN (packageConfigOption, tieredCache->describePackage(specifier));
+        if (packageConfigOption.isEmpty())
+            return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                "failed to read package.config for {}", specifier.toString());
+        auto packageConfig = packageConfigOption.getValue();
+
+        zuri_packager::LibrariesProvidedParser librariesProvidedParser(zuri_packager::LibrariesProvided{});
+        zuri_packager::LibrariesProvided librariesProvided;
+        TU_RETURN_IF_NOT_OK (tempo_config::parse_config(librariesProvided, librariesProvidedParser,
+            packageConfig, "librariesProvided"));
+
+        auto librarySource = specifier.toString();
+        for (auto it = librariesProvided.providedBegin(); it != librariesProvided.providedEnd(); ++it) {
+            const auto &libraryName = *it;
+            if (librariesAvailable.contains(libraryName))
+                return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                    "duplicate library {}; provided in both {} and {}",
+                    libraryName, librariesAvailable.at(libraryName), librarySource);
+            librariesAvailable[libraryName] = librarySource;
+        }
+    }
+
+    // verify that each library dependency for every plugin is satisfied
+    for (const auto &entry : m_priv->plugins) {
+        for (const auto &libraryName : entry.second.libraries) {
+            auto available = librariesAvailable.find(libraryName);
+            if (available == librariesAvailable.cend())
+                return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                    "missing library {} for plugin {}",
+                    libraryName, entry.second.path.toString());
+            auto &librarySource = available->second;
+            if (librarySource == "$SYSTEM$") {
+                m_priv->librariesNeeded.addSystemLibrary(libraryName);
+            } else if (librarySource == "$DISTRIBUTION$") {
+                m_priv->librariesNeeded.addDistributionLibrary(libraryName);
+            } else {
+                auto packageId = zuri_packager::PackageId::fromString(librarySource);
+                m_priv->librariesNeeded.addPackageLibrary(packageId, libraryName);
+            }
+        }
+    }
 
     return {};
 }
@@ -207,6 +378,8 @@ zuri_build::TargetWriter::writeTarget()
     if (m_priv->packageWriter == nullptr)
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "target writer is not configured");
+
+    TU_RETURN_IF_NOT_OK (determineLibrariesNeeded());
 
     TU_RETURN_IF_NOT_OK (writePackageConfig());
 

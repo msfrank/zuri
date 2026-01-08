@@ -7,11 +7,13 @@
 
 zuri_build::TargetBuilder::TargetBuilder(
     std::shared_ptr<zuri_tooling::BuildGraph> buildGraph,
+    std::shared_ptr<zuri_tooling::PackageManager> packageManager,
     lyric_build::LyricBuilder *builder,
     absl::flat_hash_map<std::string,tempo_utils::Url> &&targetBases,
     std::shared_ptr<zuri_distributor::PackageCache> tcache,
     const std::filesystem::path &installRoot)
     : m_buildGraph(std::move(buildGraph)),
+      m_packageManager(std::move(packageManager)),
       m_builder(builder),
       m_targetBases(std::move(targetBases)),
       m_tcache(std::move(tcache)),
@@ -133,7 +135,7 @@ zuri_build::TargetBuilder::buildProgramTarget(
     }
 
     // construct the target writer
-    TargetWriter targetWriter(m_installRoot, program.specifier);
+    TargetWriter targetWriter(m_packageManager, m_installRoot, program.specifier);
     TU_RETURN_IF_NOT_OK (targetWriter.configure());
 
     // set the main location
@@ -200,7 +202,7 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     }
 
     // construct the target writer
-    TargetWriter targetWriter(m_installRoot, library.specifier);
+    TargetWriter targetWriter(m_packageManager, m_installRoot, library.specifier);
     TU_RETURN_IF_NOT_OK (targetWriter.configure());
 
     auto cache = m_builder->getCache();

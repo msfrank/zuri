@@ -18,7 +18,6 @@
 namespace zuri_tooling {
 
     constexpr const char * const kEnvOverrideConfigName = "ZURI_OVERRIDE_CONFIG";
-    constexpr const char * const kEnvOverrideVendorConfigName = "ZURI_OVERRIDE_VENDOR_CONFIG";
     constexpr const char * const kEnvHomeName = "ZURI_HOME";
 
     /**

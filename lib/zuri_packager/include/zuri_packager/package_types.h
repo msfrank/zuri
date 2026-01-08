@@ -3,7 +3,9 @@
 
 #include <memory>
 #include <string>
+
 #include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 
 #include <tempo_utils/integer_types.h>
 #include <tempo_utils/url_authority.h>
@@ -193,6 +195,58 @@ namespace zuri_packager {
 
     private:
         std::shared_ptr<absl::flat_hash_map<PackageId,PackageVersion>> m_requirements;
+    };
+
+    class LibrariesNeeded {
+    public:
+        LibrariesNeeded();
+        LibrariesNeeded(const LibrariesNeeded &other);
+
+        void addSystemLibrary(std::string_view libraryName);
+        void addSystemLibraries(const absl::flat_hash_set<std::string> &libraryNames);
+        absl::flat_hash_set<std::string>::const_iterator systemLibrariesBegin() const;
+        absl::flat_hash_set<std::string>::const_iterator systemLibrariesEnd() const;
+
+        void addDistributionLibrary(std::string_view libraryName);
+        void addDistributionLibraries(const absl::flat_hash_set<std::string> &libraryNames);
+        absl::flat_hash_set<std::string>::const_iterator distributionLibrariesBegin() const;
+        absl::flat_hash_set<std::string>::const_iterator distributionLibrariesEnd() const;
+
+        void addPackageLibrary(const PackageId &packageId, std::string_view libraryName);
+        void addPackageLibraries(const PackageId &packageId, const absl::flat_hash_set<std::string> &libraryNames);
+        absl::flat_hash_set<PackageId>::const_iterator packagesBegin() const;
+        absl::flat_hash_set<PackageId>::const_iterator packagesEnd() const;
+        absl::flat_hash_set<std::string>::const_iterator packageLibrariesBegin(const PackageId &packageId) const;
+        absl::flat_hash_set<std::string>::const_iterator packageLibrariesEnd(const PackageId &packageId) const;
+
+    private:
+        struct Priv {
+            absl::flat_hash_set<std::string> systemLibraries;
+            absl::flat_hash_set<std::string> distributionLibraries;
+            absl::flat_hash_set<PackageId> packagesNeeded;
+            absl::flat_hash_map<
+                PackageId,
+                std::unique_ptr<absl::flat_hash_set<std::string>>
+            > packageLibraries;
+        };
+        std::shared_ptr<Priv> m_priv;
+    };
+
+    class LibrariesProvided {
+    public:
+        LibrariesProvided();
+        LibrariesProvided(const LibrariesProvided &other);
+
+        void addLibrary(std::string_view libraryName);
+        void addLibraries(const absl::flat_hash_set<std::string> &libraryNames);
+        absl::flat_hash_set<std::string>::const_iterator providedBegin() const;
+        absl::flat_hash_set<std::string>::const_iterator providedEnd() const;
+
+    private:
+        struct Priv {
+            absl::flat_hash_set<std::string> provided;
+        };
+        std::shared_ptr<Priv> m_priv;
     };
 
     // forward declarations

@@ -1,5 +1,7 @@
 
 #include <absl/strings/str_split.h>
+
+#include <tempo_config/config_utils.h>
 #include <tempo_utils/tempdir_maker.h>
 #include <zuri_distributor/distributor_result.h>
 #include <zuri_distributor/package_cache.h>
@@ -26,6 +28,19 @@ zuri_distributor::PackageCache::containsPackage(const zuri_packager::PackageSpec
     return std::filesystem::is_directory(packagePath);
 }
 
+tempo_utils::Result<Option<tempo_config::ConfigMap>>
+zuri_distributor::PackageCache::describePackage(const zuri_packager::PackageSpecifier &specifier) const
+{
+    Option<std::filesystem::path> pathOption;
+    TU_ASSIGN_OR_RETURN (pathOption, resolvePackage(specifier));
+    if (pathOption.isEmpty())
+        return Option<tempo_config::ConfigMap>{};
+    tempo_config::ConfigMap packageConfig;
+    TU_ASSIGN_OR_RETURN (packageConfig, tempo_config::read_config_map_file(
+        pathOption.getValue() / "package.config"));
+    return Option(packageConfig);
+}
+
 tempo_utils::Result<Option<std::filesystem::path>>
 zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageSpecifier &specifier) const
 {
@@ -39,32 +54,6 @@ zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageSpeci
 
     return Option(packagePath);
 }
-
-// tempo_utils::Result<Option<std::filesystem::path>>
-// zuri_distributor::PackageCache::resolvePackage(const zuri_packager::PackageDependency &dependency) const
-// {
-//     std::vector<std::pair<zuri_packager::PackageSpecifier,std::filesystem::path>> suitablePackages;
-//
-//     std::filesystem::directory_iterator dir(m_cacheDirectory);
-//     for (const auto &entry : dir) {
-//         if (!entry.is_directory())
-//             continue;
-//         auto path = entry.path();
-//         auto specifier = zuri_packager::PackageSpecifier::fromFilesystemName(path.filename());
-//         if (dependency.satisfiedBy(specifier))
-//             continue;
-//         suitablePackages.emplace_back(specifier, path);
-//     }
-//
-//     if (suitablePackages.empty())
-//         return Option<std::filesystem::path>();
-//
-//     std::sort(suitablePackages.begin(), suitablePackages.end(), [](auto &a, auto &b) {
-//         return a.first < b.first;
-//     });
-//
-//     return Option(suitablePackages.back().second);
-// }
 
 tempo_utils::Result<std::filesystem::path>
 zuri_distributor::PackageCache::installPackage(const std::filesystem::path &packagePath)

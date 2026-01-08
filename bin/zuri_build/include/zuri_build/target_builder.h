@@ -5,6 +5,7 @@
 #include <tempo_utils/result.h>
 #include <zuri_distributor/package_cache.h>
 #include <zuri_tooling/build_graph.h>
+#include <zuri_tooling/package_manager.h>
 
 namespace zuri_build {
 
@@ -12,6 +13,7 @@ namespace zuri_build {
     public:
         TargetBuilder(
             std::shared_ptr<zuri_tooling::BuildGraph> buildGraph,
+            std::shared_ptr<zuri_tooling::PackageManager> packageManager,
             lyric_build::LyricBuilder *builder,
             absl::flat_hash_map<std::string,tempo_utils::Url> &&targetBases,
             std::shared_ptr<zuri_distributor::PackageCache> tcache,
@@ -21,6 +23,7 @@ namespace zuri_build {
 
     private:
         std::shared_ptr<zuri_tooling::BuildGraph> m_buildGraph;
+        std::shared_ptr<zuri_tooling::PackageManager> m_packageManager;
         lyric_build::LyricBuilder *m_builder;
         absl::flat_hash_map<std::string,tempo_utils::Url> m_targetBases;
         std::shared_ptr<zuri_distributor::PackageCache> m_tcache;

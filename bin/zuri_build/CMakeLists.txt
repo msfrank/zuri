@@ -27,7 +27,6 @@ target_compile_definitions(ZuriBuildRuntime PRIVATE
     "PROJECT_VERSION=\"${PROJECT_VERSION}\""
     "DISTRIBUTION_ROOT=\"${DISTRIBUTION_ROOT}\""
     "CONFIG_DIR_PREFIX=\"${CONFIG_DIR_PREFIX}\""
-    "VENDOR_CONFIG_DIR_PREFIX=\"${VENDOR_CONFIG_DIR_PREFIX}\""
     )
 
 target_link_libraries(ZuriBuildRuntime
@@ -39,6 +38,7 @@ target_link_libraries(ZuriBuildRuntime
     zuri::zuri_packager
     zuri::zuri_tooling
     Boost::headers
+    LIEF::LIEF
     ${SANITIZER_LIBS}
     ${PROFILER_LIBS}
     )

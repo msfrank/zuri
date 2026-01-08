@@ -12,15 +12,11 @@ zuri_tooling::Distribution::Distribution()
 zuri_tooling::Distribution::Distribution(
     const std::filesystem::path &binDirectory,
     const std::filesystem::path &libDirectory,
-    const std::filesystem::path &packagesDirectory,
-    const std::filesystem::path &configDirectory,
-    const std::filesystem::path &vendorConfigDirectory)
+    const std::filesystem::path &configDirectory)
     : m_priv(std::make_shared<Priv>(
         binDirectory,
         libDirectory,
-        packagesDirectory,
-        configDirectory,
-        vendorConfigDirectory))
+        configDirectory))
 {
 }
 
@@ -52,26 +48,10 @@ zuri_tooling::Distribution::getLibDirectory() const
 }
 
 std::filesystem::path
-zuri_tooling::Distribution::getPackagesDirectory() const
-{
-    if (m_priv)
-        return m_priv->packagesDirectory;
-    return {};
-}
-
-std::filesystem::path
 zuri_tooling::Distribution::getConfigDirectory() const
 {
     if (m_priv)
         return m_priv->configDirectory;
-    return {};
-}
-
-std::filesystem::path
-zuri_tooling::Distribution::getVendorConfigDirectory() const
-{
-    if (m_priv)
-        return m_priv->vendorConfigDirectory;
     return {};
 }
 
@@ -105,14 +85,6 @@ zuri_tooling::Distribution::load(bool ignoreMissing)
             "missing distribution lib directory {}", libDirectory.string());
     }
 
-    auto packagesDirectory = resolve_path(std::filesystem::path{RELATIVE_PACKAGES_DIR}, binDirectory);
-    if (!std::filesystem::exists(packagesDirectory)) {
-        if (ignoreMissing)
-            return Distribution{};
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "missing distribution packages directory {}", packagesDirectory.string());
-    }
-
     auto configDirectory = resolve_path(std::filesystem::path{RELATIVE_CONFIG_DIR}, binDirectory);
     if (!std::filesystem::exists(configDirectory)) {
         if (ignoreMissing)
@@ -121,13 +93,5 @@ zuri_tooling::Distribution::load(bool ignoreMissing)
             "missing distribution config directory {}", configDirectory.string());
     }
 
-    auto vendorConfigDirectory = resolve_path(std::filesystem::path{RELATIVE_VENDOR_CONFIG_DIR}, binDirectory);
-    if (!std::filesystem::exists(vendorConfigDirectory)) {
-        if (ignoreMissing)
-            return Distribution{};
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "missing distribution vendor-config directory {}", vendorConfigDirectory.string());
-    }
-
-    return Distribution(binDirectory, libDirectory, packagesDirectory, configDirectory, vendorConfigDirectory);
+    return Distribution(binDirectory, libDirectory, configDirectory);
 }

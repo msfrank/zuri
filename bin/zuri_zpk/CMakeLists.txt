@@ -23,7 +23,6 @@ target_compile_definitions(ZuriZpkRuntime PRIVATE
     "PROJECT_VERSION=\"${PROJECT_VERSION}\""
     "DISTRIBUTION_ROOT=\"${DISTRIBUTION_ROOT}\""
     "CONFIG_DIR_PREFIX=\"${CONFIG_DIR_PREFIX}\""
-    "VENDOR_CONFIG_DIR_PREFIX=\"${VENDOR_CONFIG_DIR_PREFIX}\""
     )
 
 target_link_libraries(ZuriZpkRuntime

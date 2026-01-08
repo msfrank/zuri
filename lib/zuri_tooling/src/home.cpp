@@ -14,11 +14,13 @@ zuri_tooling::Home::Home()
 zuri_tooling::Home::Home(
     const std::filesystem::path &homeDirectory,
     const std::filesystem::path &packagesDirectory,
+    const std::filesystem::path &environmentsDirectory,
     const std::filesystem::path &configDirectory,
     const std::filesystem::path &vendorConfigDirectory)
     : m_priv(std::make_shared<Priv>(
         homeDirectory,
         packagesDirectory,
+        environmentsDirectory,
         configDirectory,
         vendorConfigDirectory))
 {
@@ -48,6 +50,14 @@ zuri_tooling::Home::getPackagesDirectory() const
 {
     if (m_priv)
         return m_priv->packagesDirectory;
+    return {};
+}
+
+std::filesystem::path
+zuri_tooling::Home::getEnvironmentsDirectory() const
+{
+    if (m_priv)
+        return m_priv->environmentsDirectory;
     return {};
 }
 
@@ -94,6 +104,12 @@ zuri_tooling::Home::openOrCreate(const std::filesystem::path &homeDirectory_)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create home packages directory {}", packagesDirectory.string());
 
+    auto environmentsDirectory = homeDirectory / "environments";
+    std::filesystem::create_directory(environmentsDirectory, ec);
+    if (ec)
+        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+            "failed to create home environments directory {}", environmentsDirectory.string());
+
     auto configDirectory = homeDirectory / "config";
     std::filesystem::create_directory(configDirectory, ec);
     if (ec)
@@ -106,7 +122,7 @@ zuri_tooling::Home::openOrCreate(const std::filesystem::path &homeDirectory_)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create home vendor-config directory {}", vendorConfigDirectory.string());
 
-    return Home(homeDirectory, packagesDirectory, configDirectory, vendorConfigDirectory);
+    return Home(homeDirectory, packagesDirectory, environmentsDirectory, configDirectory, vendorConfigDirectory);
 }
 
 tempo_utils::Result<zuri_tooling::Home>
@@ -124,6 +140,11 @@ zuri_tooling::Home::open(const std::filesystem::path &homeDirectory, bool ignore
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing home packages directory {}", packagesDirectory.string());
 
+    auto environmentsDirectory = homeDirectory / "environments";
+    if (!std::filesystem::exists(environmentsDirectory))
+        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+            "missing home environments directory {}", environmentsDirectory.string());
+
     auto configDirectory = homeDirectory / "config";
     if (!std::filesystem::exists(packagesDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
@@ -134,7 +155,7 @@ zuri_tooling::Home::open(const std::filesystem::path &homeDirectory, bool ignore
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing home vendor-config directory {}", packagesDirectory.string());
 
-    return Home(homeDirectory, packagesDirectory, configDirectory, vendorConfigDirectory);
+    return Home(homeDirectory, packagesDirectory, environmentsDirectory, configDirectory, vendorConfigDirectory);
 }
 
 tempo_utils::Result<zuri_tooling::Home>

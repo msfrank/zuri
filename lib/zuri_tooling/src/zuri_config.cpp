@@ -37,22 +37,6 @@ load_env_override_config()
     return overrideNode.toMap();
 }
 
-static tempo_utils::Result<tempo_config::ConfigMap>
-load_env_override_vendor_config()
-{
-    const auto *value = std::getenv(zuri_tooling::kEnvOverrideVendorConfigName);
-    if (value == nullptr)
-        return tempo_config::ConfigMap();
-    tempo_config::ConfigNode overrideNode;
-    TU_ASSIGN_OR_RETURN (overrideNode, tempo_config::read_config_string(value));
-    TU_LOG_V << "parsed env override vendor config: " << overrideNode.toString();
-
-    if (overrideNode.getNodeType() != tempo_config::ConfigNodeType::kMap)
-        return tempo_config::ConfigStatus::forCondition(tempo_config::ConfigCondition::kWrongType,
-            "invalid type for environment variable {}; expected a map", zuri_tooling::kEnvOverrideVendorConfigName);
-    return overrideNode.toMap();
-}
-
 static tempo_utils::Status
 configure_program_config_options(
     const zuri_tooling::Distribution &distribution,
@@ -63,22 +47,15 @@ configure_program_config_options(
     tempo_config::ConfigMap overrideConfig;
     TU_ASSIGN_OR_RETURN (overrideConfig, load_env_override_config());
 
-    // load override vendor config if present
-    tempo_config::ConfigMap overrideVendorConfig;
-    TU_ASSIGN_OR_RETURN (overrideVendorConfig, load_env_override_vendor_config());
-
     programConfigOptions.toolLocator = {"zuri"};
     programConfigOptions.overrideProgramConfigMap = overrideConfig;
-    programConfigOptions.overrideVendorConfigMap = overrideVendorConfig;
 
     // set the distribution paths
     programConfigOptions.distConfigDirectoryPath = distribution.getConfigDirectory();
-    programConfigOptions.distVendorConfigDirectoryPath = distribution.getVendorConfigDirectory();
 
     // set the user paths
     if (home.isValid()) {
         programConfigOptions.userConfigDirectoryPath = home.getConfigDirectory();
-        programConfigOptions.userVendorConfigDirectoryPath = home.getVendorConfigDirectory();
     }
 
     return {};
@@ -94,22 +71,15 @@ configure_workspace_config_options(
     tempo_config::ConfigMap overrideConfig;
     TU_ASSIGN_OR_RETURN (overrideConfig, load_env_override_config());
 
-    // load override vendor config if present
-    tempo_config::ConfigMap overrideVendorConfig;
-    TU_ASSIGN_OR_RETURN (overrideVendorConfig, load_env_override_vendor_config());
-
     workspaceConfigOptions.toolLocator = {"zuri"};
     workspaceConfigOptions.overrideWorkspaceConfigMap = overrideConfig;
-    workspaceConfigOptions.overrideVendorConfigMap = overrideVendorConfig;
 
     // set the distribution paths
     workspaceConfigOptions.distConfigDirectoryPath = distribution.getConfigDirectory();
-    workspaceConfigOptions.distVendorConfigDirectoryPath = distribution.getVendorConfigDirectory();
 
     // set the user paths
     if (home.isValid()) {
         workspaceConfigOptions.userConfigDirectoryPath = home.getConfigDirectory();
-        workspaceConfigOptions.userVendorConfigDirectoryPath = home.getVendorConfigDirectory();
     }
 
     return {};

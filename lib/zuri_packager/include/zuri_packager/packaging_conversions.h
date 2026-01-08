@@ -56,17 +56,29 @@ namespace zuri_packager {
         Option<RequirementsMap> m_default;
     };
 
-    // class RequirementsListParser : public tempo_config::AbstractConverter<RequirementsList> {
-    // public:
-    //     RequirementsListParser();
-    //     explicit RequirementsListParser(const RequirementsList &requirementsDefault);
-    //     tempo_utils::Status convertValue(
-    //         const tempo_config::ConfigNode &node,
-    //         RequirementsList &requirements) const override;
-    //
-    // private:
-    //     Option<RequirementsList> m_default;
-    // };
+    class LibrariesNeededParser : public tempo_config::AbstractConverter<LibrariesNeeded> {
+    public:
+        LibrariesNeededParser();
+        explicit LibrariesNeededParser(const LibrariesNeeded &librariesNeededDefault);
+        tempo_utils::Status convertValue(
+            const tempo_config::ConfigNode &node,
+            LibrariesNeeded &librariesNeeded) const override;
+
+    private:
+        Option<LibrariesNeeded> m_default;
+    };
+
+    class LibrariesProvidedParser : public tempo_config::AbstractConverter<LibrariesProvided> {
+    public:
+        LibrariesProvidedParser();
+        explicit LibrariesProvidedParser(const LibrariesProvided &librariesProvidedDefault);
+        tempo_utils::Status convertValue(
+            const tempo_config::ConfigNode &node,
+            LibrariesProvided &librariesProvided) const override;
+
+    private:
+        Option<LibrariesProvided> m_default;
+    };
 }
 
 #endif // ZURI_PACKAGER_PACKAGING_CONVERSIONS_H
