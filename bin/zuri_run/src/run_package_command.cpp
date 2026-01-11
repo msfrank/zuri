@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <lyric_runtime/chain_loader.h>
@@ -10,8 +11,7 @@
 
 tempo_utils::Status
 zuri_run::run_package_command(
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig,
-    const std::string &sessionId,
+    std::shared_ptr<zuri_tooling::EnvironmentConfig> environmentConfig,
     const std::filesystem::path &mainPackagePath,
     const std::vector<std::string> &mainArgs)
 {
@@ -29,7 +29,6 @@ zuri_run::run_package_command(
             .resolve(programMain.getPath()));
     TU_LOG_V << "main location: " << mainLocation.toString();
 
-    auto buildConfig = zuriConfig->getBuildToolConfig();
     auto tempRoot = std::filesystem::temp_directory_path();
 
     // construct the package reader loader
@@ -40,7 +39,7 @@ zuri_run::run_package_command(
     auto bootstrapLoader = std::make_shared<lyric_bootstrap::BootstrapLoader>();
 
     // construct the package manager
-    zuri_tooling::PackageManager packageManager(zuriConfig);
+    zuri_tooling::PackageManager packageManager(environmentConfig);
     TU_RETURN_IF_NOT_OK (packageManager.configure());
 
     // construct the application loader
@@ -55,7 +54,7 @@ zuri_run::run_package_command(
         bootstrapLoader, applicationLoader));
 
     // initialize the heap and interpreter state
-    TU_RETURN_IF_NOT_OK (interpreterState->load(mainLocation));
+    TU_RETURN_IF_NOT_OK (interpreterState->load(mainLocation, mainArgs));
 
     // handle log protocol messages
     auto *portMultiplexer = interpreterState->portMultiplexer();

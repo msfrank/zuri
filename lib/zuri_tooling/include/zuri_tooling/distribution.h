@@ -10,10 +10,6 @@ namespace zuri_tooling {
     class Distribution {
     public:
         Distribution();
-        Distribution(
-            const std::filesystem::path &binDirectory,
-            const std::filesystem::path &libDirectory,
-            const std::filesystem::path &configDirectory);
         Distribution(const Distribution &other);
 
         bool isValid() const;
@@ -22,7 +18,8 @@ namespace zuri_tooling {
         std::filesystem::path getLibDirectory() const;
         std::filesystem::path getConfigDirectory() const;
 
-        static tempo_utils::Result<Distribution> load(bool ignoreMissing = false);
+        static tempo_utils::Result<Distribution> open();
+        static tempo_utils::Result<Distribution> find(const std::filesystem::path &programLocation);
 
     private:
         struct Priv {
@@ -31,8 +28,12 @@ namespace zuri_tooling {
             std::filesystem::path configDirectory;
         };
         std::shared_ptr<Priv> m_priv;
-    };
 
+        Distribution(
+            const std::filesystem::path &binDirectory,
+            const std::filesystem::path &libDirectory,
+            const std::filesystem::path &configDirectory);
+    };
 }
 
 #endif // ZURI_TOOLING_DISTRIBUTION_H

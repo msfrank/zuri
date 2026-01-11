@@ -10,18 +10,15 @@ zuri_build::TargetBuilder::TargetBuilder(
     std::shared_ptr<zuri_tooling::PackageManager> packageManager,
     lyric_build::LyricBuilder *builder,
     absl::flat_hash_map<std::string,tempo_utils::Url> &&targetBases,
-    std::shared_ptr<zuri_distributor::PackageCache> tcache,
     const std::filesystem::path &installRoot)
     : m_buildGraph(std::move(buildGraph)),
       m_packageManager(std::move(packageManager)),
       m_builder(builder),
       m_targetBases(std::move(targetBases)),
-      m_tcache(std::move(tcache)),
       m_installRoot(installRoot)
 {
     TU_ASSERT (m_buildGraph != nullptr);
     TU_ASSERT (m_builder != nullptr);
-    TU_ASSERT (m_tcache != nullptr);
     TU_ASSERT (!m_installRoot.empty());
 }
 
@@ -29,6 +26,7 @@ tempo_utils::Result<std::filesystem::path>
 zuri_build::TargetBuilder::buildTarget(const std::string &targetName)
 {
     auto targetStore = m_buildGraph->getTargetStore();
+    auto tcache = m_packageManager->getTcache();
 
     // make a fresh copy of target bases
     auto targetBases = m_targetBases;
@@ -80,10 +78,10 @@ zuri_build::TargetBuilder::buildTarget(const std::string &targetName)
 
             // if target exists in package cache then remove it first
             // TODO: if package is unchanged then don't reinstall it
-            if (m_tcache->containsPackage(specifier)) {
-                TU_RETURN_IF_NOT_OK (m_tcache->removePackage(specifier));
+            if (tcache->containsPackage(specifier)) {
+                TU_RETURN_IF_NOT_OK (tcache->removePackage(specifier));
             }
-            TU_RETURN_IF_STATUS (m_tcache->installPackage(packageReader));
+            TU_RETURN_IF_STATUS (tcache->installPackage(packageReader));
 
             // add package base for target
             targetBases[currTargetName] = specifier.toUrl();

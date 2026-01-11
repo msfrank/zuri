@@ -1,20 +1,19 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-#include <lyric_runtime/chain_loader.h>
 #include <tempo_command/command_config.h>
 #include <tempo_command/command_help.h>
 #include <tempo_command/command_parser.h>
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
-#include <tempo_config/workspace_config.h>
 #include <tempo_utils/uuid.h>
 #include <zuri_run/read_eval_print_loop.h>
 #include <zuri_run/run_interactive_command.h>
 #include <zuri_run/run_package_command.h>
 #include <zuri_run/run_result.h>
 #include <zuri_run/zuri_run.h>
-#include <zuri_tooling/zuri_config.h>
+#include <zuri_tooling/environment_config.h>
+#include <zuri_tooling/project_config.h>
 
 struct MainPackageOrStdin {
     enum class Type {
@@ -55,22 +54,19 @@ public:
 tempo_utils::Status
 zuri_run::zuri_run(int argc, const char *argv[])
 {
-    tempo_config::PathParser workspaceRootParser(std::filesystem::path{});
+    tempo_config::PathParser searchStartParser(std::filesystem::current_path());
     tempo_config::BooleanParser noHomeParser(false);
-    tempo_config::PathParser sessionRootParser(std::filesystem::path{});
     tempo_config::BooleanParser colorizeOutputParser(false);
     tempo_config::IntegerParser verboseParser(0);
     tempo_config::IntegerParser quietParser(0);
     tempo_config::BooleanParser silentParser(false);
-    tempo_config::StringParser sessionIdParser(tempo_utils::UUID::randomUUID().toString());
     MainPackageOrStdinParser mainPackageOrStdinParser;
     tempo_config::StringParser mainArgParser;
     tempo_config::SeqTParser mainArgsParser(&mainArgParser);
 
     std::vector<tempo_command::Default> defaults = {
-        {"workspaceRoot", "Load config from workspace", "DIR"},
-        {"noHome", "ignore Zuri home"},
-        {"sessionId", "Resume the specified session", "ID"},
+        {"searchStart", "Path to start search for runtime environment", "PATH"},
+        {"noHome", "Ignore Zuri home"},
         {"colorizeOutput", "Display colorized output"},
         {"verbose", "Display verbose output (specify twice for even more verbose output)"},
         {"quiet", "Display warnings and errors only (specify twice for errors only)"},
@@ -80,9 +76,8 @@ zuri_run::zuri_run(int argc, const char *argv[])
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
-        {"workspaceRoot", {"-W", "--workspace-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"searchStart", {"-S", "--search-start"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"noHome", {"--no-home"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"sessionId", {"-r", "--resume-session"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
@@ -92,9 +87,8 @@ zuri_run::zuri_run(int argc, const char *argv[])
     };
 
     const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceRoot"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "searchStart"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "sessionId"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
         {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
         {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
@@ -183,76 +177,74 @@ zuri_run::zuri_run(int argc, const char *argv[])
 
     TU_LOG_V << "command config:\n" << tempo_command::command_config_to_string(commandConfig);
 
-    // determine the workspace root
-    std::filesystem::path workspaceRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceRoot, workspaceRootParser,
-        commandConfig, "workspaceRoot"));
-
-    // determine the session root
-    std::filesystem::path sessionRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionRoot, sessionRootParser,
-        commandConfig, "sessionRoot"));
+    // determine the search start
+    std::filesystem::path searchStart;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(searchStart, searchStartParser,
+        commandConfig, "searchStart"));
 
     // determine whether to load home
     bool noHome;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(noHome, noHomeParser,
         commandConfig, "noHome"));
 
-    // determine the session id
-    std::string sessionId;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(sessionId, sessionIdParser,
-        commandConfig, "sessionId"));
-
-    //
+    // determine whether to run a specified package or run interactively
     MainPackageOrStdin mainPackageOrStdin;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(mainPackageOrStdin, mainPackageOrStdinParser,
         commandConfig, "mainPackageOrStdin"));
 
-    //
+    // determine the program arguments
     std::vector<std::string> mainArgs;
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(mainArgs, mainArgsParser,
         commandConfig, "mainArgs"));
 
-    // load the distribution
+    // open the distribution
     zuri_tooling::Distribution distribution;
-    TU_ASSIGN_OR_RETURN (distribution, zuri_tooling::Distribution::load());
+    TU_ASSIGN_OR_RETURN (distribution, zuri_tooling::Distribution::open());
 
-    TU_LOG_V << "distribution bin dir: " << distribution.getBinDirectory();
-    TU_LOG_V << "distribution lib dir: " << distribution.getLibDirectory();
-    TU_LOG_V << "distribution packages dir: " << distribution.getPackagesDirectory();
-    TU_LOG_V << "distribution config dir: " << distribution.getConfigDirectory();
-    TU_LOG_V << "distribution vendor-config dir: " << distribution.getVendorConfigDirectory();
-
-    // open the home if needed
+    // open the home if --no-home is not specified
     zuri_tooling::Home home;
     if (!noHome) {
         TU_ASSIGN_OR_RETURN (home, zuri_tooling::Home::open(/* ignoreMissing= */ true));
-        if (home.isValid()) {
-            TU_LOG_V << "home packages dir: " << home.getPackagesDirectory();
-            TU_LOG_V << "home config dir: " << home.getConfigDirectory();
-            TU_LOG_V << "home vendor-config dir: " << home.getVendorConfigDirectory();
-        } else {
-            TU_LOG_V << "no home found";
-        }
     }
 
-    // load zuri config
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
-    if (!workspaceRoot.empty()) {
-        std::filesystem::path workspaceConfigFile;
-        TU_ASSIGN_OR_RETURN (workspaceConfigFile, tempo_config::find_workspace_config(workspaceRoot));
-        TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forWorkspace(
-            workspaceConfigFile, home, distribution));
+    // load the core config
+    std::shared_ptr<zuri_tooling::CoreConfig> coreConfig;
+    TU_ASSIGN_OR_RETURN (coreConfig, zuri_tooling::CoreConfig::load(distribution, home));
+
+    // open the runtime environment
+    zuri_tooling::Environment environment;
+    zuri_tooling::Project project;
+    TU_ASSIGN_OR_RETURN (project, zuri_tooling::Project::find(searchStart));
+    if (project.isValid()) {
+        TU_ASSIGN_OR_RETURN (environment, zuri_tooling::Environment::open(project.getEnvironmentDirectory()));
     } else {
-        TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(home, distribution));
+        TU_ASSIGN_OR_RETURN (environment, zuri_tooling::Environment::find(searchStart));
+    }
+    if (!environment.isValid()) {
+        return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
+            "failed to determine the runtime environment");
     }
 
-    //
+    // load the environment config
+    std::shared_ptr<zuri_tooling::EnvironmentConfig> environmentConfig;
+    TU_ASSIGN_OR_RETURN (environmentConfig, zuri_tooling::EnvironmentConfig::load(environment, coreConfig));
+
+    // load the build tool config from the project or use the core defaults
+    std::shared_ptr<zuri_tooling::BuildToolConfig> buildConfig;
+    if (project.isValid()) {
+        std::shared_ptr<zuri_tooling::ProjectConfig> projectConfig;
+        TU_ASSIGN_OR_RETURN (projectConfig, zuri_tooling::ProjectConfig::load(project, coreConfig));
+        buildConfig = projectConfig->getBuildConfig();
+    } else {
+        buildConfig = coreConfig->getDefaultBuildConfig();
+    }
+
+    // run the package or run interactively
     switch (mainPackageOrStdin.type) {
         case MainPackageOrStdin::Type::MainPackagePath:
-            return run_package_command(zuriConfig, sessionId, mainPackageOrStdin.mainPackagePath, mainArgs);
+            return run_package_command(environmentConfig, mainPackageOrStdin.mainPackagePath, mainArgs);
         case MainPackageOrStdin::Type::Stdin:
-            return run_interactive_command(zuriConfig, sessionId, mainArgs);
+            return run_interactive_command(environmentConfig, buildConfig, mainArgs);
         case MainPackageOrStdin::Type::Invalid:
             return RunStatus::forCondition(RunCondition::kRunInvariant,
                 "invalid run target");

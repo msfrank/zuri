@@ -7,6 +7,7 @@
 
 #include "import_store.h"
 #include "package_store.h"
+#include "repository_store.h"
 #include "target_store.h"
 
 namespace zuri_tooling {
@@ -16,7 +17,6 @@ namespace zuri_tooling {
         tempo_utils::Status parseString(const tempo_config::ConfigValue &value, ImportEntry &importEntry) const;
         tempo_utils::Status parseVersion(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const;
         tempo_utils::Status parsePath(const tempo_config::ConfigMap &map, ImportEntry &importEntry) const;
-
         tempo_utils::Status convertValue(const tempo_config::ConfigNode &node, ImportEntry &importEntry) const override;
     };
 
@@ -25,15 +25,14 @@ namespace zuri_tooling {
         tempo_utils::Status parseProgram(const tempo_config::ConfigMap &map, TargetEntry &targetEntry) const;
         tempo_utils::Status parseLibrary(const tempo_config::ConfigMap &map, TargetEntry &targetEntry) const;
         tempo_utils::Status parsePackage(const tempo_config::ConfigMap &map, TargetEntry &targetEntry) const;
-
         tempo_utils::Status convertValue(const tempo_config::ConfigNode &node, TargetEntry &targetEntry) const override;
     };
 
-    class PackageCacheEntryParser : public tempo_config::AbstractConverter<PackageCacheEntry> {
+    class RepositoryEntryParser : public tempo_config::AbstractConverter<RepositoryEntry> {
     public:
-        tempo_utils::Status convertValue(
-            const tempo_config::ConfigNode &node,
-            PackageCacheEntry &packageCacheEntry) const override;
+        tempo_utils::Status parseDirectory(const tempo_config::ConfigMap &map, RepositoryEntry &repositoryEntry) const;
+        tempo_utils::Status parseHttps(const tempo_config::ConfigMap &map, RepositoryEntry &repositoryEntry) const;
+        tempo_utils::Status convertValue(const tempo_config::ConfigNode &node, RepositoryEntry &repositoryEntry) const override;
     };
 
     /**

@@ -1,22 +1,19 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 #include <lyric_parser/lyric_parser.h>
 #include <lyric_runtime/chain_loader.h>
 #include <zuri_run/ephemeral_session.h>
 #include <zuri_run/fragment_store.h>
+#include <zuri_run/log_proto_writer.h>
 #include <zuri_run/read_eval_print_loop.h>
 #include <zuri_run/run_interactive_command.h>
 
-#include "zuri_run/log_proto_writer.h"
-
 tempo_utils::Status
 zuri_run::run_interactive_command(
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig,
-    const std::string &sessionId,
+    std::shared_ptr<zuri_tooling::EnvironmentConfig> environmentConfig,
+    std::shared_ptr<zuri_tooling::BuildToolConfig> buildToolConfig,
     const std::vector<std::string> &mainArgs)
 {
-
-    auto buildToolConfig = zuriConfig->getBuildToolConfig();
-
     // construct the fragment store
     auto fragmentStore = std::make_shared<FragmentStore>();
 
@@ -41,9 +38,11 @@ zuri_run::run_interactive_command(
     TU_RETURN_IF_NOT_OK (builder->configure());
 
     // construct the interpreter state
+    lyric_runtime::InterpreterStateOptions interpreterOptions;
+    interpreterOptions.mainArguments = mainArgs;
     std::shared_ptr<lyric_runtime::InterpreterState> interpreterState;
     TU_ASSIGN_OR_RETURN(interpreterState, lyric_runtime::InterpreterState::create(
-        builder->getBootstrapLoader(), applicationLoader));
+        builder->getBootstrapLoader(), applicationLoader, interpreterOptions));
 
     // handle log protocol messages
     auto *portMultiplexer = interpreterState->portMultiplexer();
@@ -52,6 +51,8 @@ zuri_run::run_interactive_command(
     TU_ASSIGN_OR_RETURN (logPort, portMultiplexer->registerPort(logProtoUrl));
     LogProtoWriter logProtoWriter(false);
     TU_RETURN_IF_NOT_OK (logPort->attach(&logProtoWriter));
+
+    auto sessionId = tempo_utils::UUID::randomUUID().toString();
 
     // construct the session
     auto ephemeralSession = std::make_shared<EphemeralSession>(sessionId,

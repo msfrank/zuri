@@ -16,7 +16,6 @@ namespace zuri_build {
             std::shared_ptr<zuri_tooling::PackageManager> packageManager,
             lyric_build::LyricBuilder *builder,
             absl::flat_hash_map<std::string,tempo_utils::Url> &&targetBases,
-            std::shared_ptr<zuri_distributor::PackageCache> tcache,
             const std::filesystem::path &installRoot);
 
         tempo_utils::Result<std::filesystem::path> buildTarget(const std::string &targetName);
@@ -26,7 +25,6 @@ namespace zuri_build {
         std::shared_ptr<zuri_tooling::PackageManager> m_packageManager;
         lyric_build::LyricBuilder *m_builder;
         absl::flat_hash_map<std::string,tempo_utils::Url> m_targetBases;
-        std::shared_ptr<zuri_distributor::PackageCache> m_tcache;
         std::filesystem::path m_installRoot;
 
         tempo_utils::Result<std::filesystem::path> buildProgramTarget(

@@ -1,9 +1,7 @@
 
 #include <tempo_utils/program_location.h>
 #include <zuri_tooling/distribution.h>
-
-#include "zuri_tooling/tooling_result.h"
-
+#include <zuri_tooling/tooling_result.h>
 
 zuri_tooling::Distribution::Distribution()
 {
@@ -66,32 +64,55 @@ inline std::filesystem::path resolve_path(
 }
 
 tempo_utils::Result<zuri_tooling::Distribution>
-zuri_tooling::Distribution::load(bool ignoreMissing)
+zuri_tooling::Distribution::open()
 {
     std::filesystem::path binDirectory;
     TU_ASSIGN_OR_RETURN (binDirectory, tempo_utils::get_program_directory());
-    if (!std::filesystem::exists(binDirectory)) {
-        if (ignoreMissing)
-            return Distribution{};
+    if (!std::filesystem::exists(binDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing distribution bin directory {}", binDirectory.string());
+
+    auto libDirectory = resolve_path(std::filesystem::path{RELATIVE_LIB_DIR}, binDirectory);
+    if (!std::filesystem::exists(libDirectory))
+        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+            "missing distribution lib directory {}", libDirectory.string());
+
+    auto configDirectory = resolve_path(std::filesystem::path{RELATIVE_CONFIG_DIR}, binDirectory);
+    if (!std::filesystem::exists(configDirectory))
+        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+            "missing distribution config directory {}", configDirectory.string());
+
+    return Distribution(binDirectory, libDirectory, configDirectory);
+}
+
+tempo_utils::Result<zuri_tooling::Distribution>
+zuri_tooling::Distribution::find(const std::filesystem::path &programLocation)
+{
+    std::filesystem::path binDirectory;
+
+    if (std::filesystem::is_symlink(programLocation)) {
+        std::error_code ec;
+        auto linkTarget = std::filesystem::read_symlink(programLocation, ec);
+        if (ec)
+            return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+                "failed to resolve symlink {}: {}", programLocation.string(), ec.message());
+        if (!std::filesystem::is_regular_file(linkTarget))
+            return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+                "symlink target {} is not a regular file", linkTarget.string());
+        binDirectory = linkTarget.parent_path();
+    } else {
+        binDirectory = programLocation.parent_path();
     }
 
     auto libDirectory = resolve_path(std::filesystem::path{RELATIVE_LIB_DIR}, binDirectory);
-    if (!std::filesystem::exists(libDirectory)) {
-        if (ignoreMissing)
-            return Distribution{};
+    if (!std::filesystem::exists(libDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing distribution lib directory {}", libDirectory.string());
-    }
 
     auto configDirectory = resolve_path(std::filesystem::path{RELATIVE_CONFIG_DIR}, binDirectory);
-    if (!std::filesystem::exists(configDirectory)) {
-        if (ignoreMissing)
-            return Distribution{};
+    if (!std::filesystem::exists(configDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing distribution config directory {}", configDirectory.string());
-    }
 
     return Distribution(binDirectory, libDirectory, configDirectory);
 }

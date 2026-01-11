@@ -1,16 +1,15 @@
 
+#include <zuri_distributor/package_cache_loader.h>
 #include <zuri_tooling/package_manager.h>
-
-#include "zuri_distributor/package_cache_loader.h"
-#include "zuri_tooling/tooling_result.h"
+#include <zuri_tooling/tooling_result.h>
 
 zuri_tooling::PackageManager::PackageManager(
-    std::shared_ptr<ZuriConfig> zuriConfig,
+    std::shared_ptr<EnvironmentConfig> environmentConfig,
     const std::filesystem::path &buildRoot)
-    : m_zuriConfig(std::move(zuriConfig)),
+    : m_environmentConfig(std::move(environmentConfig)),
       m_buildRoot(buildRoot)
 {
-    TU_ASSERT (m_zuriConfig != nullptr);
+    TU_ASSERT (m_environmentConfig != nullptr);
 }
 
 tempo_utils::Status
@@ -19,11 +18,6 @@ zuri_tooling::PackageManager::configure()
     if (m_loader != nullptr)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "package manager is already configured");
-
-    auto packageStore = m_zuriConfig->getPackageStore();
-    if (packageStore == nullptr)
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "'packages' section is missing from config");
 
     std::vector<std::shared_ptr<zuri_distributor::AbstractReadonlyPackageCache>> packageCaches;
 
@@ -39,19 +33,10 @@ zuri_tooling::PackageManager::configure()
         packageCaches.push_back(m_icache);
     }
 
-    auto home = m_zuriConfig->getHome();
-    auto userPackagesDirectory = home.getPackagesDirectory();
-    if (std::filesystem::exists(userPackagesDirectory)) {
-        TU_ASSIGN_OR_RETURN (m_ucache, zuri_distributor::PackageCache::open(userPackagesDirectory));
-        packageCaches.push_back(m_ucache);
-    }
-
-    auto distribution = m_zuriConfig->getDistribution();
-    auto systemPackagesDirectory = distribution.getPackagesDirectory();
-    if (std::filesystem::exists(systemPackagesDirectory)) {
-        TU_ASSIGN_OR_RETURN (m_dcache, zuri_distributor::PackageCache::open(systemPackagesDirectory));
-        packageCaches.push_back(m_dcache);
-    }
+    auto environment = m_environmentConfig->getEnvironment();
+    auto envPackagesDirectory = environment.getPackagesDirectory();
+    TU_ASSIGN_OR_RETURN (m_ecache, zuri_distributor::PackageCache::open(envPackagesDirectory));
+    packageCaches.push_back(m_ecache);
 
     m_tieredCache = std::make_shared<zuri_distributor::TieredPackageCache>(packageCaches);
     m_loader = std::make_shared<zuri_distributor::PackageCacheLoader>(m_tieredCache);
@@ -60,15 +45,9 @@ zuri_tooling::PackageManager::configure()
 }
 
 std::shared_ptr<zuri_distributor::PackageCache>
-zuri_tooling::PackageManager::getDcache() const
+zuri_tooling::PackageManager::getEcache() const
 {
-    return m_dcache;
-}
-
-std::shared_ptr<zuri_distributor::PackageCache>
-zuri_tooling::PackageManager::getUcache() const
-{
-    return m_ucache;
+    return m_ecache;
 }
 
 std::shared_ptr<zuri_distributor::PackageCache>

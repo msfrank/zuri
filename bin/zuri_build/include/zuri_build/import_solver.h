@@ -6,7 +6,9 @@
 #include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/package_cache.h>
 #include <zuri_distributor/package_fetcher.h>
+#include <zuri_tooling/import_store.h>
 #include <zuri_tooling/package_manager.h>
+#include <zuri_tooling/target_store.h>
 
 namespace zuri_build {
 
@@ -28,9 +30,9 @@ namespace zuri_build {
 
     private:
         std::shared_ptr<zuri_tooling::PackageManager> m_packageManager;
-        std::shared_ptr<zuri_distributor::PackageCache> m_dcache;
-        std::shared_ptr<zuri_distributor::PackageCache> m_ucache;
-        std::shared_ptr<zuri_distributor::PackageCache> m_icache;
+        // std::shared_ptr<zuri_distributor::PackageCache> m_dcache;
+        // std::shared_ptr<zuri_distributor::PackageCache> m_ucache;
+        // std::shared_ptr<zuri_distributor::PackageCache> m_icache;
         std::shared_ptr<zuri_distributor::AbstractPackageResolver> m_resolver;
         std::unique_ptr<zuri_distributor::PackageFetcher> m_fetcher;
         std::unique_ptr<zuri_distributor::DependencySelector> m_selector;

@@ -153,17 +153,60 @@ zuri_tooling::TargetEntryParser::convertValue(const tempo_config::ConfigNode &no
 }
 
 tempo_utils::Status
-zuri_tooling::PackageCacheEntryParser::convertValue(
-    const tempo_config::ConfigNode &node,
-    PackageCacheEntry &packageCacheEntry) const
+zuri_tooling::RepositoryEntryParser::parseDirectory(const tempo_config::ConfigMap &map, RepositoryEntry &repositoryEntry) const
+{
+    tempo_config::PathParser directoryPathParser;
+    RepositoryEntry::Directory directory;
+
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(directory.directoryPath, directoryPathParser,
+        map, "directoryPath"));
+    repositoryEntry.repository = std::move(directory);
+
+    return {};
+}
+
+tempo_utils::Status
+zuri_tooling::RepositoryEntryParser::parseHttps(const tempo_config::ConfigMap &map, RepositoryEntry &repositoryEntry) const
+{
+    tempo_config::UrlParser httpsLocationParser;
+    RepositoryEntry::Https https;
+
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(https.httpsLocation, httpsLocationParser,
+        map, "httpsLocation"));
+    repositoryEntry.repository = std::move(https);
+
+    return {};
+}
+
+tempo_utils::Status
+zuri_tooling::RepositoryEntryParser::convertValue(const tempo_config::ConfigNode &node, RepositoryEntry &repositoryEntry) const
 {
     if (node.getNodeType() != tempo_config::ConfigNodeType::kMap)
         return tempo_config::ConfigStatus::forCondition(
-            tempo_config::ConfigCondition::kWrongType, "target entry config must be a map");
-    auto packageCacheConfig = node.toMap();
+            tempo_config::ConfigCondition::kWrongType, "repository entry config must be a map");
+    auto repositoryConfig = node.toMap();
 
-    tempo_config::BooleanParser writeableParser(false);
+    // parse type
+    tempo_config::EnumTParser<RepositoryEntryType> repositoryEntryTypeParser({
+        {"Directory", RepositoryEntryType::Directory},
+        {"Https", RepositoryEntryType::Https},
+    });
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
-        packageCacheEntry.writeable, writeableParser, packageCacheConfig, "writeable"));
-    return {};
+        repositoryEntry.type, repositoryEntryTypeParser, repositoryConfig, "type"));
+
+    // parse priority
+    tempo_config::IntegerParser priorityParser(100);
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
+        repositoryEntry.priority, priorityParser, repositoryConfig, "priority"));
+
+    // parse type specific members
+    switch (repositoryEntry.type) {
+        case RepositoryEntryType::Directory:
+            return parseDirectory(repositoryConfig, repositoryEntry);
+        case RepositoryEntryType::Https:
+            return parseHttps(repositoryConfig, repositoryEntry);
+        default:
+            return tempo_config::ConfigStatus::forCondition(
+                tempo_config::ConfigCondition::kParseError, "invalid repository entry type");
+    }
 }

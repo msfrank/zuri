@@ -12,7 +12,6 @@
 #include <tempo_config/container_conversions.h>
 #include <tempo_config/parse_config.h>
 #include <tempo_config/time_conversions.h>
-#include <tempo_config/workspace_config.h>
 #include <zuri_build/collect_modules_task.h>
 #include <zuri_build/import_solver.h>
 #include <zuri_build/target_builder.h>
@@ -20,13 +19,13 @@
 #include <zuri_distributor/distributor_result.h>
 #include <zuri_tooling/build_graph.h>
 #include <zuri_tooling/tooling_conversions.h>
-#include <zuri_tooling/zuri_config.h>
+#include <zuri_tooling/project_config.h>
 
 tempo_utils::Status
 zuri_build::zuri_build(int argc, const char *argv[])
 {
-    tempo_config::PathParser workspaceRootParser(std::filesystem::current_path());
-    tempo_config::PathParser workspaceConfigFileParser(std::filesystem::path{});
+    tempo_config::PathParser projectRootParser(std::filesystem::path{});
+    tempo_config::PathParser projectConfigFileParser(std::filesystem::path{});
     tempo_config::PathParser buildRootParser(std::filesystem::path{});
     tempo_config::PathParser installRootParser(std::filesystem::path{});
     tempo_config::StringParser targetNameParser;
@@ -38,8 +37,8 @@ zuri_build::zuri_build(int argc, const char *argv[])
     tempo_config::BooleanParser silentParser(false);
 
     std::vector<tempo_command::Default> defaults = {
-        {"workspaceRoot", "Specify an alternative workspace root directory", "DIR"},
-        {"workspaceConfigFile", "Specify an alternative workspace config file", "FILE"},
+        {"projectRoot", "Specify an alternative project root directory", "DIR"},
+        {"projectConfigFile", "Specify an alternative project config file", "FILE"},
         {"noHome", "ignore Zuri home"},
         {"buildRoot", "Specify an alternative build root directory", "DIR"},
         {"installRoot", "Specify an alternative install root directory", "DIR"},
@@ -52,8 +51,8 @@ zuri_build::zuri_build(int argc, const char *argv[])
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
-        {"workspaceRoot", {"-W", "--workspace-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"workspaceConfigFile", {"--workspace-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"projectRoot", {"-P", "--project-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"projectConfigFile", {"--project-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"noHome", {"--no-home"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"buildRoot", {"-B", "--build-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"installRoot", {"-I", "--install-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
@@ -67,8 +66,8 @@ zuri_build::zuri_build(int argc, const char *argv[])
     };
 
     const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "workspaceConfigFile"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectRoot"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectConfigFile"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "buildRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "installRoot"},
@@ -160,15 +159,15 @@ zuri_build::zuri_build(int argc, const char *argv[])
 
     TU_LOG_V << "command config:\n" << tempo_command::command_config_to_string(commandConfig);
 
-    // determine the workspace root
-    std::filesystem::path workspaceRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceRoot, workspaceRootParser,
-        commandConfig, "workspaceRoot"));
+    // determine the project root
+    std::filesystem::path projectRoot;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(projectRoot, projectRootParser,
+        commandConfig, "projectRoot"));
 
-    // determine the workspace config file
-    std::filesystem::path workspaceConfigFile;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(workspaceConfigFile, workspaceConfigFileParser,
-        commandConfig, "workspaceConfigFile"));
+    // determine the project config file
+    std::filesystem::path projectConfigFile;
+    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(projectConfigFile, projectConfigFileParser,
+        commandConfig, "projectConfigFile"));
 
     // determine whether to load home
     bool noHome;
@@ -190,48 +189,47 @@ zuri_build::zuri_build(int argc, const char *argv[])
     TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(targets, targetsParser,
         commandConfig, "targets"));
 
-    // load the distribution
+    // open the distribution
     zuri_tooling::Distribution distribution;
-    TU_ASSIGN_OR_RETURN (distribution, zuri_tooling::Distribution::load());
+    TU_ASSIGN_OR_RETURN (distribution, zuri_tooling::Distribution::open());
 
-    TU_LOG_V << "distribution bin dir: " << distribution.getBinDirectory();
-    TU_LOG_V << "distribution lib dir: " << distribution.getLibDirectory();
-    TU_LOG_V << "distribution packages dir: " << distribution.getPackagesDirectory();
-    TU_LOG_V << "distribution config dir: " << distribution.getConfigDirectory();
-    TU_LOG_V << "distribution vendor-config dir: " << distribution.getVendorConfigDirectory();
-
-    // open the home if needed
+    // open the home if --no-home is not specified
     zuri_tooling::Home home;
     if (!noHome) {
         TU_ASSIGN_OR_RETURN (home, zuri_tooling::Home::open(/* ignoreMissing= */ true));
-        if (home.isValid()) {
-            TU_LOG_V << "home packages dir: " << home.getPackagesDirectory();
-            TU_LOG_V << "home config dir: " << home.getConfigDirectory();
-            TU_LOG_V << "home vendor-config dir: " << home.getVendorConfigDirectory();
-        } else {
-            TU_LOG_V << "no home found";
-        }
     }
 
-    // load zuri config
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
-    if (workspaceConfigFile.empty()) {
-        TU_ASSIGN_OR_RETURN (workspaceConfigFile, tempo_config::find_workspace_config(workspaceRoot));
-    }
-    TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forWorkspace(
-        workspaceConfigFile, home, distribution));
+    // load the core config
+    std::shared_ptr<zuri_tooling::CoreConfig> coreConfig;
+    TU_ASSIGN_OR_RETURN (coreConfig, zuri_tooling::CoreConfig::load(distribution, home));
 
-    // if build root was not defined in commandConfig, then default to subdirectory of the workspace root
+    // open the project
+    zuri_tooling::Project project;
+    if (!projectConfigFile.empty()) {
+        TU_ASSIGN_OR_RETURN (project, zuri_tooling::Project::open(projectConfigFile));
+    } else if (!projectRoot.empty()) {
+        TU_ASSIGN_OR_RETURN (project, zuri_tooling::Project::open(projectRoot));
+    } else {
+        TU_ASSIGN_OR_RETURN (project, zuri_tooling::Project::find(std::filesystem::current_path()));
+    }
+
+    // load the project config
+    std::shared_ptr<zuri_tooling::ProjectConfig> projectConfig;
+    TU_ASSIGN_OR_RETURN (projectConfig, zuri_tooling::ProjectConfig::load(project, coreConfig));
+
+    // get the environment config for the project
+    auto environmentConfig = projectConfig->getEnvironmentConfig();
+
+    // if build root was not specified, then default to subdirectory of the project root
     if (buildRoot.empty()) {
-        buildRoot = workspaceRoot / "build";
+        buildRoot = project.getBuildDirectory();
     }
 
-    auto importStore = zuriConfig->getImportStore();
-    auto targetStore = zuriConfig->getTargetStore();
-    auto packageStore = zuriConfig->getPackageStore();
-    auto buildToolConfig = zuriConfig->getBuildToolConfig();
+    auto importStore = projectConfig->getImportStore();
+    auto targetStore = projectConfig->getTargetStore();
+    auto buildToolConfig = projectConfig->getBuildConfig();
 
-    //
+    // construct the build graph
     std::shared_ptr<zuri_tooling::BuildGraph> buildGraph;
     TU_ASSIGN_OR_RETURN (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
@@ -248,7 +246,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
     }
 
     // construct and configure the package manager
-    auto packageManager = std::make_shared<zuri_tooling::PackageManager>(zuriConfig, buildRoot);
+    auto packageManager = std::make_shared<zuri_tooling::PackageManager>(environmentConfig, buildRoot);
     TU_RETURN_IF_NOT_OK (packageManager->configure());
 
     // construct and configure the import solver
@@ -271,7 +269,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
     auto importShortcuts = std::make_shared<lyric_importer::ShortcutResolver>();
     builderOptions.shortcutResolver = importShortcuts;
 
-    // add imports declared in the workspace
+    // add imports declared in the project
     for (auto it = importStore->importsBegin(); it != importStore->importsEnd(); ++it) {
         const auto &importId = it->first;
         const auto &importEntry = it->second;
@@ -299,12 +297,12 @@ zuri_build::zuri_build(int argc, const char *argv[])
     // set the fallback loader to load from the package cache hierarchy
     builderOptions.fallbackLoader = packageManager->getLoader();
 
-    // construct the builder based on workspace config and config overrides
-    lyric_build::LyricBuilder builder(workspaceRoot, buildToolConfig->getTaskSettings(), builderOptions);
+    // construct the builder based on project config and config overrides
+    lyric_build::LyricBuilder builder(projectRoot, buildToolConfig->getTaskSettings(), builderOptions);
     TU_RETURN_IF_NOT_OK (builder.configure());
 
     // build each target (and its dependencies) in the order specified on the command line
-    TargetBuilder targetBuilder(buildGraph, &builder, std::move(targetBases), packageManager->getTcache(), installRoot);
+    TargetBuilder targetBuilder(buildGraph, packageManager, &builder, std::move(targetBases), installRoot);
     for (const auto &target : targets) {
         TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target));
     }

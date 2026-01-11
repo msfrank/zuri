@@ -18,9 +18,9 @@ zuri_build::ImportSolver::configure()
         return BuildStatus::forCondition(BuildCondition::kBuildInvariant,
             "import solver is already configured");
 
-    m_dcache = m_packageManager->getDcache();
-    m_ucache = m_packageManager->getUcache();
-    m_icache = m_packageManager->getIcache();
+    // m_dcache = m_packageManager->getDcache();
+    // m_ucache = m_packageManager->getUcache();
+    // m_icache = m_packageManager->getIcache();
 
     zuri_distributor::HttpPackageResolverOptions resolverOptions;
     std::shared_ptr<zuri_distributor::AbstractPackageResolver> resolver;
@@ -165,13 +165,15 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
     // fetch missing dependencies
     TU_RETURN_IF_NOT_OK (m_fetcher->fetchFiles());
 
+    auto importPackageCache = m_packageManager->getIcache();
+
     // install fetched dependencies into import package cache
     for (const auto &selection : dependencyOrder) {
         auto id = selection.specifier.toString();
         if (m_fetcher->hasResult(id)) {
             auto result = m_fetcher->getResult(id);
             TU_RETURN_IF_NOT_OK (result.status);
-            TU_RETURN_IF_STATUS (m_icache->installPackage(result.path));
+            TU_RETURN_IF_STATUS (importPackageCache->installPackage(result.path));
         }
     }
 
@@ -181,9 +183,7 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
 bool
 zuri_build::ImportSolver::packageIsPresent(const zuri_packager::PackageSpecifier &specifier) const
 {
-    if (m_icache != nullptr && m_icache->containsPackage(specifier))
-        return true;
-    if (m_ucache != nullptr && m_ucache->containsPackage(specifier))
-        return true;
-    return m_dcache != nullptr && m_dcache->containsPackage(specifier);
+    auto importPackageCache = m_packageManager->getIcache();
+    auto environmentPackageCache = m_packageManager->getEcache();
+    return importPackageCache->containsPackage(specifier) || environmentPackageCache->containsPackage(specifier);
 }
