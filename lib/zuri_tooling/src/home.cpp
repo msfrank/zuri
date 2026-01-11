@@ -1,9 +1,7 @@
 
 #include <tempo_utils/user_home.h>
 #include <zuri_tooling/home.h>
-
-#include "zuri_tooling/tooling_result.h"
-#include "zuri_tooling/zuri_config.h"
+#include <zuri_tooling/tooling_result.h>
 
 static const char *kHomeDirectoryName = ".zuri-" PROJECT_VERSION_MAJOR;
 

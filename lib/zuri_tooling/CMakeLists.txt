@@ -16,7 +16,7 @@ set(ZURI_TOOLING_INCLUDES
     include/zuri_tooling/home.h
     include/zuri_tooling/import_store.h
     include/zuri_tooling/logging_config.h
-    include/zuri_tooling/package_manager.h
+    #include/zuri_tooling/package_manager.h
     include/zuri_tooling/project.h
     include/zuri_tooling/project_config.h
     include/zuri_tooling/repository_store.h
@@ -37,7 +37,7 @@ target_sources(zuri_tooling PRIVATE
     src/home.cpp
     src/import_store.cpp
     src/logging_config.cpp
-    src/package_manager.cpp
+    #src/package_manager.cpp
     src/project.cpp
     src/project_config.cpp
     src/repository_store.cpp

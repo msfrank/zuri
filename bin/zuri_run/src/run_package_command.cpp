@@ -4,6 +4,8 @@
 #include <lyric_runtime/chain_loader.h>
 #include <tempo_utils/tempdir_maker.h>
 #include <tempo_utils/unicode.h>
+#include <zuri_distributor/dependency_selector.h>
+#include <zuri_distributor/runtime_environment.h>
 #include <zuri_packager/package_reader_loader.h>
 #include <zuri_run/log_proto_writer.h>
 #include <zuri_run/run_package_command.h>
@@ -38,14 +40,16 @@ zuri_run::run_package_command(
     // construct the bootstrap loader
     auto bootstrapLoader = std::make_shared<lyric_bootstrap::BootstrapLoader>();
 
-    // construct the package manager
-    zuri_tooling::PackageManager packageManager(environmentConfig);
-    TU_RETURN_IF_NOT_OK (packageManager.configure());
+    // construct the runtime environment
+    auto environment = environmentConfig->getEnvironment();
+    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment;
+    TU_ASSIGN_OR_RETURN (runtimeEnvironment, zuri_distributor::RuntimeEnvironment::open(
+        environment.getEnvironmentDirectory()));
 
     // construct the application loader
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
     loaderChain.push_back(packageReaderLoader);
-    loaderChain.push_back(packageManager.getLoader());
+    loaderChain.push_back(runtimeEnvironment->getLoader());
     auto applicationLoader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
 
     // construct the interpreter state

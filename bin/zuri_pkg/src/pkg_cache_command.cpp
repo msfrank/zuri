@@ -6,8 +6,8 @@
 
 tempo_utils::Status
 zuri_pkg::pkg_cache_command(
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig,
-    bool manageSystem,
+    std::shared_ptr<zuri_tooling::EnvironmentConfig> environmentConfig,
+    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
     tempo_command::TokenVector &tokens)
 {
     std::vector<tempo_command::Default> defaults = {};

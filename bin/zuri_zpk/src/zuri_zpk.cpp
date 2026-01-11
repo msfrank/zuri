@@ -9,7 +9,7 @@
 #include <tempo_utils/uuid.h>
 #include <zuri_zpk/zpk_inspect_command.h>
 #include <zuri_zpk/zuri_zpk.h>
-#include <zuri_tooling/zuri_config.h>
+#include <zuri_tooling/core_config.h>
 
 #include "zuri_zpk/zpk_extract_command.h"
 
@@ -148,36 +148,23 @@ zuri_zpk::zuri_zpk(int argc, const char *argv[])
 
     // load the distribution
     zuri_tooling::Distribution distribution;
-    TU_ASSIGN_OR_RETURN (distribution, zuri_tooling::Distribution::load());
-
-    TU_LOG_V << "distribution bin dir: " << distribution.getBinDirectory();
-    TU_LOG_V << "distribution lib dir: " << distribution.getLibDirectory();
-    TU_LOG_V << "distribution packages dir: " << distribution.getPackagesDirectory();
-    TU_LOG_V << "distribution config dir: " << distribution.getConfigDirectory();
-    TU_LOG_V << "distribution vendor-config dir: " << distribution.getVendorConfigDirectory();
+    TU_ASSIGN_OR_RETURN (distribution, zuri_tooling::Distribution::open());
 
     // open the home if needed
     zuri_tooling::Home home;
     if (!noHome) {
         TU_ASSIGN_OR_RETURN (home, zuri_tooling::Home::open(/* ignoreMissing= */ true));
-        if (home.isValid()) {
-            TU_LOG_V << "home packages dir: " << home.getPackagesDirectory();
-            TU_LOG_V << "home config dir: " << home.getConfigDirectory();
-            TU_LOG_V << "home vendor-config dir: " << home.getVendorConfigDirectory();
-        } else {
-            TU_LOG_V << "no home found";
-        }
     }
 
-    // load zuri config
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig;
-    TU_ASSIGN_OR_RETURN (zuriConfig, zuri_tooling::ZuriConfig::forUser(home, distribution));
+    // load core config
+    std::shared_ptr<zuri_tooling::CoreConfig> coreConfig;
+    TU_ASSIGN_OR_RETURN (coreConfig, zuri_tooling::CoreConfig::load(distribution, home));
 
     switch (selected) {
         case Extract:
-            return zpk_extract_command(zuriConfig, tokens);
+            return zpk_extract_command(coreConfig, tokens);
         case Inspect:
-            return zpk_inspect_command(zuriConfig, tokens);
+            return zpk_inspect_command(coreConfig, tokens);
         default:
             return tempo_command::CommandStatus::forCondition(
                 tempo_command::CommandCondition::kCommandInvariant, "unexpected subcommand");

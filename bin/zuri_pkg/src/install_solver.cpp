@@ -5,14 +5,12 @@
 #include "zuri_pkg/pkg_result.h"
 
 zuri_pkg::InstallSolver::InstallSolver(
-    std::shared_ptr<zuri_tooling::PackageManager> packageManager,
-    bool systemInstall,
+    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
     bool dryRun)
-    : m_packageManager(std::move(packageManager)),
-      m_systemInstall(systemInstall),
+    : m_runtimeEnvironment(std::move(runtimeEnvironment)),
       m_dryRun(dryRun)
 {
-    TU_ASSERT (m_packageManager != nullptr);
+    TU_ASSERT (m_runtimeEnvironment != nullptr);
 }
 
 tempo_utils::Status
@@ -21,21 +19,6 @@ zuri_pkg::InstallSolver::configure()
     if (m_selector != nullptr)
         return PkgStatus::forCondition(PkgCondition::kPkgInvariant,
             "install solver is already configured");
-
-    m_dcache = m_packageManager->getDcache();
-    m_ucache = m_packageManager->getUcache();
-
-    if (m_systemInstall) {
-        if (m_dcache == nullptr)
-            return PkgStatus::forCondition(PkgCondition::kPkgInvariant,
-                "system package cache is not available");
-        m_installCache = m_dcache;
-    } else {
-        if (m_ucache == nullptr)
-            return PkgStatus::forCondition(PkgCondition::kPkgInvariant,
-                "user package cache is not available");
-        m_installCache = m_ucache;
-    }
 
     zuri_distributor::HttpPackageResolverOptions resolverOptions;
     std::shared_ptr<zuri_distributor::AbstractPackageResolver> resolver;
@@ -112,7 +95,7 @@ zuri_pkg::InstallSolver::installPackages()
     // add each missing dependency to fetcher
     int numPackagesToInstall = 0;
     for (const auto &selection : dependencyOrder) {
-        if (!packageIsPresent(selection.specifier)) {
+        if (!m_runtimeEnvironment->containsPackage(selection.specifier)) {
             TU_RETURN_IF_NOT_OK (m_fetcher->requestFile(selection.url, selection.specifier.toString()));
             numPackagesToInstall++;
         } else {
@@ -138,7 +121,7 @@ zuri_pkg::InstallSolver::installPackages()
             TU_RETURN_IF_NOT_OK (result.status);
             if (!m_dryRun) {
                 std::filesystem::path installPath;
-                TU_ASSIGN_OR_RETURN (installPath, m_installCache->installPackage(result.path));
+                TU_ASSIGN_OR_RETURN (installPath, m_runtimeEnvironment->installPackage(result.path));
                 TU_LOG_V << "installed " << selection.specifier.toString() << " in " << installPath;
             } else {
                 TU_CONSOLE_OUT << "DRY RUN: install package " << result.path;
@@ -147,14 +130,4 @@ zuri_pkg::InstallSolver::installPackages()
     }
 
     return {};
-}
-
-bool
-zuri_pkg::InstallSolver::packageIsPresent(const zuri_packager::PackageSpecifier &specifier) const
-{
-    if (!m_systemInstall) {
-        if (m_ucache->containsPackage(specifier))
-            return true;
-    }
-    return m_dcache != nullptr && m_dcache->containsPackage(specifier);
 }

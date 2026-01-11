@@ -18,7 +18,7 @@
 
 tempo_utils::Status
 zuri_zpk::zpk_extract_command(
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig,
+    std::shared_ptr<zuri_tooling::CoreConfig> coreConfig,
     tempo_command::TokenVector &tokens)
 {
     tempo_config::PathParser extractionRootParser(std::filesystem::current_path());

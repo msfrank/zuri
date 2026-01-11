@@ -18,15 +18,15 @@
 #include "zuri_packager/packaging_conversions.h"
 
 zuri_build::TargetWriter::TargetWriter(
-    std::shared_ptr<zuri_tooling::PackageManager> packageManager,
+    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
     const std::filesystem::path &installRoot,
     const zuri_packager::PackageSpecifier &specifier)
-    : m_packageManager(packageManager),
+    : m_runtimeEnvironment(runtimeEnvironment),
       m_installRoot(installRoot),
       m_specifier(specifier),
       m_priv(std::make_unique<Priv>())
 {
-    TU_ASSERT (m_packageManager != nullptr);
+    TU_ASSERT (m_runtimeEnvironment != nullptr);
     TU_ASSERT (!m_installRoot.empty());
     TU_ASSERT (m_specifier.isValid());
 }
@@ -249,8 +249,6 @@ zuri_build::TargetWriter::writeModule(
 tempo_utils::Status
 zuri_build::TargetWriter::determineLibrariesNeeded()
 {
-    auto tieredCache = m_packageManager->getTieredCache();
-
     // build map of libraries available based on system, distribution, and package requirements
     absl::flat_hash_map<std::string,std::string> librariesAvailable;
 
@@ -284,7 +282,7 @@ zuri_build::TargetWriter::determineLibrariesNeeded()
         auto specifier = zuri_packager::PackageSpecifier(entry.first, entry.second);
 
         Option<tempo_config::ConfigMap> packageConfigOption;
-        TU_ASSIGN_OR_RETURN (packageConfigOption, tieredCache->describePackage(specifier));
+        TU_ASSIGN_OR_RETURN (packageConfigOption, m_runtimeEnvironment->describePackage(specifier));
         if (packageConfigOption.isEmpty())
             return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
                 "failed to read package.config for {}", specifier.toString());

@@ -71,8 +71,8 @@ public:
 
 tempo_utils::Status
 zuri_pkg::pkg_install_command(
-    std::shared_ptr<zuri_tooling::ZuriConfig> zuriConfig,
-    bool manageSystem,
+    std::shared_ptr<zuri_tooling::EnvironmentConfig> environmentConfig,
+    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
     tempo_command::TokenVector &tokens)
 {
     PackageSpecifierOrIdOrUrlParser packageSpecifierOrIdOrUrlParser;
@@ -129,15 +129,11 @@ zuri_pkg::pkg_install_command(
     // construct command map
     tempo_config::ConfigMap commandMap(commandConfig);
 
-    // construct and configure the package manager
-    auto packageManager = std::make_shared<zuri_tooling::PackageManager>(zuriConfig);
-    TU_RETURN_IF_NOT_OK (packageManager->configure());
-
     bool dryRun;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(dryRun, dryRunParser,
         commandConfig, "dryRun"));
 
-    InstallSolver installSolver(packageManager, manageSystem, dryRun);
+    InstallSolver installSolver(runtimeEnvironment, dryRun);
     TU_RETURN_IF_NOT_OK (installSolver.configure());
 
     std::vector<PackageSpecifierOrIdOrUrl> packages;

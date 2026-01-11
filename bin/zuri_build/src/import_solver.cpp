@@ -5,10 +5,10 @@
 #include <zuri_distributor/package_fetcher.h>
 #include <zuri_tooling/package_manager.h>
 
-zuri_build::ImportSolver::ImportSolver(std::shared_ptr<zuri_tooling::PackageManager> packageManager)
-    : m_packageManager(std::move(packageManager))
+zuri_build::ImportSolver::ImportSolver(std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment)
+    : m_runtimeEnvironment(std::move(runtimeEnvironment))
 {
-    TU_ASSERT (m_packageManager != nullptr);
+    TU_ASSERT (m_runtimeEnvironment != nullptr);
 }
 
 tempo_utils::Status
@@ -17,10 +17,6 @@ zuri_build::ImportSolver::configure()
     if (m_selector != nullptr)
         return BuildStatus::forCondition(BuildCondition::kBuildInvariant,
             "import solver is already configured");
-
-    // m_dcache = m_packageManager->getDcache();
-    // m_ucache = m_packageManager->getUcache();
-    // m_icache = m_packageManager->getIcache();
 
     zuri_distributor::HttpPackageResolverOptions resolverOptions;
     std::shared_ptr<zuri_distributor::AbstractPackageResolver> resolver;
@@ -133,7 +129,7 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
     for (const auto &selection : dependencyOrder) {
 
         // request download if the package is not present in any of the available caches
-        if (!packageIsPresent(selection.specifier)) {
+        if (!m_runtimeEnvironment->containsPackage(selection.specifier)) {
             TU_RETURN_IF_NOT_OK (m_fetcher->requestFile(selection.url, selection.specifier.toString()));
             numPackagesToInstall++;
         } else {
@@ -165,25 +161,15 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
     // fetch missing dependencies
     TU_RETURN_IF_NOT_OK (m_fetcher->fetchFiles());
 
-    auto importPackageCache = m_packageManager->getIcache();
-
     // install fetched dependencies into import package cache
     for (const auto &selection : dependencyOrder) {
         auto id = selection.specifier.toString();
         if (m_fetcher->hasResult(id)) {
             auto result = m_fetcher->getResult(id);
             TU_RETURN_IF_NOT_OK (result.status);
-            TU_RETURN_IF_STATUS (importPackageCache->installPackage(result.path));
+            TU_RETURN_IF_STATUS (m_runtimeEnvironment->installPackage(result.path));
         }
     }
 
     return targetBases;
-}
-
-bool
-zuri_build::ImportSolver::packageIsPresent(const zuri_packager::PackageSpecifier &specifier) const
-{
-    auto importPackageCache = m_packageManager->getIcache();
-    auto environmentPackageCache = m_packageManager->getEcache();
-    return importPackageCache->containsPackage(specifier) || environmentPackageCache->containsPackage(specifier);
 }

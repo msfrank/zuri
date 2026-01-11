@@ -219,6 +219,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
 
     // get the environment config for the project
     auto environmentConfig = projectConfig->getEnvironmentConfig();
+    auto environment = environmentConfig->getEnvironment();
 
     // if build root was not specified, then default to subdirectory of the project root
     if (buildRoot.empty()) {
@@ -245,12 +246,13 @@ zuri_build::zuri_build(int argc, const char *argv[])
                 "unknown target '{}'", target);
     }
 
-    // construct and configure the package manager
-    auto packageManager = std::make_shared<zuri_tooling::PackageManager>(environmentConfig, buildRoot);
-    TU_RETURN_IF_NOT_OK (packageManager->configure());
+    // construct the runtime environment
+    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment;
+    TU_ASSIGN_OR_RETURN (runtimeEnvironment, zuri_distributor::RuntimeEnvironment::open(
+        environment.getEnvironmentDirectory()));
 
     // construct and configure the import solver
-    auto importSolver = std::make_shared<ImportSolver>(packageManager);
+    auto importSolver = std::make_shared<ImportSolver>(runtimeEnvironment);
     TU_RETURN_IF_NOT_OK (importSolver->configure());
 
     lyric_build::BuilderOptions builderOptions;
@@ -295,14 +297,14 @@ zuri_build::zuri_build(int argc, const char *argv[])
     builderOptions.taskRegistry = std::move(taskRegistry);
 
     // set the fallback loader to load from the package cache hierarchy
-    builderOptions.fallbackLoader = packageManager->getLoader();
+    builderOptions.fallbackLoader = runtimeEnvironment->getLoader();
 
     // construct the builder based on project config and config overrides
     lyric_build::LyricBuilder builder(projectRoot, buildToolConfig->getTaskSettings(), builderOptions);
     TU_RETURN_IF_NOT_OK (builder.configure());
 
     // build each target (and its dependencies) in the order specified on the command line
-    TargetBuilder targetBuilder(buildGraph, packageManager, &builder, std::move(targetBases), installRoot);
+    TargetBuilder targetBuilder(runtimeEnvironment, buildGraph, &builder, std::move(targetBases), installRoot);
     for (const auto &target : targets) {
         TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target));
     }

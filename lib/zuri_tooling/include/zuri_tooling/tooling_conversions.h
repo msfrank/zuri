@@ -6,7 +6,6 @@
 #include <tempo_config/enum_conversions.h>
 
 #include "import_store.h"
-#include "package_store.h"
 #include "repository_store.h"
 #include "target_store.h"
 
