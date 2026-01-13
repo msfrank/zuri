@@ -65,7 +65,7 @@ zuri_run::zuri_run(int argc, const char *argv[])
     tempo_config::SeqTParser mainArgsParser(&mainArgParser);
 
     std::vector<tempo_command::Default> defaults = {
-        {"searchStart", "Path to start search for runtime environment", "PATH"},
+        {"searchStart", "Path to start search for environment", "PATH"},
         {"noHome", "Ignore Zuri home"},
         {"colorizeOutput", "Display colorized output"},
         {"verbose", "Display verbose output (specify twice for even more verbose output)"},
@@ -211,18 +211,18 @@ zuri_run::zuri_run(int argc, const char *argv[])
     std::shared_ptr<zuri_tooling::CoreConfig> coreConfig;
     TU_ASSIGN_OR_RETURN (coreConfig, zuri_tooling::CoreConfig::load(distribution, home));
 
-    // open the runtime environment
+    // open the environment
     zuri_tooling::Environment environment;
     zuri_tooling::Project project;
     TU_ASSIGN_OR_RETURN (project, zuri_tooling::Project::find(searchStart));
     if (project.isValid()) {
-        TU_ASSIGN_OR_RETURN (environment, zuri_tooling::Environment::open(project.getEnvironmentDirectory()));
+        TU_ASSIGN_OR_RETURN (environment, zuri_tooling::Environment::open(project.getBuildEnvironmentDirectory()));
     } else {
         TU_ASSIGN_OR_RETURN (environment, zuri_tooling::Environment::find(searchStart));
     }
     if (!environment.isValid()) {
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
-            "failed to determine the runtime environment");
+            "failed to determine the environment");
     }
 
     // load the environment config

@@ -1,11 +1,11 @@
-#ifndef ZURI_DISTRIBUTOR_RUNTIME_ENVIRONMENT_H
-#define ZURI_DISTRIBUTOR_RUNTIME_ENVIRONMENT_H
+#ifndef ZURI_DISTRIBUTOR_RUNTIME_H
+#define ZURI_DISTRIBUTOR_RUNTIME_H
 
 #include <filesystem>
 
 #include <lyric_runtime/abstract_loader.h>
 
-#include "environment_database.h"
+#include "package_database.h"
 #include "package_cache.h"
 #include "package_cache_loader.h"
 #include "tiered_package_cache.h"
@@ -15,27 +15,28 @@ namespace zuri_distributor {
     /**
      *
      */
-    constexpr const char * const kEnvironmentDatabaseName = "environment.db";
+    constexpr const char * const kPackagesDatabaseName = "packages.db";
 
-    struct RuntimeEnvironmentOptions {
+    struct RuntimeOpenOrCreateOptions {
+        bool exclusive = false;
+        std::filesystem::path distributionLibDir = {};
+        std::vector<std::filesystem::path> extraLibDirs = {};
         std::filesystem::path buildRoot = {};
     };
 
     /**
      *
      */
-    class RuntimeEnvironment {
+    class Runtime {
     public:
-        ~RuntimeEnvironment();
+        ~Runtime();
 
-        static tempo_utils::Result<std::shared_ptr<RuntimeEnvironment>> openOrCreate(
-            const std::filesystem::path &environmentDirectory,
-            const RuntimeEnvironmentOptions &options = {});
-        static tempo_utils::Result<std::shared_ptr<RuntimeEnvironment>> open(
-            const std::filesystem::path &environmentDirectoryOrDatabaseFile,
-            const RuntimeEnvironmentOptions &options = {});
+        static tempo_utils::Result<std::shared_ptr<Runtime>> openOrCreate(
+            const std::filesystem::path &runtimeRoot,
+            const RuntimeOpenOrCreateOptions &options = {});
+        static tempo_utils::Result<std::shared_ptr<Runtime>> open(const std::filesystem::path &runtimeRoot);
 
-        std::filesystem::path getEnvironmentDatabaseFile() const;
+        std::filesystem::path getPackagesDatabaseFile() const;
         std::filesystem::path getBinDirectory() const;
         std::filesystem::path getLibDirectory() const;
         std::filesystem::path getPackagesDirectory() const;
@@ -53,24 +54,22 @@ namespace zuri_distributor {
         tempo_utils::Status removePackage(const zuri_packager::PackageSpecifier &specifier);
 
     private:
-        std::shared_ptr<EnvironmentDatabase> m_environmentDatabase;
+        std::shared_ptr<PackageDatabase> m_packageDatabase;
         std::filesystem::path m_binDirectory;
         std::filesystem::path m_libDirectory;
         std::shared_ptr<PackageCache> m_packageStore;
-        RuntimeEnvironmentOptions m_options;
 
         std::shared_ptr<PackageCacheLoader> m_loader;
 
-        RuntimeEnvironment(
-            std::shared_ptr<EnvironmentDatabase> environmentDatabase,
+        Runtime(
+            std::shared_ptr<PackageDatabase> packageDatabase,
             const std::filesystem::path &binDirectory,
             const std::filesystem::path &libDirectory,
-            std::shared_ptr<PackageCache> packageStore,
-            const RuntimeEnvironmentOptions &options);
+            std::shared_ptr<PackageCache> packageStore);
 
         tempo_utils::Status configure();
     };
 
 }
 
-#endif // ZURI_DISTRIBUTOR_RUNTIME_ENVIRONMENT_H
+#endif // ZURI_DISTRIBUTOR_RUNTIME_H

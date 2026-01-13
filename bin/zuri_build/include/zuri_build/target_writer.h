@@ -3,7 +3,7 @@
 
 #include <lyric_build/lyric_metadata.h>
 #include <tempo_utils/tempdir_maker.h>
-#include <zuri_distributor/runtime_environment.h>
+#include <zuri_distributor/runtime.h>
 #include <zuri_packager/package_specifier.h>
 #include <zuri_packager/package_writer.h>
 #include <zuri_tooling/package_manager.h>
@@ -14,7 +14,7 @@ namespace zuri_build {
     class TargetWriter {
     public:
         TargetWriter(
-            std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
+            std::shared_ptr<zuri_distributor::Runtime> runtime,
             const std::filesystem::path &installRoot,
             const zuri_packager::PackageSpecifier &specifier);
 
@@ -36,7 +36,7 @@ namespace zuri_build {
         tempo_utils::Result<std::filesystem::path> writeTarget();
 
     private:
-        std::shared_ptr<zuri_distributor::RuntimeEnvironment> m_runtimeEnvironment;
+        std::shared_ptr<zuri_distributor::Runtime> m_runtime;
         std::filesystem::path m_installRoot;
         zuri_packager::PackageSpecifier m_specifier;
 

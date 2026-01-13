@@ -1,5 +1,5 @@
-#ifndef ZURI_DISTRIBUTOR_ENVIRONMENT_DATABASE_H
-#define ZURI_DISTRIBUTOR_ENVIRONMENT_DATABASE_H
+#ifndef ZURI_DISTRIBUTOR_PACKAGE_DATABASE_H
+#define ZURI_DISTRIBUTOR_PACKAGE_DATABASE_H
 
 #include <filesystem>
 
@@ -9,13 +9,13 @@
 
 namespace zuri_distributor {
 
-    class EnvironmentDatabase {
+    class PackageDatabase {
     public:
-        ~EnvironmentDatabase();
+        ~PackageDatabase();
 
-        static tempo_utils::Result<std::shared_ptr<EnvironmentDatabase>> openOrCreate(
+        static tempo_utils::Result<std::shared_ptr<PackageDatabase>> openOrCreate(
             const std::filesystem::path &databaseFilePath);
-        static tempo_utils::Result<std::shared_ptr<EnvironmentDatabase>> open(
+        static tempo_utils::Result<std::shared_ptr<PackageDatabase>> open(
             const std::filesystem::path &databaseFilePath);
 
         std::filesystem::path getDatabaseFilePath() const;
@@ -27,16 +27,16 @@ namespace zuri_distributor {
         sqlite3_stmt *m_listSpecifiers = nullptr;
         sqlite3_stmt *m_insertSpecifier = nullptr;
 
-        static tempo_utils::Result<std::shared_ptr<EnvironmentDatabase>> open(
+        static tempo_utils::Result<std::shared_ptr<PackageDatabase>> open(
             const std::filesystem::path &databaseFilePath,
             int flags);
 
-        EnvironmentDatabase(
-            const std::filesystem::path &lockFilePath,
+        PackageDatabase(
+            const std::filesystem::path &databaseFilePath,
             sqlite3 *db);
 
         tempo_utils::Status prepare();
     };
 }
 
-#endif // ZURI_DISTRIBUTOR_ENVIRONMENT_DATABASE_H
+#endif // ZURI_DISTRIBUTOR_PACKAGE_DATABASE_H

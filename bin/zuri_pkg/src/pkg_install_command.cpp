@@ -5,7 +5,6 @@
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/config_result.h>
 #include <tempo_config/container_conversions.h>
-#include <tempo_utils/result.h>
 #include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/package_fetcher.h>
 #include <zuri_packager/package_specifier.h>
@@ -72,7 +71,7 @@ public:
 tempo_utils::Status
 zuri_pkg::pkg_install_command(
     std::shared_ptr<zuri_tooling::EnvironmentConfig> environmentConfig,
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
+    std::shared_ptr<zuri_distributor::Runtime> runtime,
     tempo_command::TokenVector &tokens)
 {
     PackageSpecifierOrIdOrUrlParser packageSpecifierOrIdOrUrlParser;
@@ -133,7 +132,7 @@ zuri_pkg::pkg_install_command(
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(dryRun, dryRunParser,
         commandConfig, "dryRun"));
 
-    InstallSolver installSolver(runtimeEnvironment, dryRun);
+    InstallSolver installSolver(runtime, dryRun);
     TU_RETURN_IF_NOT_OK (installSolver.configure());
 
     std::vector<PackageSpecifierOrIdOrUrl> packages;

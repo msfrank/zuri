@@ -104,33 +104,45 @@ zuri_tooling::Project::openOrCreate(
     }
 
     std::error_code ec;
+
+    // create the project root
     std::filesystem::create_directory(projectDirectory, ec);
     if (ec)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create zuri project directory {}", projectDirectory.string());
 
+    // create the targets directory
     auto targetsDirectory = projectDirectory / "targets";
     std::filesystem::create_directory(targetsDirectory, ec);
     if (ec)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create project targets directory {}", targetsDirectory.string());
 
+    // create the config directory
     auto configDirectory = projectDirectory / "config";
     std::filesystem::create_directory(configDirectory, ec);
     if (ec)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create project config directory {}", configDirectory.string());
 
+    // create the .zuribuild directory
     auto buildDirectory = projectDirectory / kProjectBuildDirectoryName;
     std::filesystem::create_directory(buildDirectory, ec);
     if (ec)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create project build directory {}", buildDirectory.string());
 
+    // create the .zuribuild/env directory
+    EnvironmentOpenOrCreateOptions environmentOpenOrCreateOptions;
+    environmentOpenOrCreateOptions.distribution = options.distribution;
+    environmentOpenOrCreateOptions.extraLibDirs = options.extraLibDirs;
+    environmentOpenOrCreateOptions.exclusive = true;
     auto buildEnvironmentDirectory = buildDirectory / "env";
     Environment environment;
-    TU_ASSIGN_OR_RETURN (environment, Environment::openOrCreate(buildEnvironmentDirectory));
+    TU_ASSIGN_OR_RETURN (environment, Environment::openOrCreate(
+        buildEnvironmentDirectory, environmentOpenOrCreateOptions));
 
+    // write the project.config
     auto projectConfigFile = projectDirectory / kProjectConfigName;
     TU_RETURN_IF_NOT_OK (tempo_config::write_config_file(options.projectMap, projectConfigFile));
 

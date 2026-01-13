@@ -4,7 +4,7 @@
 #include <zuri_distributor/abstract_package_resolver.h>
 #include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/package_fetcher.h>
-#include <zuri_distributor/runtime_environment.h>
+#include <zuri_distributor/runtime.h>
 #include <zuri_tooling/package_manager.h>
 
 namespace zuri_pkg {
@@ -12,7 +12,7 @@ namespace zuri_pkg {
     class InstallSolver {
     public:
         InstallSolver(
-            std::shared_ptr<zuri_distributor::RuntimeEnvironment> packageManager,
+            std::shared_ptr<zuri_distributor::Runtime> runtime,
             bool dryRun);
 
         tempo_utils::Status configure();
@@ -24,7 +24,7 @@ namespace zuri_pkg {
         tempo_utils::Status installPackages();
 
     private:
-        std::shared_ptr<zuri_distributor::RuntimeEnvironment> m_runtimeEnvironment;
+        std::shared_ptr<zuri_distributor::Runtime> m_runtime;
         bool m_dryRun;
 
         std::shared_ptr<zuri_distributor::AbstractPackageResolver> m_resolver;

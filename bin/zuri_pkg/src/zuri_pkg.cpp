@@ -13,8 +13,6 @@
 #include <zuri_tooling/environment_config.h>
 #include <zuri_tooling/project_config.h>
 
-#include "zuri_distributor/runtime_environment.h"
-
 tempo_utils::Status
 zuri_pkg::zuri_pkg(int argc, const char *argv[])
 {
@@ -26,8 +24,8 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
     tempo_config::BooleanParser silentParser(false);
 
     std::vector<tempo_command::Default> defaults = {
-        {"searchStart", "Path to start search for runtime environment", "PATH"},
-        {"noHome", "ignore Zuri home"},
+        {"searchStart", "Path to start search for environment", "PATH"},
+        {"noHome", "Ignore Zuri home"},
         {"colorizeOutput", "Display colorized output"},
         {"verbose", "Display verbose output (specify twice for even more verbose output)"},
         {"quiet", "Display warnings and errors only (specify twice for errors only)"},
@@ -166,34 +164,34 @@ zuri_pkg::zuri_pkg(int argc, const char *argv[])
     std::shared_ptr<zuri_tooling::CoreConfig> coreConfig;
     TU_ASSIGN_OR_RETURN (coreConfig, zuri_tooling::CoreConfig::load(distribution, home));
 
-    // open the runtime environment
+    // open the environment runtime
     zuri_tooling::Environment environment;
     zuri_tooling::Project project;
     TU_ASSIGN_OR_RETURN (project, zuri_tooling::Project::find(searchStart));
     if (project.isValid()) {
-        TU_ASSIGN_OR_RETURN (environment, zuri_tooling::Environment::open(project.getEnvironmentDirectory()));
+        TU_ASSIGN_OR_RETURN (environment, zuri_tooling::Environment::open(project.getBuildEnvironmentDirectory()));
     } else {
         TU_ASSIGN_OR_RETURN (environment, zuri_tooling::Environment::find(searchStart));
     }
     if (!environment.isValid()) {
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
-            "failed to determine the runtime environment");
+            "failed to determine the environment");
     }
 
     // load the environment config
     std::shared_ptr<zuri_tooling::EnvironmentConfig> environmentConfig;
     TU_ASSIGN_OR_RETURN (environmentConfig, zuri_tooling::EnvironmentConfig::load(environment, coreConfig));
 
-    // construct the runtime environment
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment;
-    TU_ASSIGN_OR_RETURN (runtimeEnvironment, zuri_distributor::RuntimeEnvironment::open(
+    // construct the environment runtime
+    std::shared_ptr<zuri_distributor::Runtime> runtime;
+    TU_ASSIGN_OR_RETURN (runtime, zuri_distributor::Runtime::open(
         environment.getEnvironmentDirectory()));
 
     switch (selected) {
         case Cache:
-            return pkg_cache_command(environmentConfig, runtimeEnvironment, tokens);
+            return pkg_cache_command(environmentConfig, runtime, tokens);
         case Install:
-            return pkg_install_command(environmentConfig, runtimeEnvironment, tokens);
+            return pkg_install_command(environmentConfig, runtime, tokens);
         case Remove:
         default:
             return tempo_command::CommandStatus::forCondition(

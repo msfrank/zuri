@@ -1,5 +1,6 @@
 
-#include <zuri_distributor/runtime_environment.h>
+#include <tempo_config/config_utils.h>
+#include <zuri_distributor/runtime.h>
 #include <zuri_tooling/environment.h>
 #include <zuri_tooling/tooling_result.h>
 
@@ -8,25 +9,28 @@ zuri_tooling::Environment::Environment()
 }
 
 zuri_tooling::Environment::Environment(
-    const std::filesystem::path &environmentDatabaseFile,
+    const std::filesystem::path &environmentConfigFile,
     const std::filesystem::path &environmentDirectory,
     const std::filesystem::path &binDirectory,
     const std::filesystem::path &libDirectory,
     const std::filesystem::path &packagesDirectory,
+    const std::filesystem::path &packagesDatabaseFile,
     const std::filesystem::path &configDirectory)
     : m_priv(std::make_shared<Priv>(
-        environmentDatabaseFile,
+        environmentConfigFile,
         environmentDirectory,
         binDirectory,
         libDirectory,
         packagesDirectory,
+        packagesDatabaseFile,
         configDirectory))
 {
-    TU_ASSERT (!m_priv->environmentDatabaseFile.empty());
+    TU_ASSERT (!m_priv->environmentConfigFile.empty());
     TU_ASSERT (!m_priv->environmentDirectory.empty());
     TU_ASSERT (!m_priv->binDirectory.empty());
     TU_ASSERT (!m_priv->libDirectory.empty());
     TU_ASSERT (!m_priv->packagesDirectory.empty());
+    TU_ASSERT (!m_priv->packagesDatabaseFile.empty());
     TU_ASSERT (!m_priv->configDirectory.empty());
 }
 
@@ -42,10 +46,10 @@ zuri_tooling::Environment::isValid() const
 }
 
 std::filesystem::path
-zuri_tooling::Environment::getEnvironmentDatabaseFile() const
+zuri_tooling::Environment::getEnvironmentConfigFile() const
 {
     if (m_priv)
-        return m_priv->environmentDatabaseFile;
+        return m_priv->environmentConfigFile;
     return {};
 }
 
@@ -82,6 +86,14 @@ zuri_tooling::Environment::getPackagesDirectory() const
 }
 
 std::filesystem::path
+zuri_tooling::Environment::getPackagesDatabaseFile() const
+{
+    if (m_priv)
+        return m_priv->packagesDatabaseFile;
+    return {};
+}
+
+std::filesystem::path
 zuri_tooling::Environment::getConfigDirectory() const
 {
     if (m_priv)
@@ -90,51 +102,92 @@ zuri_tooling::Environment::getConfigDirectory() const
 }
 
 tempo_utils::Result<zuri_tooling::Environment>
-zuri_tooling::Environment::openOrCreate(const std::filesystem::path &environmentDirectory)
+zuri_tooling::Environment::openOrCreate(
+    const std::filesystem::path &environmentDirectory,
+    const EnvironmentOpenOrCreateOptions &options)
 {
-    if (std::filesystem::exists(environmentDirectory))
+    if (std::filesystem::exists(environmentDirectory)) {
+        if (options.exclusive)
+            return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+                "zuri environment directory {} already exists", environmentDirectory.string());
         return open(environmentDirectory);
-
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment;
-    TU_ASSIGN_OR_RETURN (runtimeEnvironment, zuri_distributor::RuntimeEnvironment::openOrCreate(environmentDirectory));
+    }
 
     std::error_code ec;
 
+    // create the environment root
+    std::filesystem::create_directory(environmentDirectory, ec);
+    if (ec)
+        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+            "failed to create zuri environment directory {}", environmentDirectory.string());
+
+    // create the runtime
+    std::shared_ptr<zuri_distributor::Runtime> runtime;
+    zuri_distributor::RuntimeOpenOrCreateOptions runtimeOpenOrCreateOptions;
+    if (options.distribution.isValid()) {
+        runtimeOpenOrCreateOptions.distributionLibDir = options.distribution.getLibDirectory();
+    }
+    runtimeOpenOrCreateOptions.extraLibDirs = options.extraLibDirs;
+    runtimeOpenOrCreateOptions.exclusive = true;
+    TU_ASSIGN_OR_RETURN (runtime, zuri_distributor::Runtime::openOrCreate(
+        environmentDirectory, runtimeOpenOrCreateOptions));
+
+    // create the config directory
     auto configDirectory = environmentDirectory / "config";
     std::filesystem::create_directory(configDirectory, ec);
     if (ec)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create environment config directory {}", configDirectory.string());
 
-    auto environmentDatabaseFile = runtimeEnvironment->getEnvironmentDatabaseFile();
-    auto binDirectory = runtimeEnvironment->getBinDirectory();
-    auto libDirectory = runtimeEnvironment->getLibDirectory();
-    auto packagesDirectory = runtimeEnvironment->getPackagesDirectory();
+    // write the environment.config
+    auto environmentConfigFile = environmentDirectory / kEnvironmentConfigName;
+    TU_RETURN_IF_NOT_OK (tempo_config::write_config_file(options.projectMap, environmentConfigFile));
 
-    return Environment(environmentDatabaseFile, environmentDirectory, binDirectory, libDirectory,
-        packagesDirectory, configDirectory);
+    auto packagesDatabaseFile = runtime->getPackagesDatabaseFile();
+    auto binDirectory = runtime->getBinDirectory();
+    auto libDirectory = runtime->getLibDirectory();
+    auto packagesDirectory = runtime->getPackagesDirectory();
+
+    return Environment(environmentConfigFile, environmentDirectory, binDirectory, libDirectory,
+        packagesDirectory, packagesDatabaseFile, configDirectory);
 }
 
 tempo_utils::Result<zuri_tooling::Environment>
-zuri_tooling::Environment::open(const std::filesystem::path &environmentDirectoryOrDatabaseFile)
+zuri_tooling::Environment::open(const std::filesystem::path &environmentDirectoryOrConfigFile)
 {
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment;
-    TU_ASSIGN_OR_RETURN (runtimeEnvironment, zuri_distributor::RuntimeEnvironment::open(
-        environmentDirectoryOrDatabaseFile));
+    std::filesystem::path environmentConfigFile;
+    std::filesystem::path environmentDirectory;
 
-    auto environmentDatabaseFile = runtimeEnvironment->getEnvironmentDatabaseFile();
-    auto environmentDirectory = environmentDatabaseFile.parent_path();
-    auto binDirectory = runtimeEnvironment->getBinDirectory();
-    auto libDirectory = runtimeEnvironment->getLibDirectory();
-    auto packagesDirectory = runtimeEnvironment->getPackagesDirectory();
+    if (std::filesystem::is_regular_file(environmentDirectoryOrConfigFile)) {
+        environmentConfigFile = environmentDirectoryOrConfigFile;
+        environmentDirectory = environmentConfigFile.parent_path();
+    } else if (std::filesystem::is_directory(environmentDirectoryOrConfigFile)) {
+        environmentDirectory = environmentDirectoryOrConfigFile;
+        environmentConfigFile = environmentDirectory / kEnvironmentConfigName;
+    } else {
+        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+            "zuri environment not found at {}", environmentDirectoryOrConfigFile.string());
+    }
+
+    if (!std::filesystem::exists(environmentConfigFile))
+        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+            "missing zuri environment config file {}", environmentConfigFile.string());
+
+    std::shared_ptr<zuri_distributor::Runtime> runtime;
+    TU_ASSIGN_OR_RETURN (runtime, zuri_distributor::Runtime::open(environmentDirectory));
+
+    auto packagesDatabaseFile = runtime->getPackagesDatabaseFile();
+    auto binDirectory = runtime->getBinDirectory();
+    auto libDirectory = runtime->getLibDirectory();
+    auto packagesDirectory = runtime->getPackagesDirectory();
 
     auto configDirectory = environmentDirectory / "config";
     if (!std::filesystem::exists(configDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing environment config directory {}", configDirectory.string());
 
-    return Environment(environmentDatabaseFile, environmentDirectory, binDirectory, libDirectory,
-        packagesDirectory, configDirectory);
+    return Environment(environmentConfigFile, environmentDirectory, binDirectory, libDirectory,
+        packagesDirectory, packagesDatabaseFile, configDirectory);
 }
 
 tempo_utils::Result<zuri_tooling::Environment>
@@ -150,10 +203,10 @@ zuri_tooling::Environment::find(const std::filesystem::path &searchStart)
         currentDirectory = currentDirectory.parent_path();
     }
 
-    // check each parent directory for a file called "environment.db". if the file is found then we have
+    // check each parent directory for a file called "environment.config". if the file is found then we have
     // determined the environment root. otherwise if no file is found then environment detection failed.
     while (currentDirectory != currentDirectory.root_path()) {
-        auto file = currentDirectory / kEnvironmentDatabaseName;
+        auto file = currentDirectory / kEnvironmentConfigName;
         if (std::filesystem::exists(file))
             return open(currentDirectory);
         currentDirectory = currentDirectory.parent_path();
@@ -161,47 +214,4 @@ zuri_tooling::Environment::find(const std::filesystem::path &searchStart)
 
     // we were unable to find the environment
     return Environment{};
-}
-
-inline std::filesystem::path resolve_path(
-    const std::filesystem::path &p,
-    const std::filesystem::path &base)
-{
-    if (p.is_absolute())
-        return p;
-    auto full_path = base / p;
-    return full_path.lexically_normal();
-}
-
-tempo_utils::Result<zuri_tooling::Environment>
-zuri_tooling::Environment::relativeTo(const std::filesystem::path &programLocation)
-{
-    if (!std::filesystem::is_symlink(programLocation))
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "invalid program location {}", programLocation.string());
-    auto binDirectory = programLocation.parent_path();
-    auto environmentDirectory = binDirectory.parent_path();
-
-    auto environmentDatabaseFile = environmentDirectory / kEnvironmentDatabaseName;
-    if (!std::filesystem::exists(environmentDatabaseFile))
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "missing environment database file {}", environmentDatabaseFile.string());
-
-    auto libDirectory = resolve_path(std::filesystem::path{RELATIVE_LIB_DIR}, binDirectory);
-    if (!std::filesystem::exists(libDirectory))
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "missing environment lib directory {}", libDirectory.string());
-
-    auto packagesDirectory = resolve_path(std::filesystem::path{RELATIVE_PACKAGES_DIR}, binDirectory);
-    if (!std::filesystem::exists(packagesDirectory))
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "missing environment packages directory {}", packagesDirectory.string());
-
-    auto configDirectory = resolve_path(std::filesystem::path{RELATIVE_CONFIG_DIR}, binDirectory);
-    if (!std::filesystem::exists(configDirectory))
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "missing distribution config directory {}", configDirectory.string());
-
-    return Environment(environmentDatabaseFile, environmentDirectory, binDirectory, libDirectory,
-        packagesDirectory, configDirectory);
 }

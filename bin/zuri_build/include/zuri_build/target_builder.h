@@ -3,7 +3,7 @@
 
 #include <lyric_build/lyric_builder.h>
 #include <tempo_utils/result.h>
-#include <zuri_distributor/runtime_environment.h>
+#include <zuri_distributor/runtime.h>
 #include <zuri_tooling/build_graph.h>
 #include <zuri_tooling/package_manager.h>
 
@@ -12,7 +12,7 @@ namespace zuri_build {
     class TargetBuilder {
     public:
         TargetBuilder(
-            std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
+            std::shared_ptr<zuri_distributor::Runtime> runtime,
             std::shared_ptr<zuri_tooling::BuildGraph> buildGraph,
             lyric_build::LyricBuilder *builder,
             absl::flat_hash_map<std::string,tempo_utils::Url> &&targetBases,
@@ -21,7 +21,7 @@ namespace zuri_build {
         tempo_utils::Result<std::filesystem::path> buildTarget(const std::string &targetName);
 
     private:
-        std::shared_ptr<zuri_distributor::RuntimeEnvironment> m_runtimeEnvironment;
+        std::shared_ptr<zuri_distributor::Runtime> m_runtime;
         std::shared_ptr<zuri_tooling::BuildGraph> m_buildGraph;
         lyric_build::LyricBuilder *m_builder;
         absl::flat_hash_map<std::string,tempo_utils::Url> m_targetBases;

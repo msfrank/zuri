@@ -5,10 +5,10 @@
 #include <zuri_distributor/package_fetcher.h>
 #include <zuri_tooling/package_manager.h>
 
-zuri_build::ImportSolver::ImportSolver(std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment)
-    : m_runtimeEnvironment(std::move(runtimeEnvironment))
+zuri_build::ImportSolver::ImportSolver(std::shared_ptr<zuri_distributor::Runtime> runtime)
+    : m_runtime(std::move(runtime))
 {
-    TU_ASSERT (m_runtimeEnvironment != nullptr);
+    TU_ASSERT (m_runtime != nullptr);
 }
 
 tempo_utils::Status
@@ -129,7 +129,7 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
     for (const auto &selection : dependencyOrder) {
 
         // request download if the package is not present in any of the available caches
-        if (!m_runtimeEnvironment->containsPackage(selection.specifier)) {
+        if (!m_runtime->containsPackage(selection.specifier)) {
             TU_RETURN_IF_NOT_OK (m_fetcher->requestFile(selection.url, selection.specifier.toString()));
             numPackagesToInstall++;
         } else {
@@ -167,7 +167,7 @@ zuri_build::ImportSolver::installImports(std::shared_ptr<lyric_importer::Shortcu
         if (m_fetcher->hasResult(id)) {
             auto result = m_fetcher->getResult(id);
             TU_RETURN_IF_NOT_OK (result.status);
-            TU_RETURN_IF_STATUS (m_runtimeEnvironment->installPackage(result.path));
+            TU_RETURN_IF_STATUS (m_runtime->installPackage(result.path));
         }
     }
 

@@ -6,6 +6,8 @@
 #include <tempo_config/config_types.h>
 #include <tempo_utils/result.h>
 
+#include "distribution.h"
+
 namespace zuri_tooling {
 
     /**
@@ -19,8 +21,10 @@ namespace zuri_tooling {
     constexpr const char * const kProjectBuildDirectoryName = ".zuribuild";
 
     struct ProjectOpenOrCreateOptions {
-        bool exclusive = false;                     /**< if true then project must not exist, and will be created. */
-        tempo_config::ConfigMap projectMap = {};    /**< map contents will be written to project.config  */
+        bool exclusive = false;
+        Distribution distribution = {};
+        std::vector<std::filesystem::path> extraLibDirs = {};
+        tempo_config::ConfigMap projectMap = {};
     };
 
     class Project {

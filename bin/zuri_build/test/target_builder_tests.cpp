@@ -14,10 +14,14 @@
 class TargetBuilderTests : public ::testing::Test {
 protected:
     std::unique_ptr<tempo_utils::TempdirMaker> installRoot;
+    std::shared_ptr<zuri_distributor::Runtime> runtime;
 
     void SetUp() override {
         installRoot = std::make_unique<tempo_utils::TempdirMaker>("install.XXXXXXXX");
         TU_RAISE_IF_NOT_OK (installRoot->getStatus());
+        auto runtimeDirectory = installRoot->getTempdir() / "runtime";
+        std::filesystem::create_directory(runtimeDirectory);
+        TU_ASSIGN_OR_RAISE (runtime, zuri_distributor::Runtime::openOrCreate(runtimeDirectory));
     }
     void TearDown() override {
         if (installRoot) {
@@ -57,13 +61,10 @@ TEST_F(TargetBuilderTests, BuildLibrary)
     TU_ASSIGN_OR_RAISE (buildGraph, zuri_tooling::BuildGraph::create(targetStore, importStore));
 
     auto tempdir = installRoot->getTempdir();
-
     auto *testRunner = tester.getRunner();
     auto *builder = testRunner->getBuilder();
-    std::shared_ptr<zuri_distributor::PackageCache> packageCache;
-    TU_ASSIGN_OR_RAISE (packageCache, zuri_distributor::PackageCache::openOrCreate(tempdir, "pkgcache"));
 
-    zuri_build::TargetBuilder targetBuilder(buildGraph, builder, {}, packageCache, installRoot->getTempdir());
+    zuri_build::TargetBuilder targetBuilder(runtime, buildGraph, builder, {}, tempdir);
 
     auto buildTargetResult = targetBuilder.buildTarget("lib1");
     ASSERT_THAT (buildTargetResult, tempo_test::IsResult());

@@ -4,36 +4,36 @@
 #include <tempo_test/result_matchers.h>
 #include <tempo_test/status_matchers.h>
 #include <tempo_utils/file_utilities.h>
-#include <zuri_distributor/environment_database.h>
+#include <zuri_distributor/package_database.h>
 #include <zuri_distributor/distributor_result.h>
 
-class EnvironmentDatabase : public ::testing::Test {
+class PackageDatabase : public ::testing::Test {
 protected:
-    std::shared_ptr<zuri_distributor::EnvironmentDatabase> environmentDatabase;
+    std::shared_ptr<zuri_distributor::PackageDatabase> packageDatabase;
     void TearDown() override {
-        if (environmentDatabase) {
-            auto path = environmentDatabase->getDatabaseFilePath();
-            environmentDatabase.reset();
+        if (packageDatabase) {
+            auto path = packageDatabase->getDatabaseFilePath();
+            packageDatabase.reset();
             std::filesystem::remove(path);
         }
     }
 };
 
-TEST_F(EnvironmentDatabase, CreateDatabaseWhenMissing)
+TEST_F(PackageDatabase, CreateDatabaseWhenMissing)
 {
     auto databaseFilePath = tempo_utils::generate_name("environment.db.XXXXXXXX");
     ASSERT_FALSE (std::filesystem::exists(databaseFilePath));
 
-    auto createDatabaseResult = zuri_distributor::EnvironmentDatabase::openOrCreate(databaseFilePath);
+    auto createDatabaseResult = zuri_distributor::PackageDatabase::openOrCreate(databaseFilePath);
     ASSERT_THAT (createDatabaseResult, tempo_test::IsResult());
-    environmentDatabase = createDatabaseResult.getResult();
+    packageDatabase = createDatabaseResult.getResult();
     ASSERT_TRUE (std::filesystem::exists(databaseFilePath));
 }
 
-TEST_F(EnvironmentDatabase, OpenFailsWhenDatabaseDoesNotExist)
+TEST_F(PackageDatabase, OpenFailsWhenDatabaseDoesNotExist)
 {
     auto databaseFilePath = tempo_utils::generate_name("environment.db.XXXXXXXX");
-    auto createDatabaseResult = zuri_distributor::EnvironmentDatabase::open(databaseFilePath);
+    auto createDatabaseResult = zuri_distributor::PackageDatabase::open(databaseFilePath);
     ASSERT_THAT (createDatabaseResult, tempo_test::ContainsStatus(
         zuri_distributor::DistributorCondition::kDistributorInvariant));
 }

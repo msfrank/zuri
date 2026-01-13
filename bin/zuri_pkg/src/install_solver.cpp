@@ -5,12 +5,12 @@
 #include "zuri_pkg/pkg_result.h"
 
 zuri_pkg::InstallSolver::InstallSolver(
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
+    std::shared_ptr<zuri_distributor::Runtime> runtime,
     bool dryRun)
-    : m_runtimeEnvironment(std::move(runtimeEnvironment)),
+    : m_runtime(std::move(runtime)),
       m_dryRun(dryRun)
 {
-    TU_ASSERT (m_runtimeEnvironment != nullptr);
+    TU_ASSERT (m_runtime != nullptr);
 }
 
 tempo_utils::Status
@@ -95,7 +95,7 @@ zuri_pkg::InstallSolver::installPackages()
     // add each missing dependency to fetcher
     int numPackagesToInstall = 0;
     for (const auto &selection : dependencyOrder) {
-        if (!m_runtimeEnvironment->containsPackage(selection.specifier)) {
+        if (!m_runtime->containsPackage(selection.specifier)) {
             TU_RETURN_IF_NOT_OK (m_fetcher->requestFile(selection.url, selection.specifier.toString()));
             numPackagesToInstall++;
         } else {
@@ -121,7 +121,7 @@ zuri_pkg::InstallSolver::installPackages()
             TU_RETURN_IF_NOT_OK (result.status);
             if (!m_dryRun) {
                 std::filesystem::path installPath;
-                TU_ASSIGN_OR_RETURN (installPath, m_runtimeEnvironment->installPackage(result.path));
+                TU_ASSIGN_OR_RETURN (installPath, m_runtime->installPackage(result.path));
                 TU_LOG_V << "installed " << selection.specifier.toString() << " in " << installPath;
             } else {
                 TU_CONSOLE_OUT << "DRY RUN: install package " << result.path;

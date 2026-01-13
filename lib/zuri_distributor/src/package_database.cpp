@@ -1,10 +1,10 @@
 
 #include <sqlite3.h>
 
-#include <zuri_distributor/environment_database.h>
+#include <zuri_distributor/package_database.h>
 #include <zuri_distributor/distributor_result.h>
 
-zuri_distributor::EnvironmentDatabase::EnvironmentDatabase(
+zuri_distributor::PackageDatabase::PackageDatabase(
     const std::filesystem::path &databaseFilePath,
     sqlite3 *db)
     : m_databaseFilePath(databaseFilePath),
@@ -14,7 +14,7 @@ zuri_distributor::EnvironmentDatabase::EnvironmentDatabase(
     TU_ASSERT (m_db != nullptr);
 }
 
-zuri_distributor::EnvironmentDatabase::~EnvironmentDatabase()
+zuri_distributor::PackageDatabase::~PackageDatabase()
 {
     sqlite3_finalize(m_listSpecifiers);
     sqlite3_finalize(m_insertSpecifier);
@@ -23,8 +23,8 @@ zuri_distributor::EnvironmentDatabase::~EnvironmentDatabase()
     TU_LOG_WARN_IF (ret != SQLITE_OK) << "sqlite close failed unexpectedly: " << sqlite3_errstr(ret);
 }
 
-tempo_utils::Result<std::shared_ptr<zuri_distributor::EnvironmentDatabase>>
-zuri_distributor::EnvironmentDatabase::open(const std::filesystem::path &databaseFilePath, int flags)
+tempo_utils::Result<std::shared_ptr<zuri_distributor::PackageDatabase>>
+zuri_distributor::PackageDatabase::open(const std::filesystem::path &databaseFilePath, int flags)
 {
     sqlite3 *db = nullptr;
     auto ret = sqlite3_open_v2(databaseFilePath.c_str(), &db, flags, nullptr);
@@ -33,20 +33,20 @@ zuri_distributor::EnvironmentDatabase::open(const std::filesystem::path &databas
             "failed to open environment database {}: {}",
             databaseFilePath.string(), sqlite3_errstr(ret));
 
-    auto environmentDatabase = std::shared_ptr<EnvironmentDatabase>(new EnvironmentDatabase(databaseFilePath, db));
-    TU_RETURN_IF_NOT_OK (environmentDatabase->prepare());
-    return environmentDatabase;
+    auto packageDatabase = std::shared_ptr<PackageDatabase>(new PackageDatabase(databaseFilePath, db));
+    TU_RETURN_IF_NOT_OK (packageDatabase->prepare());
+    return packageDatabase;
 }
 
-tempo_utils::Result<std::shared_ptr<zuri_distributor::EnvironmentDatabase>>
-zuri_distributor::EnvironmentDatabase::openOrCreate(const std::filesystem::path &databaseFilePath)
+tempo_utils::Result<std::shared_ptr<zuri_distributor::PackageDatabase>>
+zuri_distributor::PackageDatabase::openOrCreate(const std::filesystem::path &databaseFilePath)
 {
     int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX | SQLITE_OPEN_NOFOLLOW;
     return open(databaseFilePath, flags);
 }
 
-tempo_utils::Result<std::shared_ptr<zuri_distributor::EnvironmentDatabase>>
-zuri_distributor::EnvironmentDatabase::open(const std::filesystem::path &databaseFilePath)
+tempo_utils::Result<std::shared_ptr<zuri_distributor::PackageDatabase>>
+zuri_distributor::PackageDatabase::open(const std::filesystem::path &databaseFilePath)
 {
     int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX | SQLITE_OPEN_NOFOLLOW;
     return open(databaseFilePath, flags);
@@ -65,7 +65,7 @@ sqlite3_err_to_status(char *err)
 }
 
 tempo_utils::Status
-zuri_distributor::EnvironmentDatabase::prepare()
+zuri_distributor::PackageDatabase::prepare()
 {
     char *err = nullptr;
     const char *tail = nullptr;
@@ -157,7 +157,7 @@ INSERT INTO Specifiers
 }
 
 std::filesystem::path
-zuri_distributor::EnvironmentDatabase::getDatabaseFilePath() const
+zuri_distributor::PackageDatabase::getDatabaseFilePath() const
 {
     return m_databaseFilePath;
 }

@@ -6,18 +6,18 @@
 #include <zuri_build/target_writer.h>
 
 zuri_build::TargetBuilder::TargetBuilder(
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
+    std::shared_ptr<zuri_distributor::Runtime> runtime,
     std::shared_ptr<zuri_tooling::BuildGraph> buildGraph,
     lyric_build::LyricBuilder *builder,
     absl::flat_hash_map<std::string,tempo_utils::Url> &&targetBases,
     const std::filesystem::path &installRoot)
-    : m_runtimeEnvironment(std::move(runtimeEnvironment)),
+    : m_runtime(std::move(runtime)),
       m_buildGraph(std::move(buildGraph)),
       m_builder(builder),
       m_targetBases(std::move(targetBases)),
       m_installRoot(installRoot)
 {
-    TU_ASSERT (m_runtimeEnvironment != nullptr);
+    TU_ASSERT (m_runtime != nullptr);
     TU_ASSERT (m_buildGraph != nullptr);
     TU_ASSERT (m_builder != nullptr);
     TU_ASSERT (!m_installRoot.empty());
@@ -78,10 +78,10 @@ zuri_build::TargetBuilder::buildTarget(const std::string &targetName)
 
             // if target exists in package cache then remove it first
             // TODO: if package is unchanged then don't reinstall it
-            if (m_runtimeEnvironment->containsPackage(specifier)) {
-                TU_RETURN_IF_NOT_OK (m_runtimeEnvironment->removePackage(specifier));
+            if (m_runtime->containsPackage(specifier)) {
+                TU_RETURN_IF_NOT_OK (m_runtime->removePackage(specifier));
             }
-            TU_RETURN_IF_STATUS (m_runtimeEnvironment->installPackage(packageReader));
+            TU_RETURN_IF_STATUS (m_runtime->installPackage(packageReader));
 
             // add package base for target
             targetBases[currTargetName] = specifier.toUrl();
@@ -136,7 +136,7 @@ zuri_build::TargetBuilder::buildProgramTarget(
     }
 
     // construct the target writer
-    TargetWriter targetWriter(m_runtimeEnvironment, m_installRoot, program.specifier);
+    TargetWriter targetWriter(m_runtime, m_installRoot, program.specifier);
     TU_RETURN_IF_NOT_OK (targetWriter.configure());
 
     // set the main location
@@ -206,7 +206,7 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     }
 
     // construct the target writer
-    TargetWriter targetWriter(m_runtimeEnvironment, m_installRoot, library.specifier);
+    TargetWriter targetWriter(m_runtime, m_installRoot, library.specifier);
     TU_RETURN_IF_NOT_OK (targetWriter.configure());
 
     auto cache = m_builder->getCache();

@@ -2,7 +2,7 @@
 
 #include <lyric_parser/lyric_parser.h>
 #include <lyric_runtime/chain_loader.h>
-#include <zuri_distributor/runtime_environment.h>
+#include <zuri_distributor/runtime.h>
 #include <zuri_run/ephemeral_session.h>
 #include <zuri_run/fragment_store.h>
 #include <zuri_run/log_proto_writer.h>
@@ -22,16 +22,16 @@ zuri_run::run_interactive_command(
     lyric_parser::ParserOptions parserOptions;
     auto parser = std::make_unique<lyric_parser::LyricParser>(parserOptions);
 
-    // construct the runtime environment
+    // construct the environment runtime
     auto environment = environmentConfig->getEnvironment();
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment;
-    TU_ASSIGN_OR_RETURN (runtimeEnvironment, zuri_distributor::RuntimeEnvironment::open(
+    std::shared_ptr<zuri_distributor::Runtime> runtime;
+    TU_ASSIGN_OR_RETURN (runtime, zuri_distributor::Runtime::open(
         environment.getEnvironmentDirectory()));
 
     // construct the loader chain used by the builder and interpreter
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
     loaderChain.push_back(fragmentStore);
-    loaderChain.push_back(runtimeEnvironment->getLoader());
+    loaderChain.push_back(runtime->getLoader());
     auto applicationLoader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
 
     // construct the builder used to compile fragments

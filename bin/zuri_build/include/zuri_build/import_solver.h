@@ -5,7 +5,7 @@
 #include <zuri_distributor/abstract_package_resolver.h>
 #include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/package_fetcher.h>
-#include <zuri_distributor/runtime_environment.h>
+#include <zuri_distributor/runtime.h>
 #include <zuri_tooling/import_store.h>
 #include <zuri_tooling/package_manager.h>
 #include <zuri_tooling/target_store.h>
@@ -14,7 +14,7 @@ namespace zuri_build {
 
     class ImportSolver {
     public:
-        explicit ImportSolver(std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment);
+        explicit ImportSolver(std::shared_ptr<zuri_distributor::Runtime> runtime);
 
         tempo_utils::Status configure();
 
@@ -29,7 +29,7 @@ namespace zuri_build {
             std::shared_ptr<lyric_importer::ShortcutResolver> shortcutResolver);
 
     private:
-        std::shared_ptr<zuri_distributor::RuntimeEnvironment> m_runtimeEnvironment;
+        std::shared_ptr<zuri_distributor::Runtime> m_runtime;
         std::shared_ptr<zuri_distributor::AbstractPackageResolver> m_resolver;
         std::unique_ptr<zuri_distributor::PackageFetcher> m_fetcher;
         std::unique_ptr<zuri_distributor::DependencySelector> m_selector;

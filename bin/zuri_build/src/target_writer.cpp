@@ -10,23 +10,21 @@
 #include <lyric_object/lyric_object.h>
 #include <tempo_config/config_builder.h>
 #include <tempo_config/parse_config.h>
-#include <tempo_utils/directory_maker.h>
 #include <tempo_utils/log_message.h>
 #include <tempo_utils/memory_bytes.h>
 #include <zuri_build/target_writer.h>
-
-#include "zuri_packager/packaging_conversions.h"
+#include <zuri_packager/packaging_conversions.h>
 
 zuri_build::TargetWriter::TargetWriter(
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment,
+    std::shared_ptr<zuri_distributor::Runtime> runtime,
     const std::filesystem::path &installRoot,
     const zuri_packager::PackageSpecifier &specifier)
-    : m_runtimeEnvironment(runtimeEnvironment),
+    : m_runtime(runtime),
       m_installRoot(installRoot),
       m_specifier(specifier),
       m_priv(std::make_unique<Priv>())
 {
-    TU_ASSERT (m_runtimeEnvironment != nullptr);
+    TU_ASSERT (m_runtime != nullptr);
     TU_ASSERT (!m_installRoot.empty());
     TU_ASSERT (m_specifier.isValid());
 }
@@ -285,7 +283,7 @@ zuri_build::TargetWriter::determineLibrariesNeeded()
         auto specifier = zuri_packager::PackageSpecifier(entry.first, entry.second);
 
         Option<tempo_config::ConfigMap> packageConfigOption;
-        TU_ASSIGN_OR_RETURN (packageConfigOption, m_runtimeEnvironment->describePackage(specifier));
+        TU_ASSIGN_OR_RETURN (packageConfigOption, m_runtime->describePackage(specifier));
         if (packageConfigOption.isEmpty())
             return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
                 "failed to read package.config for {}", specifier.toString());

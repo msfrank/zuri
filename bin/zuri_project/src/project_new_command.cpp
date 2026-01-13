@@ -9,8 +9,7 @@
 #include <zuri_distributor/package_fetcher.h>
 #include <zuri_project/project_new_command.h>
 #include <zuri_project/project_result.h>
-
-#include "zuri_tooling/project.h"
+#include <zuri_tooling/project.h>
 
 tempo_utils::Status
 zuri_project::project_new_command(
@@ -23,7 +22,7 @@ zuri_project::project_new_command(
     tempo_config::PathParser copyTargetsDirectoryParser(std::filesystem::path{});
     tempo_config::SeqTParser copyConfigListParser(&pathParser, {});
     tempo_config::PathParser copyConfigDirectoryParser(std::filesystem::path{});
-    tempo_config::SeqTParser extraComponentDirsParser(&pathParser, {});
+    tempo_config::SeqTParser extraLibDirListParser(&pathParser, {});
     tempo_config::BooleanParser ignoreExistingParser(false);
     tempo_config::PathParser projectPathParser;
 
@@ -33,7 +32,7 @@ zuri_project::project_new_command(
         {"copyConfigList", "Copy existing config", "PATH"},
         {"copyTargetsDirectory", "Copy all targets from existing directory", "DIR"},
         {"copyConfigDirectory", "Copy configs from existing directory", "DIR"},
-        {"extraComponentDirs", "Additional component directories", "DIR"},
+        {"extraLibDirList", "Additional component directories", "DIR"},
         {"ignoreExisting", "Do nothing if project already exists"},
         {"projectPath", "Path to the new project", "PATH"},
     };
@@ -44,7 +43,7 @@ zuri_project::project_new_command(
         {"copyConfigList", {"--copy-config"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"copyTargetsDirectory", {"--copy-targets-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"copyConfigDirectory", {"--copy-config-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"extraComponentDirs", {"--extra-distribution"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"extraLibDirList", {"--extra-lib-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"ignoreExisting", {"--ignore-existing"}, tempo_command::GroupingType::NO_ARGUMENT},
         {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
     };
@@ -55,8 +54,8 @@ zuri_project::project_new_command(
         {tempo_command::MappingType::ANY_INSTANCES, "copyConfigList"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "copyTargetsDirectory"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "copyConfigDirectory"},
+        {tempo_command::MappingType::ANY_INSTANCES, "extraLibDirList"},
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "ignoreExisting"},
-        {tempo_command::MappingType::ANY_INSTANCES, "extraComponentDirs"},
     };
 
     std::vector<tempo_command::Mapping> argMappings = {
@@ -122,10 +121,10 @@ zuri_project::project_new_command(
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(copyConfigDirectory, copyConfigDirectoryParser,
         commandConfig, "copyConfigDirectory"));
 
-    // determine extra component directories
-    std::vector<std::filesystem::path> extraComponentDirs;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(extraComponentDirs, extraComponentDirsParser,
-        commandConfig, "extraComponentDirs"));
+    // determine list of extra lib directories
+    std::vector<std::filesystem::path> extraLibDirList;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(extraLibDirList, extraLibDirListParser,
+        commandConfig, "extraLibDirList"));
 
     // determine whether to ignore existing project
     bool ignoreExisting;
@@ -149,6 +148,8 @@ zuri_project::project_new_command(
 
     zuri_tooling::ProjectOpenOrCreateOptions openOrCreateOptions;
     openOrCreateOptions.exclusive = true;
+    openOrCreateOptions.distribution = coreConfig->getDistribution();
+    openOrCreateOptions.extraLibDirs = extraLibDirList;
 
     // parse the project config file if specified
     if (!projectConfigFile.empty()) {
