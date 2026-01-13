@@ -132,6 +132,12 @@ zuri_tooling::TargetEntryParser::convertValue(const tempo_config::ConfigNode &no
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(
         targetEntry.type, targetEntryTypeParser, targetConfig, "type"));
 
+    // construct the task settings if it was provided
+    auto settingsMap = targetConfig.mapAt("settings").toMap();
+    if (settingsMap.getNodeType() == tempo_config::ConfigNodeType::kMap) {
+        targetEntry.settings = lyric_build::TaskSettings(settingsMap);
+    }
+
     // parse depends
     tempo_config::StringParser dependencyParser;
     tempo_config::SeqTParser dependsParser(&dependencyParser, {});

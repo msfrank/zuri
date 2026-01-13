@@ -6,8 +6,6 @@
 #include <tempo_config/config_types.h>
 #include <tempo_utils/result.h>
 
-#include "environment.h"
-
 namespace zuri_tooling {
 
     /**
@@ -18,12 +16,12 @@ namespace zuri_tooling {
     /**
      *
      */
-    constexpr const char * const kProjectEnvironmentDirectoryName = ".zurienv";
-
-    /**
-     *
-     */
     constexpr const char * const kProjectBuildDirectoryName = ".zuribuild";
+
+    struct ProjectOpenOrCreateOptions {
+        bool exclusive = false;                     /**< if true then project must not exist, and will be created. */
+        tempo_config::ConfigMap projectMap = {};    /**< map contents will be written to project.config  */
+    };
 
     class Project {
     public:
@@ -34,14 +32,14 @@ namespace zuri_tooling {
 
         std::filesystem::path getProjectConfigFile() const;
         std::filesystem::path getProjectDirectory() const;
-        std::filesystem::path getSrcDirectory() const;
         std::filesystem::path getConfigDirectory() const;
+        std::filesystem::path getTargetsDirectory() const;
         std::filesystem::path getBuildDirectory() const;
-        std::filesystem::path getEnvironmentDirectory() const;
+        std::filesystem::path getBuildEnvironmentDirectory() const;
 
         static tempo_utils::Result<Project> openOrCreate(
             const std::filesystem::path &projectDirectory,
-            const tempo_config::ConfigMap &projectMap = {});
+            const ProjectOpenOrCreateOptions &options = {});
         static tempo_utils::Result<Project> open(const std::filesystem::path &projectDirectoryOrConfigFile);
         static tempo_utils::Result<Project> find(const std::filesystem::path &searchStart = {});
 
@@ -49,20 +47,20 @@ namespace zuri_tooling {
         struct Priv {
             std::filesystem::path projectConfigFile;
             std::filesystem::path projectDirectory;
-            std::filesystem::path srcDirectory;
             std::filesystem::path configDirectory;
+            std::filesystem::path targetsDirectory;
             std::filesystem::path buildDirectory;
-            std::filesystem::path environmentDirectory;
+            std::filesystem::path buildEnvironmentDirectory;
         };
         std::shared_ptr<Priv> m_priv;
 
         Project(
             const std::filesystem::path &projectConfigFile,
             const std::filesystem::path &projectDirectory,
-            const std::filesystem::path &srcDirectory,
             const std::filesystem::path &configDirectory,
+            const std::filesystem::path &targetsDirectory,
             const std::filesystem::path &buildDirectory,
-            const std::filesystem::path &environmentDirectory);
+            const std::filesystem::path &buildEnvironmentDirectory);
     };
 }
 

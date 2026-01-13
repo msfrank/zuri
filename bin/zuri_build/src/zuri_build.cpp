@@ -221,7 +221,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
     auto environmentConfig = projectConfig->getEnvironmentConfig();
     auto environment = environmentConfig->getEnvironment();
 
-    // if build root was not specified, then default to subdirectory of the project root
+    // if build root was not specified, then default to the project build directory
     if (buildRoot.empty()) {
         buildRoot = project.getBuildDirectory();
     }

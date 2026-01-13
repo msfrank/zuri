@@ -100,6 +100,8 @@ zuri_build::TargetBuilder::buildProgramTarget(
     TU_ASSERT (targetEntry->type == zuri_tooling::TargetEntryType::Program);
     const auto &program = std::get<zuri_tooling::TargetEntry::Program>(targetEntry->target);
 
+    auto targetSettings = targetEntry->settings;
+
     // declare the build tasks
     lyric_build::TaskId collectModules("collect_modules", targetName);
     auto collectModulesOverridesBuilder = tempo_config::startMap();
@@ -115,9 +117,10 @@ zuri_build::TargetBuilder::buildProgramTarget(
 
     absl::flat_hash_map<lyric_build::TaskId, tempo_config::ConfigMap> taskOverrides;
     taskOverrides[collectModules] = collectModulesOverridesBuilder.buildMap();
+    auto settingsOverrides = lyric_build::TaskSettings({}, {}, taskOverrides);
 
     lyric_build::ComputeTargetOverrides overrides;
-    overrides.settings = lyric_build::TaskSettings({}, {}, taskOverrides);
+    overrides.settings = targetSettings.merge(settingsOverrides);
     overrides.shortcuts = targetShortcuts;
 
     // run the build
@@ -168,6 +171,8 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     TU_ASSERT (targetEntry->type == zuri_tooling::TargetEntryType::Library);
     const auto &library = std::get<zuri_tooling::TargetEntry::Library>(targetEntry->target);
 
+    auto targetSettings = targetEntry->settings;
+
     // declare the build tasks
     lyric_build::TaskId collectModules("collect_modules", targetName);
     auto collectModulesOverridesBuilder = tempo_config::startMap();
@@ -182,9 +187,10 @@ zuri_build::TargetBuilder::buildLibraryTarget(
 
     absl::flat_hash_map<lyric_build::TaskId, tempo_config::ConfigMap> taskOverrides;
     taskOverrides[collectModules] = collectModulesOverridesBuilder.buildMap();
+    auto settingsOverrides = lyric_build::TaskSettings({}, {}, taskOverrides);
 
     lyric_build::ComputeTargetOverrides overrides;
-    overrides.settings = lyric_build::TaskSettings({}, {}, taskOverrides);
+    overrides.settings = targetSettings.merge(settingsOverrides);
     overrides.shortcuts = targetShortcuts;
 
     // run the build

@@ -3,6 +3,7 @@
 
 #include <variant>
 
+#include <lyric_build/task_settings.h>
 #include <lyric_common/module_location.h>
 #include <tempo_config/config_types.h>
 #include <tempo_utils/status.h>
@@ -19,6 +20,7 @@ namespace zuri_tooling {
 
     struct TargetEntry {
         TargetEntryType type;
+        lyric_build::TaskSettings settings;
         std::vector<std::string> depends;
 
         struct Program {

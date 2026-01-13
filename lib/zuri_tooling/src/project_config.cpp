@@ -43,27 +43,40 @@ load_project_override_config()
 
 static tempo_utils::Result<tempo_config::ConfigMap>
 read_project_config(
-    const std::filesystem::path &projectConfigFile,
+    const zuri_tooling::Project &project,
     const tempo_config::ConfigMap &defaultsMap)
 {
-    tempo_config::ConfigMap projectConfig;
-    tempo_config::ConfigMap overrideConfig;
-
     // build the default config
     auto defaultConfig = tempo_config::startMap()
         .put("zuri", tempo_config::startMap()
             .put("project", defaultsMap).buildNode())
         .buildMap();
 
+    // parse the config/ directory config
+    auto configDirectory = project.getConfigDirectory();
+    tempo_config::ConfigMap directoryConfig;
+    if (std::filesystem::exists(configDirectory)) {
+        TU_ASSIGN_OR_RETURN (directoryConfig, tempo_config::read_config_tree_directory(
+            configDirectory, ".config"));
+    }
+
     // parse the project config file
-    TU_ASSIGN_OR_RETURN (projectConfig, tempo_config::read_config_map_file(projectConfigFile));
+    tempo_config::ConfigMap projectMap;
+    TU_ASSIGN_OR_RETURN (projectMap, tempo_config::read_config_map_file(project.getProjectConfigFile()));
+    auto projectConfig = tempo_config::startMap()
+        .put("zuri", tempo_config::startMap()
+            .put("project", projectMap).buildNode())
+        .buildMap();
 
     // load override config if present
+    tempo_config::ConfigMap overrideConfig;
     TU_ASSIGN_OR_RETURN (overrideConfig, load_project_override_config());
 
-    // return the project config
+    // return the merged config
     return tempo_config::merge_map(defaultConfig,
-        tempo_config::merge_map(projectConfig, overrideConfig));
+        tempo_config::merge_map(projectConfig,
+            tempo_config::merge_map(projectConfig,
+                overrideConfig)));
 }
 
 tempo_utils::Status
@@ -108,14 +121,14 @@ zuri_tooling::ProjectConfig::load(
     const Project &project,
     std::shared_ptr<CoreConfig> coreConfig)
 {
-    auto environmentDirectory = project.getEnvironmentDirectory();
+    auto environmentDirectory = project.getBuildEnvironmentDirectory();
     Environment environment;
     TU_ASSIGN_OR_RETURN (environment, Environment::open(environmentDirectory));
     std::shared_ptr<EnvironmentConfig> environmentConfig;
     TU_ASSIGN_OR_RETURN(environmentConfig, EnvironmentConfig::load(environment, coreConfig));
 
     tempo_config::ConfigMap configMap;
-    TU_ASSIGN_OR_RETURN (configMap, read_project_config(project.getProjectConfigFile(), coreConfig->getDefaultsMap()));
+    TU_ASSIGN_OR_RETURN (configMap, read_project_config(project, coreConfig->getDefaultsMap()));
 
     auto projectConfig = std::shared_ptr<ProjectConfig>(new ProjectConfig(
         project, environmentConfig, coreConfig, configMap));

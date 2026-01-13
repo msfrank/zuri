@@ -363,6 +363,8 @@ zuri_packager::RequirementsMap::numRequirements() const
 zuri_packager::LibrariesNeeded::LibrariesNeeded()
     : m_priv(std::make_shared<Priv>())
 {
+    m_priv->neededLibraries["$DISTRIBUTION$"] = std::make_unique<absl::flat_hash_set<std::string>>();
+    m_priv->neededLibraries["$SYSTEM$"] = std::make_unique<absl::flat_hash_set<std::string>>();
 }
 
 zuri_packager::LibrariesNeeded::LibrariesNeeded(const LibrariesNeeded &other)
@@ -370,65 +372,80 @@ zuri_packager::LibrariesNeeded::LibrariesNeeded(const LibrariesNeeded &other)
 {
 }
 
+bool
+zuri_packager::LibrariesNeeded::isEmpty() const
+{
+    return m_priv->neededLibraries.empty();
+}
+
 void
 zuri_packager::LibrariesNeeded::addSystemLibrary(std::string_view libraryName)
 {
-    m_priv->systemLibraries.insert(std::string(libraryName));
+    auto &systemLibraries = m_priv->neededLibraries.at("$SYSTEM$");
+    systemLibraries->insert(std::string(libraryName));
 }
 
 void
 zuri_packager::LibrariesNeeded::addSystemLibraries(const absl::flat_hash_set<std::string> &libraryNames)
 {
-    m_priv->systemLibraries.insert(libraryNames.cbegin(), libraryNames.cend());
+    auto &systemLibraries = m_priv->neededLibraries.at("$SYSTEM$");
+    systemLibraries->insert(libraryNames.cbegin(), libraryNames.cend());
 }
 
 absl::flat_hash_set<std::string>::const_iterator
 zuri_packager::LibrariesNeeded::systemLibrariesBegin() const
 {
-    return m_priv->systemLibraries.cbegin();
+    auto &systemLibraries = m_priv->neededLibraries.at("$SYSTEM$");
+    return systemLibraries->cbegin();
 }
 
 absl::flat_hash_set<std::string>::const_iterator
 zuri_packager::LibrariesNeeded::systemLibrariesEnd() const
 {
-    return m_priv->systemLibraries.cend();
+    auto &systemLibraries = m_priv->neededLibraries.at("$SYSTEM$");
+    return systemLibraries->cend();
 }
 
 void
 zuri_packager::LibrariesNeeded::addDistributionLibrary(std::string_view libraryName)
 {
-    m_priv->distributionLibraries.insert(std::string(libraryName));
+    auto &distributionLibraries = m_priv->neededLibraries.at("$DISTRIBUTION$");
+    distributionLibraries->insert(std::string(libraryName));
 }
 
 void
 zuri_packager::LibrariesNeeded::addDistributionLibraries(const absl::flat_hash_set<std::string> &libraryNames)
 {
-    m_priv->distributionLibraries.insert(libraryNames.cbegin(), libraryNames.cend());
+    auto &distributionLibraries = m_priv->neededLibraries.at("$DISTRIBUTION$");
+    distributionLibraries->insert(libraryNames.cbegin(), libraryNames.cend());
 }
 
 absl::flat_hash_set<std::string>::const_iterator
 zuri_packager::LibrariesNeeded::distributionLibrariesBegin() const
 {
-    return m_priv->distributionLibraries.cbegin();
+    auto &distributionLibraries = m_priv->neededLibraries.at("$DISTRIBUTION$");
+    return distributionLibraries->cbegin();
 }
 
 absl::flat_hash_set<std::string>::const_iterator
 zuri_packager::LibrariesNeeded::distributionLibrariesEnd() const
 {
-    return m_priv->distributionLibraries.cend();
+    auto &distributionLibraries = m_priv->neededLibraries.at("$DISTRIBUTION$");
+    return distributionLibraries->cend();
 }
 
 void
 zuri_packager::LibrariesNeeded::addPackageLibrary(const PackageId &packageId, std::string_view libraryName)
 {
-    auto entry = m_priv->packageLibraries.find(packageId);
-    if (entry != m_priv->packageLibraries.cend()) {
+    auto source = packageId.toString();
+    auto entry = m_priv->neededLibraries.find(source);
+    if (entry != m_priv->neededLibraries.cend()) {
         entry->second->insert(std::string(libraryName));
     } else {
         m_priv->packagesNeeded.insert(packageId);
         auto needed = std::make_unique<absl::flat_hash_set<std::string>>();
         needed->insert(std::string(libraryName));
-        m_priv->packageLibraries[packageId] = std::move(needed);
+        m_priv->neededLibraries[source] = std::move(needed);
     }
 }
 
@@ -437,15 +454,54 @@ zuri_packager::LibrariesNeeded::addPackageLibraries(
     const PackageId &packageId,
     const absl::flat_hash_set<std::string> &libraryNames)
 {
-    auto entry = m_priv->packageLibraries.find(packageId);
-    if (entry != m_priv->packageLibraries.cend()) {
+    auto source = packageId.toString();
+    auto entry = m_priv->neededLibraries.find(source);
+    if (entry != m_priv->neededLibraries.cend()) {
         entry->second->insert(libraryNames.cbegin(), libraryNames.cend());
     } else {
         m_priv->packagesNeeded.insert(packageId);
         auto needed = std::make_unique<absl::flat_hash_set<std::string>>();
         needed->insert(libraryNames.cbegin(), libraryNames.cend());
-        m_priv->packageLibraries[packageId] = std::move(needed);
+        m_priv->neededLibraries[source] = std::move(needed);
     }
+}
+
+absl::flat_hash_set<std::string>::const_iterator
+zuri_packager::LibrariesNeeded::packageLibrariesBegin(const PackageId &packageId) const
+{
+    auto source = packageId.toString();
+    auto entry = m_priv->neededLibraries.find(source);
+    if (entry == m_priv->neededLibraries.cend())
+        return {};
+    return entry->second->cbegin();
+}
+
+absl::flat_hash_set<std::string>::const_iterator
+zuri_packager::LibrariesNeeded::packageLibrariesEnd(const PackageId &packageId) const
+{
+    auto source = packageId.toString();
+    auto entry = m_priv->neededLibraries.find(source);
+    if (entry == m_priv->neededLibraries.cend())
+        return {};
+    return entry->second->end();
+}
+
+absl::flat_hash_map<
+    std::string,
+    std::unique_ptr<absl::flat_hash_set<std::string>>
+>::const_iterator
+zuri_packager::LibrariesNeeded::neededBegin() const
+{
+    return m_priv->neededLibraries.cbegin();
+}
+
+absl::flat_hash_map<
+    std::string,
+    std::unique_ptr<absl::flat_hash_set<std::string>>
+>::const_iterator
+zuri_packager::LibrariesNeeded::neededEnd() const
+{
+    return m_priv->neededLibraries.cend();
 }
 
 absl::flat_hash_set<zuri_packager::PackageId>::const_iterator
@@ -458,24 +514,6 @@ absl::flat_hash_set<zuri_packager::PackageId>::const_iterator
 zuri_packager::LibrariesNeeded::packagesEnd() const
 {
     return m_priv->packagesNeeded.cend();
-}
-
-absl::flat_hash_set<std::string>::const_iterator
-zuri_packager::LibrariesNeeded::packageLibrariesBegin(const PackageId &packageId) const
-{
-    auto entry = m_priv->packageLibraries.find(packageId);
-    if (entry == m_priv->packageLibraries.cend())
-        return {};
-    return entry->second->cbegin();
-}
-
-absl::flat_hash_set<std::string>::const_iterator
-zuri_packager::LibrariesNeeded::packageLibrariesEnd(const PackageId &packageId) const
-{
-    auto entry = m_priv->packageLibraries.find(packageId);
-    if (entry == m_priv->packageLibraries.cend())
-        return {};
-    return entry->second->end();
 }
 
 zuri_packager::LibrariesProvided::LibrariesProvided()

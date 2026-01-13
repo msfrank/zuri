@@ -12,24 +12,24 @@ zuri_tooling::Project::Project()
 zuri_tooling::Project::Project(
     const std::filesystem::path &projectConfigFile,
     const std::filesystem::path &projectDirectory,
-    const std::filesystem::path &srcDirectory,
     const std::filesystem::path &configDirectory,
+    const std::filesystem::path &targetsDirectory,
     const std::filesystem::path &buildDirectory,
-    const std::filesystem::path &environmentDirectory)
+    const std::filesystem::path &buildEnvironmentDirectory)
     : m_priv(std::make_shared<Priv>(
         projectConfigFile,
         projectDirectory,
-        srcDirectory,
         configDirectory,
+        targetsDirectory,
         buildDirectory,
-        environmentDirectory))
+        buildEnvironmentDirectory))
 {
     TU_ASSERT (!m_priv->projectConfigFile.empty());
     TU_ASSERT (!m_priv->projectDirectory.empty());
-    TU_ASSERT (!m_priv->srcDirectory.empty());
     TU_ASSERT (!m_priv->configDirectory.empty());
+    TU_ASSERT (!m_priv->targetsDirectory.empty());
     TU_ASSERT (!m_priv->buildDirectory.empty());
-    TU_ASSERT (!m_priv->environmentDirectory.empty());
+    TU_ASSERT (!m_priv->buildEnvironmentDirectory.empty());
 }
 
 zuri_tooling::Project::Project(const Project &other)
@@ -60,10 +60,10 @@ zuri_tooling::Project::getProjectDirectory() const
 }
 
 std::filesystem::path
-zuri_tooling::Project::getSrcDirectory() const
+zuri_tooling::Project::getTargetsDirectory() const
 {
     if (m_priv)
-        return m_priv->srcDirectory;
+        return m_priv->targetsDirectory;
     return {};
 }
 
@@ -84,20 +84,24 @@ zuri_tooling::Project::getBuildDirectory() const
 }
 
 std::filesystem::path
-zuri_tooling::Project::getEnvironmentDirectory() const
+zuri_tooling::Project::getBuildEnvironmentDirectory() const
 {
     if (m_priv)
-        return m_priv->environmentDirectory;
+        return m_priv->buildEnvironmentDirectory;
     return {};
 }
 
 tempo_utils::Result<zuri_tooling::Project>
 zuri_tooling::Project::openOrCreate(
     const std::filesystem::path &projectDirectory,
-    const tempo_config::ConfigMap &projectMap)
+    const ProjectOpenOrCreateOptions &options)
 {
-    if (std::filesystem::exists(projectDirectory))
+    if (std::filesystem::exists(projectDirectory)) {
+        if (options.exclusive)
+            return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+                "zuri project directory {} already exists", projectDirectory.string());
         return open(projectDirectory);
+    }
 
     std::error_code ec;
     std::filesystem::create_directory(projectDirectory, ec);
@@ -105,11 +109,11 @@ zuri_tooling::Project::openOrCreate(
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create zuri project directory {}", projectDirectory.string());
 
-    auto srcDirectory = projectDirectory / "src";
-    std::filesystem::create_directory(srcDirectory, ec);
+    auto targetsDirectory = projectDirectory / "targets";
+    std::filesystem::create_directory(targetsDirectory, ec);
     if (ec)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "failed to create project src directory {}", srcDirectory.string());
+            "failed to create project targets directory {}", targetsDirectory.string());
 
     auto configDirectory = projectDirectory / "config";
     std::filesystem::create_directory(configDirectory, ec);
@@ -117,21 +121,21 @@ zuri_tooling::Project::openOrCreate(
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create project config directory {}", configDirectory.string());
 
-    auto buildDirectory = projectDirectory / "build";
+    auto buildDirectory = projectDirectory / kProjectBuildDirectoryName;
     std::filesystem::create_directory(buildDirectory, ec);
     if (ec)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create project build directory {}", buildDirectory.string());
 
-    auto environmentDirectory = projectDirectory / kProjectEnvironmentDirectoryName;
+    auto buildEnvironmentDirectory = buildDirectory / "env";
     Environment environment;
-    TU_ASSIGN_OR_RETURN (environment, Environment::openOrCreate(environmentDirectory));
+    TU_ASSIGN_OR_RETURN (environment, Environment::openOrCreate(buildEnvironmentDirectory));
 
     auto projectConfigFile = projectDirectory / kProjectConfigName;
-    TU_RETURN_IF_NOT_OK (tempo_config::write_config_file(projectMap, projectConfigFile));
+    TU_RETURN_IF_NOT_OK (tempo_config::write_config_file(options.projectMap, projectConfigFile));
 
-    return Project(projectConfigFile, projectDirectory, srcDirectory, configDirectory,
-        buildDirectory, environmentDirectory);
+    return Project(projectConfigFile, projectDirectory, configDirectory, targetsDirectory,
+        buildDirectory, buildEnvironmentDirectory);
 }
 
 tempo_utils::Result<zuri_tooling::Project>
@@ -155,28 +159,28 @@ zuri_tooling::Project::open(const std::filesystem::path &projectDirectoryOrConfi
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing zuri project config file {}", projectConfigFile.string());
 
-    auto srcDirectory = projectDirectory / "src";
-    if (!std::filesystem::exists(srcDirectory))
+    auto targetsDirectory = projectDirectory / "targets";
+    if (!std::filesystem::exists(targetsDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "missing project src directory {}", srcDirectory.string());
+            "missing project targets directory {}", targetsDirectory.string());
 
     auto configDirectory = projectDirectory / "config";
     if (!std::filesystem::exists(configDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing project config directory {}", configDirectory.string());
 
-    auto buildDirectory = projectDirectory / "build";
+    auto buildDirectory = projectDirectory / kProjectBuildDirectoryName;
     if (!std::filesystem::exists(buildDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "missing project build directory {}", buildDirectory.string());
 
-    auto environmentDirectory = projectDirectory / kProjectEnvironmentDirectoryName;
-    if (!std::filesystem::exists(environmentDirectory))
+    auto buildEnvironmentDirectory = buildDirectory / "env";
+    if (!std::filesystem::exists(buildEnvironmentDirectory))
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "missing project environment directory {}", environmentDirectory.string());
+            "missing project build environment directory {}", buildEnvironmentDirectory.string());
 
-    return Project(projectConfigFile, projectDirectory, srcDirectory, configDirectory,
-        buildDirectory, environmentDirectory);
+    return Project(projectConfigFile, projectDirectory, configDirectory, targetsDirectory,
+        buildDirectory, buildEnvironmentDirectory);
 }
 
 inline std::filesystem::path resolve_path(

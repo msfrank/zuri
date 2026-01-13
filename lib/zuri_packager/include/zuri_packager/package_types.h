@@ -202,6 +202,8 @@ namespace zuri_packager {
         LibrariesNeeded();
         LibrariesNeeded(const LibrariesNeeded &other);
 
+        bool isEmpty() const;
+
         void addSystemLibrary(std::string_view libraryName);
         void addSystemLibraries(const absl::flat_hash_set<std::string> &libraryNames);
         absl::flat_hash_set<std::string>::const_iterator systemLibrariesBegin() const;
@@ -214,20 +216,28 @@ namespace zuri_packager {
 
         void addPackageLibrary(const PackageId &packageId, std::string_view libraryName);
         void addPackageLibraries(const PackageId &packageId, const absl::flat_hash_set<std::string> &libraryNames);
-        absl::flat_hash_set<PackageId>::const_iterator packagesBegin() const;
-        absl::flat_hash_set<PackageId>::const_iterator packagesEnd() const;
         absl::flat_hash_set<std::string>::const_iterator packageLibrariesBegin(const PackageId &packageId) const;
         absl::flat_hash_set<std::string>::const_iterator packageLibrariesEnd(const PackageId &packageId) const;
 
+        absl::flat_hash_map<
+            std::string,
+            std::unique_ptr<absl::flat_hash_set<std::string>>
+        >::const_iterator neededBegin() const;
+        absl::flat_hash_map<
+            std::string,
+            std::unique_ptr<absl::flat_hash_set<std::string>>
+        >::const_iterator neededEnd() const;
+
+        absl::flat_hash_set<PackageId>::const_iterator packagesBegin() const;
+        absl::flat_hash_set<PackageId>::const_iterator packagesEnd() const;
+
     private:
         struct Priv {
-            absl::flat_hash_set<std::string> systemLibraries;
-            absl::flat_hash_set<std::string> distributionLibraries;
-            absl::flat_hash_set<PackageId> packagesNeeded;
             absl::flat_hash_map<
-                PackageId,
+                std::string,
                 std::unique_ptr<absl::flat_hash_set<std::string>>
-            > packageLibraries;
+            > neededLibraries;
+            absl::flat_hash_set<PackageId> packagesNeeded;
         };
         std::shared_ptr<Priv> m_priv;
     };

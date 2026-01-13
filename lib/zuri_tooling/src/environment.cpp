@@ -95,20 +95,16 @@ zuri_tooling::Environment::openOrCreate(const std::filesystem::path &environment
     if (std::filesystem::exists(environmentDirectory))
         return open(environmentDirectory);
 
+    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment;
+    TU_ASSIGN_OR_RETURN (runtimeEnvironment, zuri_distributor::RuntimeEnvironment::openOrCreate(environmentDirectory));
+
     std::error_code ec;
-    std::filesystem::create_directory(environmentDirectory, ec);
-    if (ec)
-        return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
-            "failed to create zuri environment directory {}", environmentDirectory.string());
 
     auto configDirectory = environmentDirectory / "config";
     std::filesystem::create_directory(configDirectory, ec);
     if (ec)
         return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
             "failed to create environment config directory {}", configDirectory.string());
-
-    std::shared_ptr<zuri_distributor::RuntimeEnvironment> runtimeEnvironment;
-    TU_ASSIGN_OR_RETURN (runtimeEnvironment, zuri_distributor::RuntimeEnvironment::openOrCreate(environmentDirectory));
 
     auto environmentDatabaseFile = runtimeEnvironment->getEnvironmentDatabaseFile();
     auto binDirectory = runtimeEnvironment->getBinDirectory();

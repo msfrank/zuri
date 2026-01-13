@@ -133,7 +133,7 @@ tempo_utils::Result<
         zuri_build::TargetWriter::PluginInfo>>
 zuri_build::TargetWriter::rewritePlugin(const tempo_utils::UrlPath &path, std::span<const tu_uint8> content)
 {
-    std::filesystem::path pluginName(path.getHead().getPart());
+    std::filesystem::path pluginName(path.lastView());
     auto pluginExtension = pluginName.extension();
     std::vector pluginData(content.begin(), content.end());
 
@@ -153,9 +153,12 @@ zuri_build::TargetWriter::rewritePlugin(const tempo_utils::UrlPath &path, std::s
             pluginInfo.libraries.insert(library.name());
         }
         // clear existing rpath commands
-        for (auto &rpath : dso->rpaths()) {
-            dso->remove(rpath);
+        while (dso->has_rpath()) {
+            dso->remove(*dso->rpath());
         }
+        // for (auto &rpath : dso->rpaths()) {
+        //     dso->remove(rpath);
+        // }
 
         // add the rpath for the distribution/lib directory
         auto distributionLibRpathCommand = LIEF::MachO::RPathCommand::create(
@@ -308,10 +311,14 @@ zuri_build::TargetWriter::determineLibrariesNeeded()
     for (const auto &entry : m_priv->plugins) {
         for (const auto &libraryName : entry.second.libraries) {
             auto available = librariesAvailable.find(libraryName);
-            if (available == librariesAvailable.cend())
-                return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
-                    "missing library {} for plugin {}",
-                    libraryName, entry.second.path.toString());
+            if (available == librariesAvailable.cend()) {
+                // FIXME
+                TU_LOG_V << "missing library " << libraryName << " for plugin " << entry.second.path.toString() ;
+                continue;
+                //return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
+                //    "missing library {} for plugin {}",
+                //    libraryName, entry.second.path.toString());
+            }
             auto &librarySource = available->second;
             if (librarySource == "$SYSTEM$") {
                 m_priv->librariesNeeded.addSystemLibrary(libraryName);
@@ -350,7 +357,6 @@ zuri_build::TargetWriter::writePackageConfig()
     if (m_priv->programMain.isValid()) {
         rootBuilder = rootBuilder.put("programMain", tempo_config::valueNode(m_priv->programMain.toString()));
     }
-
     if (!m_priv->requirements.empty()) {
         auto requirementsBuilder = tempo_config::startMap();
         for (const auto &req : m_priv->requirements) {
@@ -359,6 +365,17 @@ zuri_build::TargetWriter::writePackageConfig()
                 tempo_config::valueNode(req.second.toString()));
         }
         rootBuilder = rootBuilder.put("requirements", requirementsBuilder.buildNode());
+    }
+    if (!m_priv->librariesNeeded.isEmpty()) {
+        absl::btree_map<std::string,tempo_config::ConfigNode> neededEntries;
+        for (auto it = m_priv->librariesNeeded.neededBegin(); it != m_priv->librariesNeeded.neededEnd(); ++it) {
+            std::vector<tempo_config::ConfigNode> libraryNames;
+            for (const auto &libraryName : *it->second) {
+                libraryNames.push_back(tempo_config::valueNode(libraryName));
+            }
+            neededEntries[it->first] = tempo_config::ConfigSeq(std::move(libraryNames));
+        }
+        rootBuilder = rootBuilder.put("librariesNeeded", tempo_config::ConfigMap(std::move(neededEntries)));
     }
 
     auto packageConfig = rootBuilder.buildMap();
