@@ -4,22 +4,22 @@
 #include <tempo_utils/result.h>
 #include <zuri_packager/package_reader.h>
 
-#include "abstract_readonly_package_cache.h"
+#include "abstract_package_cache.h"
 
 namespace zuri_distributor {
 
     /**
-     * TieredPackageCache is an implementation of AbstractReadonlyPackageCache which acts as
+     * TieredPackageCache is an implementation of AbstractPackageCache which acts as
      * a facade for a list of package caches. When resolving a package the TieredPackageCache
      * consults each package cache in order, returning the first package found.
      */
-    class TieredPackageCache : public AbstractReadonlyPackageCache {
+    class TieredPackageCache : public AbstractPackageCache {
     public:
         explicit TieredPackageCache(
-            const std::vector<std::shared_ptr<AbstractReadonlyPackageCache>> &packageCaches);
+            const std::vector<std::shared_ptr<AbstractPackageCache>> &packageCaches);
 
         static tempo_utils::Result<std::shared_ptr<TieredPackageCache>> create(
-            const std::vector<std::filesystem::path> &packageCacheDirectories);
+            const std::vector<std::filesystem::path> &packagesDirectories);
 
         bool containsPackage(const zuri_packager::PackageSpecifier &specifier) const override;
 
@@ -30,7 +30,7 @@ namespace zuri_distributor {
             const zuri_packager::PackageSpecifier &specifier) const override;
 
     private:
-        std::vector<std::shared_ptr<AbstractReadonlyPackageCache>> m_packageCaches;
+        std::vector<std::shared_ptr<AbstractPackageCache>> m_packageCaches;
     };
 }
 

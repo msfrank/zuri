@@ -4,11 +4,11 @@
 #include <tempo_config/config_utils.h>
 #include <tempo_utils/tempdir_maker.h>
 #include <zuri_distributor/distributor_result.h>
-#include <zuri_distributor/package_cache.h>
+#include <zuri_distributor/package_store.h>
 #include <zuri_distributor/tiered_package_cache.h>
 
 zuri_distributor::TieredPackageCache::TieredPackageCache(
-    const std::vector<std::shared_ptr<AbstractReadonlyPackageCache>> &packageCaches)
+    const std::vector<std::shared_ptr<AbstractPackageCache>> &packageCaches)
     : m_packageCaches(packageCaches)
 {
     TU_ASSERT (!m_packageCaches.empty());
@@ -58,14 +58,14 @@ zuri_distributor::TieredPackageCache::resolvePackage(const zuri_packager::Packag
 
 tempo_utils::Result<std::shared_ptr<zuri_distributor::TieredPackageCache>>
 zuri_distributor::TieredPackageCache::create(
-    const std::vector<std::filesystem::path> &packageCacheDirectories)
+    const std::vector<std::filesystem::path> &packagesDirectories)
 {
-    std::vector<std::shared_ptr<AbstractReadonlyPackageCache>> packageCaches;
+    std::vector<std::shared_ptr<AbstractPackageCache>> packageCaches;
 
-    for (const auto &packageCacheDirectory : packageCacheDirectories) {
-        std::shared_ptr<PackageCache> packageCache;
-        TU_ASSIGN_OR_RETURN (packageCache, PackageCache::open(packageCacheDirectory));
-        packageCaches.push_back(std::move(packageCache));
+    for (const auto &packagesDirectory : packagesDirectories) {
+        std::shared_ptr<PackageStore> packageStore;
+        TU_ASSIGN_OR_RETURN (packageStore, PackageStore::open(packagesDirectory));
+        packageCaches.push_back(std::move(packageStore));
     }
 
     return std::make_shared<TieredPackageCache>(packageCaches);

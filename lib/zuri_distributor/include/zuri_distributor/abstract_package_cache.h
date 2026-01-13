@@ -1,14 +1,14 @@
-#ifndef ZURI_DISTRIBUTOR_ABSTRACT_READONLY_PACKAGE_CACHE_H
-#define ZURI_DISTRIBUTOR_ABSTRACT_READONLY_PACKAGE_CACHE_H
+#ifndef ZURI_DISTRIBUTOR_ABSTRACT_PACKAGE_CACHE_H
+#define ZURI_DISTRIBUTOR_ABSTRACT_PACKAGE_CACHE_H
 
 #include <tempo_utils/result.h>
 #include <zuri_packager/package_reader.h>
 
 namespace zuri_distributor {
 
-    class AbstractReadonlyPackageCache {
+    class AbstractPackageCache {
     public:
-        virtual ~AbstractReadonlyPackageCache() = default;
+        virtual ~AbstractPackageCache() = default;
 
         /**
          *
@@ -35,4 +35,4 @@ namespace zuri_distributor {
     };
 }
 
-#endif // ZURI_DISTRIBUTOR_ABSTRACT_READONLY_PACKAGE_CACHE_H
+#endif // ZURI_DISTRIBUTOR_ABSTRACT_PACKAGE_CACHE_H

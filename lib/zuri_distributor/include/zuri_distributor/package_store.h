@@ -1,24 +1,21 @@
-#ifndef ZURI_DISTRIBUTOR_PACKAGE_CACHE_H
-#define ZURI_DISTRIBUTOR_PACKAGE_CACHE_H
+#ifndef ZURI_DISTRIBUTOR_PACKAGE_STORE_H
+#define ZURI_DISTRIBUTOR_PACKAGE_STORE_H
 
 #include <tempo_utils/result.h>
 #include <zuri_packager/package_reader.h>
 
-#include "abstract_readonly_package_cache.h"
+#include "abstract_package_cache.h"
 
 namespace zuri_distributor {
 
-    class PackageCache : public AbstractReadonlyPackageCache {
+    class PackageStore : public AbstractPackageCache {
     public:
-        static tempo_utils::Result<std::shared_ptr<PackageCache>> openOrCreate(
-            const std::filesystem::path &cacheDirectory);
-        static tempo_utils::Result<std::shared_ptr<PackageCache>> openOrCreate(
-            const std::filesystem::path &cacheRoot,
-            std::string_view cacheName);
-        static tempo_utils::Result<std::shared_ptr<PackageCache>> open(
-            const std::filesystem::path &cacheDirectory);
+        static tempo_utils::Result<std::shared_ptr<PackageStore>> openOrCreate(
+            const std::filesystem::path &packagesDirectory);
+        static tempo_utils::Result<std::shared_ptr<PackageStore>> open(
+            const std::filesystem::path &packagesDirectory);
 
-        std::filesystem::path getCacheDirectory() const;
+        std::filesystem::path getPackagesDirectory() const;
 
         bool containsPackage(const zuri_packager::PackageSpecifier &specifier) const override;
 
@@ -34,10 +31,10 @@ namespace zuri_distributor {
 
 
     private:
-        std::filesystem::path m_cacheDirectory;
+        std::filesystem::path m_packagesDirectory;
 
-        explicit PackageCache(const std::filesystem::path &cacheDirectory);
+        explicit PackageStore(const std::filesystem::path &packagesDirectory);
     };
 }
 
-#endif // ZURI_DISTRIBUTOR_PACKAGE_CACHE_H
+#endif // ZURI_DISTRIBUTOR_PACKAGE_STORE_H

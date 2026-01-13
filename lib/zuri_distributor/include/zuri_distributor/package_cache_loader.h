@@ -5,15 +5,15 @@
 
 #include <lyric_runtime/abstract_loader.h>
 
-#include "package_cache.h"
+#include "abstract_package_cache.h"
 
 namespace zuri_distributor {
 
     class PackageCacheLoader : public lyric_runtime::AbstractLoader {
     public:
-        explicit PackageCacheLoader(std::shared_ptr<AbstractReadonlyPackageCache> readonlyPackageCache);
+        explicit PackageCacheLoader(std::shared_ptr<AbstractPackageCache> readonlyPackageCache);
 
-        std::shared_ptr<AbstractReadonlyPackageCache> getPackageCache() const;
+        std::shared_ptr<AbstractPackageCache> getPackageCache() const;
 
         tempo_utils::Result<bool> hasModule(
             const lyric_common::ModuleLocation &location) const override;
@@ -24,7 +24,7 @@ namespace zuri_distributor {
             const lyric_object::PluginSpecifier &specifier) override;
 
     private:
-        std::shared_ptr<AbstractReadonlyPackageCache> m_readonlyPackageCache;
+        std::shared_ptr<AbstractPackageCache> m_readonlyPackageCache;
 
         tempo_utils::Result<std::filesystem::path> findModule(
             const lyric_common::ModuleLocation &location,

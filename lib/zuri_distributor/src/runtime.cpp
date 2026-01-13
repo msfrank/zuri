@@ -6,7 +6,7 @@ zuri_distributor::Runtime::Runtime(
     std::shared_ptr<PackageDatabase> packageDatabase,
     const std::filesystem::path &binDirectory,
     const std::filesystem::path &libDirectory,
-    std::shared_ptr<PackageCache> packageStore)
+    std::shared_ptr<PackageStore> packageStore)
     : m_packageDatabase(std::move(packageDatabase)),
       m_binDirectory(binDirectory),
       m_libDirectory(libDirectory),
@@ -99,8 +99,8 @@ zuri_distributor::Runtime::openOrCreate(
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "failed to create runtime packages directory {}", packagesDirectory.string());
 
-    std::shared_ptr<PackageCache> packageStore;
-    TU_ASSIGN_OR_RETURN (packageStore, PackageCache::openOrCreate(packagesDirectory));
+    std::shared_ptr<PackageStore> packageStore;
+    TU_ASSIGN_OR_RETURN (packageStore, PackageStore::openOrCreate(packagesDirectory));
 
     auto runtime = std::shared_ptr<Runtime>(
         new Runtime(packageDatabase, binDirectory, libDirectory, packageStore));
@@ -139,8 +139,8 @@ zuri_distributor::Runtime::open(const std::filesystem::path &runtimeRoot)
     std::shared_ptr<PackageDatabase> packageDatabase;
     TU_ASSIGN_OR_RETURN (packageDatabase, PackageDatabase::open(packageDatabaseFile));
 
-    std::shared_ptr<PackageCache> packageStore;
-    TU_ASSIGN_OR_RETURN (packageStore, PackageCache::open(packagesDirectory));
+    std::shared_ptr<PackageStore> packageStore;
+    TU_ASSIGN_OR_RETURN (packageStore, PackageStore::open(packagesDirectory));
 
     auto runtime = std::shared_ptr<Runtime>(
         new Runtime(packageDatabase, binDirectory, libDirectory, packageStore));
@@ -178,7 +178,7 @@ zuri_distributor::Runtime::getLibDirectory() const
 std::filesystem::path
 zuri_distributor::Runtime::getPackagesDirectory() const
 {
-    return m_packageStore->getCacheDirectory();
+    return m_packageStore->getPackagesDirectory();
 }
 
 std::shared_ptr<lyric_runtime::AbstractLoader>

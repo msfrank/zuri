@@ -6,7 +6,7 @@
 #include <lyric_runtime/abstract_loader.h>
 
 #include "package_database.h"
-#include "package_cache.h"
+#include "package_store.h"
 #include "package_cache_loader.h"
 #include "tiered_package_cache.h"
 
@@ -57,7 +57,7 @@ namespace zuri_distributor {
         std::shared_ptr<PackageDatabase> m_packageDatabase;
         std::filesystem::path m_binDirectory;
         std::filesystem::path m_libDirectory;
-        std::shared_ptr<PackageCache> m_packageStore;
+        std::shared_ptr<PackageStore> m_packageStore;
 
         std::shared_ptr<PackageCacheLoader> m_loader;
 
@@ -65,7 +65,7 @@ namespace zuri_distributor {
             std::shared_ptr<PackageDatabase> packageDatabase,
             const std::filesystem::path &binDirectory,
             const std::filesystem::path &libDirectory,
-            std::shared_ptr<PackageCache> packageStore);
+            std::shared_ptr<PackageStore> packageStore);
 
         tempo_utils::Status configure();
     };

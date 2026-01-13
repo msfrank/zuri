@@ -8,13 +8,13 @@ add_library(zuri::zuri_distributor ALIAS zuri_distributor)
 
 set(ZURI_DISTRIBUTOR_INCLUDES
     include/zuri_distributor/abstract_package_resolver.h
-    include/zuri_distributor/abstract_readonly_package_cache.h
+    include/zuri_distributor/abstract_package_cache.h
     include/zuri_distributor/dependency_selector.h
     include/zuri_distributor/dependency_set.h
     include/zuri_distributor/distributor_result.h
     include/zuri_distributor/package_database.h
     include/zuri_distributor/http_package_resolver.h
-    include/zuri_distributor/package_cache.h
+    include/zuri_distributor/package_store.h
     include/zuri_distributor/package_cache_loader.h
     include/zuri_distributor/package_fetcher.h
     include/zuri_distributor/runtime.h
@@ -29,7 +29,7 @@ target_sources(zuri_distributor PRIVATE
     src/distributor_result.cpp
     src/package_database.cpp
     src/http_package_resolver.cpp
-    src/package_cache.cpp
+    src/package_store.cpp
     src/package_cache_loader.cpp
     src/package_fetcher.cpp
     src/runtime.cpp

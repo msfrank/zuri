@@ -13,13 +13,13 @@
 #include <zuri_distributor/package_cache_loader.h>
 
 zuri_distributor::PackageCacheLoader::PackageCacheLoader(
-    std::shared_ptr<AbstractReadonlyPackageCache> readonlyPackageCache)
+    std::shared_ptr<AbstractPackageCache> readonlyPackageCache)
     : m_readonlyPackageCache(std::move(readonlyPackageCache))
 {
     TU_ASSERT (m_readonlyPackageCache != nullptr);
 }
 
-std::shared_ptr<zuri_distributor::AbstractReadonlyPackageCache>
+std::shared_ptr<zuri_distributor::AbstractPackageCache>
 zuri_distributor::PackageCacheLoader::getPackageCache() const
 {
     return m_readonlyPackageCache;
