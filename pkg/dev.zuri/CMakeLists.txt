@@ -24,7 +24,6 @@ add_custom_target(generate-project-directory
         --ignore-existing
         --project-config-file ${CMAKE_CURRENT_BINARY_DIR}/project.config
         --copy-targets-dir ${CMAKE_CURRENT_SOURCE_DIR}/targets
-        --copy-config-dir ${CMAKE_CURRENT_SOURCE_DIR}/config
         ${EXTRA_LIB_DIR_LIST}
         ${CMAKE_CURRENT_BINARY_DIR}/project
     COMMAND_EXPAND_LISTS
