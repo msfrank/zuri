@@ -61,6 +61,10 @@ set(RUNTIME_DISTRIBUTION_ROOT "${CMAKE_INSTALL_PREFIX}"
     "The runtime distribution root directory. Defaults to CMAKE_INSTALL_PREFIX.")
 message(STATUS "runtime distribution root is ${RUNTIME_DISTRIBUTION_ROOT}")
 
+set(RUNTIME_LIB_DIRS ""
+    CACHE STRING
+    "List of runtime library directories. Defaults to empty list.")
+
 option(ENABLE_SANITIZER "Enable sanitizer library." OFF)
 
 set(SANITIZER ""

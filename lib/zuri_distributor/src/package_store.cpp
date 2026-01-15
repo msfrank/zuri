@@ -56,14 +56,6 @@ zuri_distributor::PackageStore::resolvePackage(const zuri_packager::PackageSpeci
 }
 
 tempo_utils::Result<std::filesystem::path>
-zuri_distributor::PackageStore::installPackage(const std::filesystem::path &packagePath)
-{
-    std::shared_ptr<zuri_packager::PackageReader> reader;
-    TU_ASSIGN_OR_RETURN (reader, zuri_packager::PackageReader::open(packagePath));
-    return installPackage(reader);
-}
-
-tempo_utils::Result<std::filesystem::path>
 zuri_distributor::PackageStore::installPackage(std::shared_ptr<zuri_packager::PackageReader> reader)
 {
     zuri_packager::PackageExtractorOptions options;

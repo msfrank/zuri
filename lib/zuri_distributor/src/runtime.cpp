@@ -30,13 +30,16 @@ symlink_libs(
     if (ec)
         return false;
     for (const auto &entry : sourceIterator) {
+        // only symlink library files
+        if (!entry.is_regular_file())
+            continue;
+        auto filename = entry.path().filename().string();
+        if (!filename.starts_with("lib"))
+            continue;
+        // symlink library to destination lib dir
         auto from = std::filesystem::absolute(entry.path());
-        auto to = destLibDir / entry.path().filename();
-        if (entry.is_directory()) {
-            std::filesystem::create_directory_symlink(from, to, ec);
-        } else if (entry.is_regular_file()) {
-            std::filesystem::create_symlink(from, to, ec);
-        }
+        auto to = destLibDir / filename;
+        std::filesystem::create_symlink(from, to, ec);
         if (ec)
             return false;
     }
@@ -188,6 +191,26 @@ zuri_distributor::Runtime::getLoader() const
 }
 
 bool
+zuri_distributor::Runtime::containsPackage(const std::filesystem::path &packagePath) const
+{
+    auto result = zuri_packager::PackageReader::open(packagePath);
+    if (result.isStatus())
+        return false;
+    return containsPackage(result.getResult());
+}
+
+bool
+zuri_distributor::Runtime::containsPackage(std::shared_ptr<zuri_packager::PackageReader> reader) const
+{
+    if (reader == nullptr)
+        return false;
+    auto result = reader->readPackageSpecifier();
+    if (result.isStatus())
+        return false;
+    return containsPackage(result.getResult());
+}
+
+bool
 zuri_distributor::Runtime::containsPackage(const zuri_packager::PackageSpecifier &specifier) const
 {
     return m_packageStore->containsPackage(specifier);
@@ -208,13 +231,23 @@ zuri_distributor::Runtime::resolvePackage(const zuri_packager::PackageSpecifier 
 tempo_utils::Result<std::filesystem::path>
 zuri_distributor::Runtime::installPackage(const std::filesystem::path &packagePath)
 {
-    return m_packageStore->installPackage(packagePath);
+    std::shared_ptr<zuri_packager::PackageReader> reader;
+    TU_ASSIGN_OR_RETURN (reader, zuri_packager::PackageReader::open(packagePath));
+    return installPackage(reader);
 }
 
 tempo_utils::Result<std::filesystem::path>
 zuri_distributor::Runtime::installPackage(std::shared_ptr<zuri_packager::PackageReader> reader)
 {
-    return m_packageStore->installPackage(reader);
+    std::filesystem::path packageRoot;
+    TU_ASSIGN_OR_RETURN (packageRoot, m_packageStore->installPackage(reader));
+    auto packageRuntimeLibLink = packageRoot / "runtime-lib";
+    std::error_code ec;
+    std::filesystem::create_directory_symlink(m_libDirectory, packageRuntimeLibLink, ec);
+    if (ec)
+        return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
+            "failed to create runtime-lib link in {}; {}", packageRoot.string(), ec.message());
+    return packageRoot;
 }
 
 tempo_utils::Status

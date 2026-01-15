@@ -120,9 +120,11 @@ make_relative_rpath(
     std::string_view originName)
 {
     auto pluginFilePath = pluginFile.toFilesystemPath("/");
-    pluginFilePath.replace_filename(originName);
+    auto pluginDirectory = pluginFilePath.parent_path();
     auto libDirectoryPath = libDirectory.toFilesystemPath("/");
-    return pluginFilePath.lexically_relative(libDirectoryPath);
+    auto relativePath = libDirectoryPath.lexically_relative(pluginDirectory);
+    auto rpath = std::filesystem::path{originName} / relativePath;
+    return rpath;
 }
 
 tempo_utils::Result<
@@ -135,7 +137,7 @@ zuri_build::TargetWriter::rewritePlugin(const tempo_utils::UrlPath &path, std::s
     auto pluginExtension = pluginName.extension();
     std::vector pluginData(content.begin(), content.end());
 
-    auto distributionLibPath = tempo_utils::UrlPath::fromString("/distribution/lib");
+    auto runtimeLibPath = tempo_utils::UrlPath::fromString("/runtime-lib");
     auto libPath = tempo_utils::UrlPath::fromString("/lib");
 
     PluginInfo pluginInfo;
@@ -150,41 +152,43 @@ zuri_build::TargetWriter::rewritePlugin(const tempo_utils::UrlPath &path, std::s
         for (const auto &library : dso->libraries()) {
             pluginInfo.libraries.insert(library.name());
         }
-        // clear existing rpath commands
-        while (dso->has_rpath()) {
-            dso->remove(*dso->rpath());
-        }
-        // for (auto &rpath : dso->rpaths()) {
-        //     dso->remove(rpath);
+
+        // // remove the code signature command
+        // dso->remove_signature();
+        //
+        // // clear existing rpath commands
+        // while (dso->has_rpath()) {
+        //     dso->remove(*dso->rpath());
         // }
-
-        // add the rpath for the distribution/lib directory
-        auto distributionLibRpathCommand = LIEF::MachO::RPathCommand::create(
-            make_relative_rpath(path, distributionLibPath, "@loader_path"));
-        dso->add(*distributionLibRpathCommand);
-
-        // add the rpath for the lib directory
-        auto libRpathCommand = LIEF::MachO::RPathCommand::create(
-            make_relative_rpath(path, libPath, "@loader_path"));
-        dso->add(*libRpathCommand);
-
-        // write the new content
-        std::vector<tu_uint8> rewrittenContent;
-        LIEF::MachO::Builder::write(*fatBinary, rewrittenContent);
-        auto rewrittenBytes = std::static_pointer_cast<const tempo_utils::ImmutableBytes>(
-            tempo_utils::MemoryBytes::create(std::move(rewrittenContent)));
-
-        std::pair p(rewrittenBytes, pluginInfo);
+        //
+        // // add the rpath for the distribution/lib directory
+        // auto runtimeLibRpathCommand = LIEF::MachO::RPathCommand::create(
+        //     make_relative_rpath(path, runtimeLibPath, "@loader_path"));
+        // dso->add(*runtimeLibRpathCommand);
+        //
+        // // add the rpath for the lib directory
+        // auto libRpathCommand = LIEF::MachO::RPathCommand::create(
+        //     make_relative_rpath(path, libPath, "@loader_path"));
+        // dso->add(*libRpathCommand);
+        //
+        // // write the new content
+        // std::vector<tu_uint8> rewrittenContent;
+        // LIEF::MachO::Builder::write(*fatBinary, rewrittenContent);
+        // auto rewrittenBytes = std::static_pointer_cast<const tempo_utils::ImmutableBytes>(
+        //     tempo_utils::MemoryBytes::create(std::move(rewrittenContent)));
+        //
+        // std::pair p(rewrittenBytes, pluginInfo);
+        std::pair p(std::shared_ptr<const tempo_utils::ImmutableBytes>{}, pluginInfo);
 
         return p;
     }
 
-    if (pluginExtension == ".so") {
-
-    }
+    // if (pluginExtension == ".so") {
+    //
+    // }
 
     return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
-        "unsupported DSO type");
+        "unsupported DSO file type '{}'", pluginName.string());
 }
 
 using perms = std::filesystem::perms;
@@ -232,7 +236,9 @@ zuri_build::TargetWriter::writeModule(
         std::pair<std::shared_ptr<const tempo_utils::ImmutableBytes>,PluginInfo> p;
         TU_ASSIGN_OR_RETURN (p, rewritePlugin(fullModulePath, content->getSpan()));
         m_priv->plugins[p.second.path] = std::move(p.second);
-        content = std::move(p.first);
+        if (p.first != nullptr) {
+            content = std::move(p.first);
+        }
     } else {
         return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
             "unhandled module content '{}' for {}", contentType, fullModulePath.toString());

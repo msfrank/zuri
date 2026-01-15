@@ -119,6 +119,13 @@ class Zuri(ConanFile):
         if self.options.docker_registry:
             tc.cache_variables['DOCKER_REGISTRY'] = self.options.docker_registry
 
+        runtime_lib_dirs = set()
+        for id,dep in self.dependencies.items():
+            libdirs = [dir for dir in dep.cpp_info.libdirs if dir != 'lib']
+            runtime_lib_dirs.update(libdirs)
+        self.output.info(f"runtime lib dirs: {runtime_lib_dirs}")
+        tc.cache_variables['RUNTIME_LIB_DIRS'] = ';'.join(runtime_lib_dirs)
+
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()

@@ -7,15 +7,18 @@
 #include <lyric_runtime/chain_loader.h>
 #include <lyric_test/test_inspector.h>
 #include <tempo_utils/directory_maker.h>
-#include <tempo_utils/tempdir_maker.h>
-#include <zuri_distributor/package_cache.h>
+#include <zuri_distributor/package_store.h>
 #include <zuri_distributor/package_cache_loader.h>
 #include <zuri_test/placeholder_loader.h>
 #include <zuri_test/zuri_tester.h>
 
-zuri_test::ZuriTester::ZuriTester(const TesterOptions &options)
-    : m_options(options)
+zuri_test::ZuriTester::ZuriTester(
+    std::shared_ptr<zuri_distributor::Runtime> runtime,
+    const TesterOptions &options)
+    : m_runtime(std::move(runtime)),
+      m_options(options)
 {
+    TU_ASSERT (m_runtime != nullptr);
 }
 
 tempo_utils::Status
@@ -41,19 +44,11 @@ zuri_test::ZuriTester::configure()
     // configure the test runner
     TU_RETURN_IF_NOT_OK (runner->configureBaseTester());
 
-    // open the existing package cache if specified, otherwise create a new one
-    std::shared_ptr<zuri_distributor::PackageCache> packageCache;
-    if (m_options.existingPackageCache.empty()) {
-        TU_ASSIGN_OR_RETURN (packageCache, zuri_distributor::PackageCache::openOrCreate(
-            runner->getTesterDirectory(), "packages"));
-    } else {
-        TU_ASSIGN_OR_RETURN (packageCache, zuri_distributor::PackageCache::open(
-            m_options.existingPackageCache));
-    }
-
     // install local packages
     for (const auto &packagePath : m_options.localPackages) {
-        TU_RETURN_IF_STATUS (packageCache->installPackage(packagePath));
+        if (!m_runtime->containsPackage(packagePath)) {
+            TU_RETURN_IF_STATUS (m_runtime->installPackage(packagePath));
+        }
     }
 
     // // resolve package dependencies
@@ -67,12 +62,8 @@ zuri_test::ZuriTester::configure()
     //     importPackages[entry.first] = pathOption.getValue();
     // }
 
-    // configure requirements loader
-    auto packageCacheLoader = std::make_shared<zuri_distributor::PackageCacheLoader>(packageCache);
-    TU_RETURN_IF_NOT_OK (placeholderLoader->resolve(packageCacheLoader));
+    TU_RETURN_IF_NOT_OK (placeholderLoader->resolve(m_runtime->getLoader()));
 
-    m_packageCacheLoader = packageCacheLoader;
-    m_packageCache = std::move(packageCache);
     m_runner = std::move(runner);
     return {};
 }
@@ -136,7 +127,7 @@ zuri_test::ZuriTester::runModule(
 
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
     loaderChain.push_back(dependencyLoader);
-    loaderChain.push_back(m_packageCacheLoader);
+    loaderChain.push_back(m_runtime->getLoader());
     auto applicationLoader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
 
     // construct the interpreter state
@@ -158,11 +149,10 @@ zuri_test::ZuriTester::runModule(
 tempo_utils::Result<lyric_test::RunModule>
 zuri_test::ZuriTester::runSingleModule(
     const std::string &code,
+    std::shared_ptr<zuri_distributor::Runtime> runtime,
     const TesterOptions &options)
 {
-    ZuriTester tester(options);
-    auto status = tester.configure();
-    if (!status.isOk())
-        return status;
+    ZuriTester tester(std::move(runtime), options);
+    TU_RETURN_IF_NOT_OK (tester.configure());
     return tester.runModule(code);
 }

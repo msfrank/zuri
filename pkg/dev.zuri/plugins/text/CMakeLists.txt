@@ -12,17 +12,18 @@ add_library(std-text-plugin SHARED
     text_ref.h
     )
 
-#
 set_target_properties(std-text-plugin PROPERTIES
-    INSTALL_RPATH_USE_LINK_PATH TRUE
+    BUILD_WITH_INSTALL_RPATH TRUE
     LIBRARY_OUTPUT_NAME ${PLUGIN_BASENAME}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PREFIX ""
     )
 
-# set the RPATH if on OS X
+# set the plugin RPATH
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set_target_properties(std-text-plugin PROPERTIES MACOSX_RPATH TRUE)
+    set_target_properties(std-text-plugin PROPERTIES INSTALL_RPATH "@loader_path/../runtime-lib;@loader_path/../lib")
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set_target_properties(std-text-plugin PROPERTIES INSTALL_RPATH "$ORIGIN/../runtime-lib;$ORIGIN/../lib")
 endif()
 
 target_link_libraries(std-text-plugin PUBLIC

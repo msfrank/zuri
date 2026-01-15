@@ -9,6 +9,7 @@
 #include <tempo_command/command_parser.h>
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
+#include <tempo_config/config_builder.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_config/parse_config.h>
 #include <tempo_config/time_conversions.h>
@@ -251,6 +252,13 @@ zuri_build::zuri_build(int argc, const char *argv[])
     TU_ASSIGN_OR_RETURN (runtime, zuri_distributor::Runtime::open(
         environment.getEnvironmentDirectory()));
 
+    // build the task settings
+    absl::flat_hash_map<std::string,tempo_config::ConfigNode> globalMap;
+    globalMap["runtimeBinDirectory"] = tempo_config::valueNode(runtime->getBinDirectory().string());
+    globalMap["runtimeLibDirectory"] = tempo_config::valueNode(runtime->getLibDirectory().string());
+    lyric_build::TaskSettings runtimeSettings(globalMap, {}, {});
+    auto taskSettings = runtimeSettings.merge(buildToolConfig->getTaskSettings());
+
     // construct and configure the import solver
     auto importSolver = std::make_shared<ImportSolver>(runtime);
     TU_RETURN_IF_NOT_OK (importSolver->configure());
@@ -299,8 +307,8 @@ zuri_build::zuri_build(int argc, const char *argv[])
     // set the fallback loader to load from the package cache hierarchy
     builderOptions.fallbackLoader = runtime->getLoader();
 
-    // construct the builder based on project config and config overrides
-    lyric_build::LyricBuilder builder(projectRoot, buildToolConfig->getTaskSettings(), builderOptions);
+    // construct the builder based on runtime, project config, and config overrides
+    lyric_build::LyricBuilder builder(projectRoot, taskSettings, builderOptions);
     TU_RETURN_IF_NOT_OK (builder.configure());
 
     // build each target (and its dependencies) in the order specified on the command line

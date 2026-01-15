@@ -15,6 +15,8 @@ get_directory_property(ZURI_STD_TIME_PLUGIN_FILEPATH DIRECTORY plugins/time PLUG
 # create the workspace config file used to build package
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/project.config.in ${CMAKE_CURRENT_BINARY_DIR}/project.config @ONLY)
 
+list(TRANSFORM RUNTIME_LIB_DIRS PREPEND "--extra-lib-dir=" OUTPUT_VARIABLE EXTRA_LIB_DIR_LIST)
+
 # generate the project directory
 add_custom_target(generate-project-directory
     COMMAND
@@ -23,7 +25,9 @@ add_custom_target(generate-project-directory
         --project-config-file ${CMAKE_CURRENT_BINARY_DIR}/project.config
         --copy-targets-dir ${CMAKE_CURRENT_SOURCE_DIR}/targets
         --copy-config-dir ${CMAKE_CURRENT_SOURCE_DIR}/config
+        ${EXTRA_LIB_DIR_LIST}
         ${CMAKE_CURRENT_BINARY_DIR}/project
+    COMMAND_EXPAND_LISTS
     DEPENDS
       ${CMAKE_CURRENT_BINARY_DIR}/project.config
       zuri-project
@@ -62,4 +66,4 @@ set_target_properties(zuri-std-package PROPERTIES
 install(FILES ${ZURI_STD_PACKAGE_PATH} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/zpk)
 
 # add testing subdirectory
-#add_subdirectory(test)
+add_subdirectory(test)

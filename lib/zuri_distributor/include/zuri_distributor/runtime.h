@@ -43,7 +43,10 @@ namespace zuri_distributor {
 
         std::shared_ptr<lyric_runtime::AbstractLoader> getLoader() const;
 
+        bool containsPackage(const std::filesystem::path &packagePath) const;
+        bool containsPackage(std::shared_ptr<zuri_packager::PackageReader> reader) const;
         bool containsPackage(const zuri_packager::PackageSpecifier &specifier) const;
+
         tempo_utils::Result<Option<tempo_config::ConfigMap>> describePackage(
             const zuri_packager::PackageSpecifier &specifier) const;
         tempo_utils::Result<Option<std::filesystem::path>> resolvePackage(

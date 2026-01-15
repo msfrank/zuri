@@ -127,7 +127,11 @@ zuri_packager::PackageExtractor::extractPackage()
 
     auto destinationRoot = !m_options.destinationRoot.empty()? m_options.destinationRoot : std::filesystem::current_path();
     auto destinationPath = m_specifier.toDirectoryPath(destinationRoot);
-    std::filesystem::rename(m_workdirPath, destinationPath);
+    std::error_code ec;
+    std::filesystem::rename(m_workdirPath, destinationPath, ec);
+    if (ec)
+        return PackagerStatus::forCondition(PackagerCondition::kPackagerInvariant,
+            "failed to move extracted package to destination: {}", ec.message());
 
     return destinationPath;
 }

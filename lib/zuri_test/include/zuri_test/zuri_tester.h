@@ -9,8 +9,7 @@
 #include <lyric_compiler/compiler_result.h>
 #include <lyric_test/base_protocol_mock.h>
 #include <lyric_test/test_runner.h>
-#include <zuri_distributor/package_cache.h>
-#include <zuri_distributor/package_cache_loader.h>
+#include <zuri_distributor/runtime.h>
 
 namespace zuri_test {
 
@@ -23,8 +22,7 @@ namespace zuri_test {
         std::shared_ptr<lyric_runtime::AbstractLoader> bootstrapLoader = {};
         std::shared_ptr<lyric_runtime::AbstractLoader> fallbackLoader = {};
         lyric_build::TaskSettings taskSettings = {};
-        std::filesystem::path existingPackageCache = {};
-        std::vector<std::filesystem::path> localPackages;
+        std::vector<std::filesystem::path> localPackages = {};
         absl::flat_hash_map<
             tempo_utils::Url,
             std::shared_ptr<lyric_test::BaseProtocolMock>> protocolMocks = {};
@@ -34,7 +32,9 @@ namespace zuri_test {
     class ZuriTester {
 
     public:
-        explicit ZuriTester(const TesterOptions &options);
+        ZuriTester(
+            std::shared_ptr<zuri_distributor::Runtime> runtime,
+            const TesterOptions &options);
 
         tempo_utils::Status configure();
 
@@ -47,12 +47,13 @@ namespace zuri_test {
 
         static tempo_utils::Result<lyric_test::RunModule> runSingleModule(
             const std::string &code,
+            std::shared_ptr<zuri_distributor::Runtime> runtime,
             const TesterOptions &options = {});
 
     private:
+        std::shared_ptr<zuri_distributor::Runtime> m_runtime;
         TesterOptions m_options;
-        std::shared_ptr<zuri_distributor::PackageCache> m_packageCache;
-        std::shared_ptr<zuri_distributor::PackageCacheLoader> m_packageCacheLoader;
+
         std::shared_ptr<lyric_test::TestRunner> m_runner;
     };
 }
