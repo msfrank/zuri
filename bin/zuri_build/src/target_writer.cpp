@@ -153,39 +153,22 @@ zuri_build::TargetWriter::rewritePlugin(const tempo_utils::UrlPath &path, std::s
             pluginInfo.libraries.insert(library.name());
         }
 
-        // // remove the code signature command
-        // dso->remove_signature();
-        //
-        // // clear existing rpath commands
-        // while (dso->has_rpath()) {
-        //     dso->remove(*dso->rpath());
-        // }
-        //
-        // // add the rpath for the distribution/lib directory
-        // auto runtimeLibRpathCommand = LIEF::MachO::RPathCommand::create(
-        //     make_relative_rpath(path, runtimeLibPath, "@loader_path"));
-        // dso->add(*runtimeLibRpathCommand);
-        //
-        // // add the rpath for the lib directory
-        // auto libRpathCommand = LIEF::MachO::RPathCommand::create(
-        //     make_relative_rpath(path, libPath, "@loader_path"));
-        // dso->add(*libRpathCommand);
-        //
-        // // write the new content
-        // std::vector<tu_uint8> rewrittenContent;
-        // LIEF::MachO::Builder::write(*fatBinary, rewrittenContent);
-        // auto rewrittenBytes = std::static_pointer_cast<const tempo_utils::ImmutableBytes>(
-        //     tempo_utils::MemoryBytes::create(std::move(rewrittenContent)));
-        //
-        // std::pair p(rewrittenBytes, pluginInfo);
         std::pair p(std::shared_ptr<const tempo_utils::ImmutableBytes>{}, pluginInfo);
-
         return p;
     }
 
-    // if (pluginExtension == ".so") {
-    //
-    // }
+    if (pluginExtension == ".so") {
+        // load the ELF binary
+        auto elfBinary = LIEF::ELF::Parser::parse(pluginData);
+
+        // record all dependencies
+        for (const auto &libraryName : elfBinary->imported_libraries()) {
+            pluginInfo.libraries.insert(libraryName);
+        }
+
+        std::pair p(std::shared_ptr<const tempo_utils::ImmutableBytes>{}, pluginInfo);
+        return p;
+    }
 
     return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
         "unsupported DSO file type '{}'", pluginName.string());
