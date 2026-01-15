@@ -4,7 +4,7 @@
     "imports": {
     },
     "targets": {
-        "dev.zuri_std": {
+        "std": {
             "type": "Library",
             "specifier": "std-@PROJECT_VERSION@@zuri.dev",
             "libraryModules": [
@@ -72,9 +72,10 @@
                 }
             }
         },
-        "dev.zuri_fs": {
+        "fs": {
             "type": "Library",
             "specifier": "fs-@PROJECT_VERSION@@zuri.dev",
+            "depends": ["std"],
             "libraryModules": [
                 "/file",
                 "/path",

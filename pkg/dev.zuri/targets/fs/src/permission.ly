@@ -1,5 +1,5 @@
 
-import from "//std@zuri.dev/flags" { Flags, IntoFlags }
+import from "//std/flags" { Flags, IntoFlags }
 
 defenum Permission {
 

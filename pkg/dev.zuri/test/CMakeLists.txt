@@ -30,4 +30,4 @@ target_link_libraries(test_utils
     )
 
 add_subdirectory(std)
-#add_subdirectory(fs)
+add_subdirectory(fs)

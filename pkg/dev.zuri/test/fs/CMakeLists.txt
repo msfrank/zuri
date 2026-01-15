@@ -23,6 +23,7 @@ target_compile_definitions(zuri_fs_package_testsuite PRIVATE
     "ZURI_FS_PACKAGE_PATH=\"${ZURI_FS_PACKAGE_PATH}\""
     )
 target_link_libraries(zuri_fs_package_testsuite
+    test_utils
     lyric::lyric_test
     tempo::tempo_test
     tempo::tempo_utils
@@ -44,6 +45,7 @@ target_compile_definitions(ZuriFsPackageTestSuite PRIVATE
     )
 target_link_libraries(ZuriFsPackageTestSuite
     PUBLIC
+    test_utils
     lyric::lyric_test
     tempo::tempo_test
     tempo::tempo_utils

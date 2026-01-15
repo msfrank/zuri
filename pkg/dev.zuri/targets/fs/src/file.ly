@@ -1,8 +1,8 @@
 
 @@Plugin("/file")
 
-import from "//std@zuri.dev/system" { Future }
-import from "//std@zuri.dev/flags" { Flags, IntoFlags }
+import from "//std/system" { Future }
+import from "//std/flags" { Flags, IntoFlags }
 import from "/permission" { Permission, Permissions }
 
 defenum FileMode {

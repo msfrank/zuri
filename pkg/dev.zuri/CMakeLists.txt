@@ -41,7 +41,7 @@ add_custom_command (
       zuri-build -vv
         -P ${CMAKE_CURRENT_BINARY_DIR}/project
         -I ${CMAKE_BINARY_DIR}
-        "dev.zuri_std"
+        "std"
     WORKING_DIRECTORY
       ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS
@@ -62,8 +62,39 @@ set_target_properties(zuri-std-package PROPERTIES
     ZURI_PKG_SPECIFIER "std-${PROJECT_VERSION}@zuri.dev"
     )
 
-# install zpk file
-install(FILES ${ZURI_STD_PACKAGE_PATH} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/zpk)
+# build the fs package
+add_custom_command (
+    OUTPUT
+    ${ZURI_FS_PACKAGE_PATH}
+    COMMAND
+    zuri-build -vv
+    -P ${CMAKE_CURRENT_BINARY_DIR}/project
+    -I ${CMAKE_BINARY_DIR}
+    "fs"
+    WORKING_DIRECTORY
+    ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS
+    zuri-build
+    generate-project-directory
+    zuri-std-package
+    fs-file-plugin
+    fs-path-plugin
+    )
+
+# define custom target and target properties for consuming fs
+add_custom_target(zuri-fs-package DEPENDS ${ZURI_FS_PACKAGE_PATH})
+set_target_properties(zuri-fs-package PROPERTIES
+    ZURI_PKG_FILEPATH ${ZURI_FS_PACKAGE_PATH}
+    ZURI_PKG_SPECIFIER "fs-${PROJECT_VERSION}@zuri.dev"
+    )
+
+# install zpk files
+install(
+    FILES
+      ${ZURI_STD_PACKAGE_PATH}
+      ${ZURI_FS_PACKAGE_PATH}
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/zpk
+    )
 
 # add testing subdirectory
 add_subdirectory(test)
