@@ -43,6 +43,14 @@ zuri_tooling::Project::isValid() const
     return m_priv != nullptr;
 }
 
+bool
+zuri_tooling::Project::isLinked() const
+{
+    if (m_priv == nullptr)
+        return false;
+    return std::filesystem::is_symlink(m_priv->projectConfigFile);
+}
+
 std::filesystem::path
 zuri_tooling::Project::getProjectConfigFile() const
 {
@@ -142,9 +150,18 @@ zuri_tooling::Project::openOrCreate(
     TU_ASSIGN_OR_RETURN (environment, Environment::openOrCreate(
         buildEnvironmentDirectory, environmentOpenOrCreateOptions));
 
-    // write the project.config
     auto projectConfigFile = projectDirectory / kProjectConfigName;
-    TU_RETURN_IF_NOT_OK (tempo_config::write_config_file(options.projectMap, projectConfigFile));
+
+    // write the project.config
+    if (options.linked) {
+        auto opts = std::filesystem::copy_options::create_symlinks;
+        std::filesystem::copy(options.projectConfigTarget, projectConfigFile, opts, ec);
+        if (ec)
+            return ToolingStatus::forCondition(ToolingCondition::kToolingInvariant,
+                "failed to link project config file {}", options.projectConfigTarget.string());
+    } else {
+        TU_RETURN_IF_NOT_OK (tempo_config::write_config_file(options.projectMap, projectConfigFile));
+    }
 
     return Project(projectConfigFile, projectDirectory, configDirectory, targetsDirectory,
         buildDirectory, buildEnvironmentDirectory);

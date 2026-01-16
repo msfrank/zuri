@@ -11,28 +11,37 @@
 namespace zuri_tooling {
 
     /**
-     *
+     * The file name of the project config file within a project.
      */
     constexpr const char * const kProjectConfigName = "project.config";
 
     /**
-     *
+     * The directory name of the environment directory within a project.
      */
     constexpr const char * const kProjectBuildDirectoryName = ".zuribuild";
 
+    /**
+     * Options structure which controls the creation of a new Project.
+     */
     struct ProjectOpenOrCreateOptions {
         bool exclusive = false;
         Distribution distribution = {};
         std::vector<std::filesystem::path> extraLibDirs = {};
         tempo_config::ConfigMap projectMap = {};
+        bool linked = false;
+        std::filesystem::path projectConfigTarget = {};
     };
 
+    /**
+     * A Project is a directory structure containing the files and directories needed to build targets.
+     */
     class Project {
     public:
         Project();
         Project(const Project &other);
 
         bool isValid() const;
+        bool isLinked() const;
 
         std::filesystem::path getProjectConfigFile() const;
         std::filesystem::path getProjectDirectory() const;

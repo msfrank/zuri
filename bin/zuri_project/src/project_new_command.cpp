@@ -4,6 +4,7 @@
 #include <tempo_config/abstract_converter.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
+#include <tempo_config/enum_conversions.h>
 #include <tempo_utils/result.h>
 #include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/package_fetcher.h>
@@ -16,46 +17,65 @@ zuri_project::project_new_command(
     std::shared_ptr<zuri_tooling::CoreConfig> coreConfig,
     tempo_command::TokenVector &tokens)
 {
-    tempo_config::PathParser projectConfigFileParser(std::filesystem::path{});
+    tempo_config::PathParser copyProjectConfigFileParser(std::filesystem::path{});
+    tempo_config::PathParser linkProjectConfigFileParser(std::filesystem::path{});
     tempo_config::PathParser pathParser;
     tempo_config::SeqTParser copyTargetListParser(&pathParser, {});
     tempo_config::PathParser copyTargetsDirectoryParser(std::filesystem::path{});
-    tempo_config::SeqTParser copyConfigListParser(&pathParser, {});
-    tempo_config::PathParser copyConfigDirectoryParser(std::filesystem::path{});
+    tempo_config::SeqTParser linkTargetListParser(&pathParser, {});
+    tempo_config::PathParser linkTargetsDirectoryParser(std::filesystem::path{});
     tempo_config::SeqTParser extraLibDirListParser(&pathParser, {});
-    tempo_config::BooleanParser ignoreExistingParser(false);
     tempo_config::PathParser projectPathParser;
 
+    enum IfExisting {
+        Abort,
+        Skip,
+        Recreate,
+    };
+    tempo_config::EnumTParser<IfExisting> ifExistingParser({
+        {"Abort", Abort},
+        {"Skip", Skip},
+        {"Recreate", Recreate},
+    }, Abort);
+
+    tempo_config::PathParser recreateIfFilePresentParser(std::filesystem::path{});
+
     std::vector<tempo_command::Default> defaults = {
-        {"projectConfigFile", "Use specified project.config file", "FILE"},
+        {"copyProjectConfigFile", "Copy the specified project.config file", "FILE"},
+        {"linkProjectConfigFile", "Link the specified project.config file", "FILE"},
         {"copyTargetList", "Copy existing target", "PATH"},
-        {"copyConfigList", "Copy existing config", "PATH"},
         {"copyTargetsDirectory", "Copy all targets from existing directory", "DIR"},
-        {"copyConfigDirectory", "Copy configs from existing directory", "DIR"},
+        {"linkTargetList", "Link existing target", "PATH"},
+        {"linkTargetsDirectory", "Link all targets from existing directory", "DIR"},
         {"extraLibDirList", "Additional component directories", "DIR"},
-        {"ignoreExisting", "Do nothing if project already exists"},
+        {"ifExisting", "Do nothing if project already exists"},
+        {"recreateIfFilePresent", "Recreate project if specified file is present", "PATH"},
         {"projectPath", "Path to the new project", "PATH"},
     };
 
     const std::vector<tempo_command::Grouping> groupings = {
-        {"projectConfigFile", {"--project-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"copyProjectConfigFile", {"--copy-project-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"linkProjectConfigFile", {"--link-project-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"copyTargetList", {"--copy-target"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"copyConfigList", {"--copy-config"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"copyTargetsDirectory", {"--copy-targets-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"copyConfigDirectory", {"--copy-config-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"linkTargetList", {"--link-target"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"linkTargetsDirectory", {"--link-targets-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"extraLibDirList", {"--extra-lib-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"ignoreExisting", {"--ignore-existing"}, tempo_command::GroupingType::NO_ARGUMENT},
+        {"ifExisting", {"--if-existing"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"recreateIfFilePresent", {"--recreate-if-file-present"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
     };
 
     const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectConfigFile"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "copyProjectConfigFile"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "linkProjectConfigFile"},
         {tempo_command::MappingType::ANY_INSTANCES, "copyTargetList"},
-        {tempo_command::MappingType::ANY_INSTANCES, "copyConfigList"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "copyTargetsDirectory"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "copyConfigDirectory"},
+        {tempo_command::MappingType::ANY_INSTANCES, "linkTargetList"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "linkTargetsDirectory"},
         {tempo_command::MappingType::ANY_INSTANCES, "extraLibDirList"},
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "ignoreExisting"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "ifExisting"},
+        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "recreateIfFilePresent"},
     };
 
     std::vector<tempo_command::Mapping> argMappings = {
@@ -96,40 +116,54 @@ zuri_project::project_new_command(
     // construct command map
     tempo_config::ConfigMap commandMap(commandConfig);
 
-    // determine project config file
-    std::filesystem::path projectConfigFile;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(projectConfigFile, projectConfigFileParser,
-        commandConfig, "projectConfigFile"));
+    // determine project config file  to copy from
+    std::filesystem::path copyProjectConfigFile;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(copyProjectConfigFile, copyProjectConfigFileParser,
+        commandConfig, "copyProjectConfigFile"));
+
+    // determine project config file  to link from
+    std::filesystem::path linkProjectConfigFile;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(linkProjectConfigFile, linkProjectConfigFileParser,
+        commandConfig, "linkProjectConfigFile"));
+
+    if (!copyProjectConfigFile.empty() && !linkProjectConfigFile.empty())
+        return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
+            "cannot specify both --copy-project-config-file and --link-project-config-file");
 
     // determine list of targets to copy from
     std::vector<std::filesystem::path> copyTargetList;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(copyTargetList, copyTargetListParser,
         commandConfig, "copyTargetList"));
 
-    // determine list of targets to copy from
-    std::vector<std::filesystem::path> copyConfigList;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(copyConfigList, copyConfigListParser,
-        commandConfig, "copyConfigList"));
-
     // determine targets directory to copy from
     std::filesystem::path copyTargetsDirectory;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(copyTargetsDirectory, copyTargetsDirectoryParser,
         commandConfig, "copyTargetsDirectory"));
 
-    // determine config directory to copy from
-    std::filesystem::path copyConfigDirectory;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(copyConfigDirectory, copyConfigDirectoryParser,
-        commandConfig, "copyConfigDirectory"));
+    // determine list of targets to link from
+    std::vector<std::filesystem::path> linkTargetList;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(linkTargetList, linkTargetListParser,
+        commandConfig, "linkTargetList"));
+
+    // determine targets directory to link from
+    std::filesystem::path linkTargetsDirectory;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(linkTargetsDirectory, linkTargetsDirectoryParser,
+        commandConfig, "linkTargetsDirectory"));
 
     // determine list of extra lib directories
     std::vector<std::filesystem::path> extraLibDirList;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(extraLibDirList, extraLibDirListParser,
         commandConfig, "extraLibDirList"));
 
-    // determine whether to ignore existing project
-    bool ignoreExisting;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(ignoreExisting, ignoreExistingParser,
-        commandConfig, "ignoreExisting"));
+    // determine what to do if project already exists
+    IfExisting ifExisting;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(ifExisting, ifExistingParser,
+        commandConfig, "ifExisting"));
+
+    // determine file to check for existence if Recreate is set
+    std::filesystem::path recreateIfFilePresent;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(recreateIfFilePresent, recreateIfFilePresentParser,
+        commandConfig, "recreateIfFilePresent"));
 
     // determine the path to the new project directory
     std::filesystem::path projectPath;
@@ -137,13 +171,43 @@ zuri_project::project_new_command(
         commandConfig, "projectPath"));
 
     if (std::filesystem::exists(projectPath)) {
-        if (ignoreExisting) {
-            zuri_tooling::Project existingProject;
-            TU_ASSIGN_OR_RETURN (existingProject, zuri_tooling::Project::open(projectPath));
-            return {};
+        switch (ifExisting) {
+            // if project directory exists then skip creation
+            case Skip: {
+                zuri_tooling::Project existingProject;
+                TU_ASSIGN_OR_RETURN (existingProject, zuri_tooling::Project::open(projectPath));
+                TU_CONSOLE_OUT << "skipping project creation; project already exists";
+                return {};
+            }
+            // if project directory exists then recreate if condition is met or skip creation
+            case Recreate: {
+                bool recreate = false;
+                if (!recreateIfFilePresent.empty()) {
+                    recreate = std::filesystem::exists(recreateIfFilePresent);
+                }
+                if (!recreate) {
+                    zuri_tooling::Project existingProject;
+                    TU_ASSIGN_OR_RETURN (existingProject, zuri_tooling::Project::open(projectPath));
+                    TU_CONSOLE_OUT << "skipping project creation; project already exists";
+                    return {};
+                }
+                break;
+            }
+            // if project directory exists then abort creation
+            case Abort:
+            default:
+                return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
+                    "directory '{}' already exists", projectPath.string());
         }
-        return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-            "directory '{}' already exists", projectPath.string());
+        std::error_code ec;
+        std::filesystem::remove_all(projectPath, ec);
+        if (ec)
+            return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
+                "failed to remove existing project directory '{}'; {}",
+                projectPath.string(), ec.message());
+        TU_CONSOLE_OUT << "recreating project " << projectPath;
+    } else {
+        TU_CONSOLE_OUT << "creating project " << projectPath;
     }
 
     zuri_tooling::ProjectOpenOrCreateOptions openOrCreateOptions;
@@ -152,19 +216,21 @@ zuri_project::project_new_command(
     openOrCreateOptions.extraLibDirs = extraLibDirList;
 
     // parse the project config file if specified
-    if (!projectConfigFile.empty()) {
-        TU_ASSIGN_OR_RETURN (openOrCreateOptions.projectMap, tempo_config::read_config_map_file(projectConfigFile));
-        TU_LOG_V << "using project config file " << projectConfigFile;
+    if (!copyProjectConfigFile.empty()) {
+        TU_ASSIGN_OR_RETURN (openOrCreateOptions.projectMap, tempo_config::read_config_map_file(copyProjectConfigFile));
+        TU_LOG_INFO << "copying project config file " << copyProjectConfigFile;
+    } else if (!linkProjectConfigFile.empty()) {
+        openOrCreateOptions.linked = true;
+        openOrCreateOptions.projectConfigTarget = linkProjectConfigFile;
+        TU_LOG_INFO << "linking to project config file " << linkProjectConfigFile;
     }
 
     // create project directory structure
     zuri_tooling::Project project;
     TU_ASSIGN_OR_RETURN (project, zuri_tooling::Project::openOrCreate(projectPath, openOrCreateOptions));
-    TU_LOG_V << "creating project " << projectPath;
 
     using copyopts = std::filesystem::copy_options;
     auto copyTargetOptions = copyopts::recursive;
-    auto copyConfigOptions = copyopts::recursive;
     std::error_code ec;
 
     // if --copy-targets-dir was specified then add all directory entries to copyTargetList
@@ -188,7 +254,7 @@ zuri_project::project_new_command(
                 "failed to copy target; directory '{}' does not exist", copyTarget.string());
         auto absoluteCopyTarget = std::filesystem::absolute(copyTarget);
         auto destinationDirectory = project.getTargetsDirectory() / copyTarget.filename();
-        TU_LOG_V << "copying target from " << absoluteCopyTarget << " to " << destinationDirectory;
+        TU_LOG_INFO << "copying target from " << absoluteCopyTarget << " to " << destinationDirectory;
         std::filesystem::copy(absoluteCopyTarget, destinationDirectory, copyTargetOptions, ec);
         if (ec)
             return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
@@ -196,32 +262,33 @@ zuri_project::project_new_command(
                 copyTarget.filename().string(), absoluteCopyTarget.string(), ec.message());
     }
 
-    // if --copy-config-dir was specified then add all directory entries to copyConfigList
-    if (!copyConfigDirectory.empty()) {
-        if (!std::filesystem::is_directory(copyConfigDirectory))
+    // if --link-targets-dir was specified then add all directory entries to linkTargetList
+    if (!linkTargetsDirectory.empty()) {
+        if (!std::filesystem::is_directory(linkTargetsDirectory))
             return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-                "failed to copy config directory; '{}' does not exist", copyConfigDirectory.string());
-        std::filesystem::directory_iterator configIterator(copyConfigDirectory, ec);
+                "failed to link targets directory; '{}' does not exist", linkTargetsDirectory.string());
+        std::filesystem::directory_iterator targetsIterator(linkTargetsDirectory, ec);
         if (ec)
             return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-                "failed to list directory {}; {}", copyConfigDirectory.string(), ec.message());
-        for (const auto &entry : configIterator) {
-            copyConfigList.push_back(entry.path());
+                "failed to list directory {}; {}", linkTargetsDirectory.string(), ec.message());
+        for (const auto &entry : targetsIterator) {
+            linkTargetList.push_back(entry.path());
         }
     }
 
-    // copy configs into the project
-    for (const auto &copyConfig : copyConfigList) {
-        if (!std::filesystem::exists(copyConfig))
+    // link targets into the project
+    for (const auto &linkTarget : linkTargetList) {
+        if (!std::filesystem::is_directory(linkTarget))
             return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-                "failed to copy config; '{}' does not exist", copyConfig.string());
-        auto absoluteCopyConfig = std::filesystem::absolute(copyConfig);
-        TU_LOG_V << "copying configs from " << absoluteCopyConfig << " to " << project.getConfigDirectory();
-        std::filesystem::copy(absoluteCopyConfig, project.getConfigDirectory(), copyConfigOptions, ec);
+                "failed to link target; directory '{}' does not exist", linkTarget.string());
+        auto absoluteLinkTarget = std::filesystem::absolute(linkTarget);
+        auto destinationDirectory = project.getTargetsDirectory() / linkTarget.filename();
+        TU_LOG_INFO << "linking target from " << absoluteLinkTarget << " to " << destinationDirectory;
+        std::filesystem::create_directory_symlink(absoluteLinkTarget, destinationDirectory, ec);
         if (ec)
             return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-                "failed to copy '{}' config from {}; {}",
-                copyConfig.filename().string(), absoluteCopyConfig.string(), ec.message());
+                "failed to link '{}' target from {}; {}",
+                linkTarget.filename().string(), absoluteLinkTarget.string(), ec.message());
     }
 
     return {};

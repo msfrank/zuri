@@ -17,15 +17,26 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/project.config.in ${CMAKE_CURRENT_BIN
 
 list(TRANSFORM RUNTIME_LIB_DIRS PREPEND "--extra-lib-dir=" OUTPUT_VARIABLE EXTRA_LIB_DIR_LIST)
 
+#
+set(ZURI_PROJECT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/project")
+set(ZURI_PROJECT_RECREATE_FILE "${CMAKE_CURRENT_BINARY_DIR}/project.recreate")
+
+# create recreate file to signal
+#file(CONFIGURE OUTPUT ${ZURI_PROJECT_RECREATE_FILE} CONTENT "@BUILDGEN_TIMESTAMP@" @ONLY)
+file(TOUCH ${ZURI_PROJECT_RECREATE_FILE})
+
 # generate the project directory
 add_custom_target(generate-project-directory
     COMMAND
       zuri-project -vv new
-        --ignore-existing
-        --project-config-file ${CMAKE_CURRENT_BINARY_DIR}/project.config
-        --copy-targets-dir ${CMAKE_CURRENT_SOURCE_DIR}/targets
+        --if-existing Recreate
+        --recreate-if-file-present ${ZURI_PROJECT_RECREATE_FILE}
+        --link-project-config-file ${CMAKE_CURRENT_BINARY_DIR}/project.config
+        --link-targets-dir ${CMAKE_CURRENT_SOURCE_DIR}/targets
         ${EXTRA_LIB_DIR_LIST}
-        ${CMAKE_CURRENT_BINARY_DIR}/project
+        ${ZURI_PROJECT_DIRECTORY}
+    COMMAND
+      ${CMAKE_COMMAND} -E rm -f ${ZURI_PROJECT_RECREATE_FILE}
     COMMAND_EXPAND_LISTS
     DEPENDS
       ${CMAKE_CURRENT_BINARY_DIR}/project.config
@@ -33,12 +44,10 @@ add_custom_target(generate-project-directory
     )
 
 # build the std package
-add_custom_command (
-    OUTPUT
-      ${ZURI_STD_PACKAGE_PATH}
+add_custom_target(zuri-std-package
     COMMAND
       zuri-build -vv
-        -P ${CMAKE_CURRENT_BINARY_DIR}/project
+        -P ${ZURI_PROJECT_DIRECTORY}
         -I ${CMAKE_BINARY_DIR}
         "std"
     WORKING_DIRECTORY
@@ -54,34 +63,30 @@ add_custom_command (
       std-time-plugin
     )
 
-# define custom target and target properties for consuming std
-add_custom_target(zuri-std-package DEPENDS ${ZURI_STD_PACKAGE_PATH})
+# set custom target properties for consuming std
 set_target_properties(zuri-std-package PROPERTIES
     ZURI_PKG_FILEPATH ${ZURI_STD_PACKAGE_PATH}
     ZURI_PKG_SPECIFIER "std-${PROJECT_VERSION}@zuri.dev"
     )
 
 # build the fs package
-add_custom_command (
-    OUTPUT
-    ${ZURI_FS_PACKAGE_PATH}
+add_custom_target(zuri-fs-package
     COMMAND
-    zuri-build -vv
-    -P ${CMAKE_CURRENT_BINARY_DIR}/project
-    -I ${CMAKE_BINARY_DIR}
-    "fs"
+      zuri-build -vv
+      -P ${ZURI_PROJECT_DIRECTORY}
+      -I ${CMAKE_BINARY_DIR}
+      "fs"
     WORKING_DIRECTORY
-    ${CMAKE_CURRENT_BINARY_DIR}
+      ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS
-    zuri-build
-    generate-project-directory
-    zuri-std-package
-    fs-file-plugin
-    fs-path-plugin
+      zuri-build
+      generate-project-directory
+      zuri-std-package
+      fs-file-plugin
+      fs-path-plugin
     )
 
-# define custom target and target properties for consuming fs
-add_custom_target(zuri-fs-package DEPENDS ${ZURI_FS_PACKAGE_PATH})
+# set custom target properties for consuming fs
 set_target_properties(zuri-fs-package PROPERTIES
     ZURI_PKG_FILEPATH ${ZURI_FS_PACKAGE_PATH}
     ZURI_PKG_SPECIFIER "fs-${PROJECT_VERSION}@zuri.dev"

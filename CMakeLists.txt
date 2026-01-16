@@ -149,6 +149,8 @@ else()
     set(LIB_RPATH "$ORIGIN/")
 endif()
 
+string(TIMESTAMP BUILDGEN_TIMESTAMP)
+
 
 #######################################################################
 #

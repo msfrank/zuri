@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include <lyric_build/local_filesystem.h>
 #include <lyric_build/lyric_builder.h>
 #include <lyric_runtime/chain_loader.h>
 #include <tempo_command/command_config.h>
@@ -269,6 +270,10 @@ zuri_build::zuri_build(int argc, const char *argv[])
     builderOptions.buildRoot = buildRoot;
     builderOptions.cacheMode = buildToolConfig->getCacheMode();
     builderOptions.waitTimeout = buildToolConfig->getWaitTimeout();
+    if (project.isLinked()) {
+        TU_ASSIGN_OR_RETURN (builderOptions.virtualFilesystem, lyric_build::LocalFilesystem::create(
+            projectRoot, /* allowSymlinksOutsideBase= */ true));
+    }
 
     // determine the job parallelism
     tempo_config::IntegerParser jobParallelismParser(buildToolConfig->getJobParallelism());
