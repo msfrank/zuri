@@ -1,0 +1,50 @@
+#ifndef ZURI_PROJECT_TEMPLATE_CONFIG_H
+#define ZURI_PROJECT_TEMPLATE_CONFIG_H
+
+#include <tempo_config/config_types.h>
+#include <tempo_utils/result.h>
+
+#include "template.h"
+
+namespace zuri_project {
+
+    struct ParameterEntry {
+        tempo_config::ConfigNodeType type;
+        tempo_config::ConfigNode dfl;
+    };
+
+    /**
+     *
+     */
+    class TemplateConfig {
+
+    public:
+        static tempo_utils::Result<std::shared_ptr<TemplateConfig>> load(const Template &tmpl);
+
+        Template getTemplate() const;
+        std::string getName() const;
+        std::filesystem::path getContentRoot() const;
+
+        bool hasParameter(std::string_view name) const;
+        std::shared_ptr<const ParameterEntry> getParameter(std::string_view name) const;
+        absl::flat_hash_map<std::string,std::shared_ptr<const ParameterEntry>>::const_iterator parametersBegin() const;
+        absl::flat_hash_map<std::string,std::shared_ptr<const ParameterEntry>>::const_iterator parametersEnd() const;
+        int numParameters() const;
+
+    private:
+        zuri_project::Template m_template;
+        tempo_config::ConfigMap m_configMap;
+
+        std::string m_name;
+        std::filesystem::path m_contentRoot;
+        absl::flat_hash_map<std::string,std::shared_ptr<const ParameterEntry>> m_parameterStore;
+
+        TemplateConfig(
+            const Template &tmpl,
+            const tempo_config::ConfigMap &configMap);
+
+        tempo_utils::Status configure();
+    };
+}
+
+#endif // ZURI_PROJECT_TEMPLATE_CONFIG_H

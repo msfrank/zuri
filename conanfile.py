@@ -54,6 +54,7 @@ class Zuri(ConanFile):
         'icu/77.1@timbre',
         'libedit/20250104.1@timbre',
         'lief/0.17.1@timbre',
+        'mustache/20250614.1@timbre',
         'openssl/3.5.2@timbre',
         'rocksdb/10.4.2@timbre',
         'sqlite/3.49.2@timbre',

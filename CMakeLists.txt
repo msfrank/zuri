@@ -191,6 +191,9 @@ find_package(uv REQUIRED)
 # find required Fmt dependency
 find_package(fmt REQUIRED)
 
+# find required Mustache dependency
+find_package(mustache REQUIRED)
+
 # find required ICU dependency
 find_package(icu REQUIRED)
 
