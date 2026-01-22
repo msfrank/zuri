@@ -3,7 +3,6 @@
 #include <lyric_runtime/url_ref.h>
 
 #include <lyric_test/matchers.h>
-#include <tempo_config/workspace_config.h>
 #include <tempo_test/tempo_test.h>
 #include <tempo_utils/log_console.h>
 #include <zuri_test/zuri_tester.h>

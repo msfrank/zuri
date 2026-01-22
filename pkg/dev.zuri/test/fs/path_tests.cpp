@@ -2,7 +2,6 @@
 #include <gmock/gmock.h>
 
 #include <lyric_test/matchers.h>
-#include <tempo_config/workspace_config.h>
 #include <tempo_test/tempo_test.h>
 #include <tempo_utils/file_reader.h>
 #include <zuri_test/zuri_tester.h>

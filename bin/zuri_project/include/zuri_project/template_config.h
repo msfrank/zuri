@@ -11,6 +11,7 @@ namespace zuri_project {
     struct ParameterEntry {
         tempo_config::ConfigNodeType type;
         tempo_config::ConfigNode dfl;
+        bool optional;
     };
 
     /**

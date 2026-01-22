@@ -12,6 +12,8 @@
 #include <zuri_project/project_result.h>
 #include <zuri_tooling/project.h>
 
+#include "zuri_project/project_conversions.h"
+
 tempo_utils::Status
 zuri_project::project_new_command(
     std::shared_ptr<zuri_tooling::CoreConfig> coreConfig,
@@ -24,6 +26,12 @@ zuri_project::project_new_command(
     tempo_config::PathParser copyTargetsDirectoryParser(std::filesystem::path{});
     tempo_config::SeqTParser linkTargetListParser(&pathParser, {});
     tempo_config::PathParser linkTargetsDirectoryParser(std::filesystem::path{});
+    tempo_config::StringParser nameParser;
+    tempo_config::SeqTParser addProgramTargetListParser(&nameParser, {});
+    tempo_config::SeqTParser addLibraryTargetListParser(&nameParser, {});
+    tempo_config::StringParser valueParser;
+    PairKVParser templateArgumentParser(&nameParser, &valueParser);
+    tempo_config::SeqTParser templateArgumentListParser(&templateArgumentParser, {});
     tempo_config::SeqTParser extraLibDirListParser(&pathParser, {});
     tempo_config::PathParser projectPathParser;
 
@@ -47,6 +55,8 @@ zuri_project::project_new_command(
         {"copyTargetsDirectory", "Copy all targets from existing directory", "DIR"},
         {"linkTargetList", "Link existing target", "PATH"},
         {"linkTargetsDirectory", "Link all targets from existing directory", "DIR"},
+        {"addTemplateTargetList", "Add a new target using the specified template", "TEMPLATE:NAME"},
+        {"templateArgumentList", "Specify template argument", "NAME:VALUE"},
         {"extraLibDirList", "Additional component directories", "DIR"},
         {"ifExisting", "Do nothing if project already exists"},
         {"recreateIfFilePresent", "Recreate project if specified file is present", "PATH"},
@@ -60,6 +70,9 @@ zuri_project::project_new_command(
         {"copyTargetsDirectory", {"--copy-targets-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"linkTargetList", {"--link-target"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"linkTargetsDirectory", {"--link-targets-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"addProgramTargetList", {"--add-program-target"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"addLibraryTargetList", {"--add-library-target"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"templateArgumentList", {"-t", "--template-argument"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"extraLibDirList", {"--extra-lib-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"ifExisting", {"--if-existing"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"recreateIfFilePresent", {"--recreate-if-file-present"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
@@ -73,6 +86,9 @@ zuri_project::project_new_command(
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "copyTargetsDirectory"},
         {tempo_command::MappingType::ANY_INSTANCES, "linkTargetList"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "linkTargetsDirectory"},
+        {tempo_command::MappingType::ANY_INSTANCES, "addProgramTargetList"},
+        {tempo_command::MappingType::ANY_INSTANCES, "addLibraryTargetList"},
+        {tempo_command::MappingType::ANY_INSTANCES, "templateArgumentList"},
         {tempo_command::MappingType::ANY_INSTANCES, "extraLibDirList"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "ifExisting"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "recreateIfFilePresent"},
@@ -150,6 +166,21 @@ zuri_project::project_new_command(
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(linkTargetsDirectory, linkTargetsDirectoryParser,
         commandConfig, "linkTargetsDirectory"));
 
+    // determine list of program targets to add
+    std::vector<std::string> addProgramTargetList;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(addProgramTargetList, addProgramTargetListParser,
+        commandConfig, "addProgramTargetList"));
+
+    // determine list of library targets to add
+    std::vector<std::string> addLibraryTargetList;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(addLibraryTargetList, addLibraryTargetListParser,
+        commandConfig, "addLibraryTargetList"));
+
+    // determine list of template arguments to make available when processing templates
+    std::vector<std::pair<std::string,std::string>> templateArgumentList;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(templateArgumentList, templateArgumentListParser,
+        commandConfig, "templateArgumentList"));
+
     // determine list of extra lib directories
     std::vector<std::filesystem::path> extraLibDirList;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(extraLibDirList, extraLibDirListParser,
@@ -169,6 +200,17 @@ zuri_project::project_new_command(
     std::filesystem::path projectPath;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(projectPath, projectPathParser,
         commandConfig, "projectPath"));
+
+    // construct map of template arguments
+    absl::flat_hash_map<std::string,std::string> templateArguments;
+    for (const auto &kv : templateArgumentList) {
+        auto curr = templateArguments.find(kv.first);
+        if (curr != templateArguments.cend())
+            tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kInvalidConfiguration,
+                "--template-argument '{}' already exists; current value is '{}'",
+                curr->first, curr->second);
+        templateArguments[kv.first] = kv.second;
+    }
 
     if (std::filesystem::exists(projectPath)) {
         switch (ifExisting) {
@@ -290,6 +332,12 @@ zuri_project::project_new_command(
                 "failed to link '{}' target from {}; {}",
                 linkTarget.filename().string(), absoluteLinkTarget.string(), ec.message());
     }
+
+    // add program targets to the project
+
+    // add library targets to the project
+
+    // add template targets to the project
 
     return {};
 }

@@ -5,8 +5,8 @@
 #include <tempo_command/command_parser.h>
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
-#include <tempo_config/workspace_config.h>
 #include <tempo_utils/uuid.h>
+#include <zuri_project/project_add_command.h>
 #include <zuri_project/project_new_command.h>
 #include <zuri_project/zuri_project.h>
 
@@ -40,10 +40,12 @@ zuri_project::zuri_project(int argc, const char *argv[])
 
     enum Subcommands {
         New,
+        Add,
         NUM_SUBCOMMANDS,
     };
     std::vector<tempo_command::Subcommand> subcommands(NUM_SUBCOMMANDS);
     subcommands[New] = {"new", "Create a new project"};
+    subcommands[Add] = {"add", "Add a new target"};
 
     const std::vector<tempo_command::Mapping> optMappings = {
         {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
@@ -149,6 +151,8 @@ zuri_project::zuri_project(int argc, const char *argv[])
     switch (selected) {
         case New:
             return project_new_command(coreConfig, tokens);
+        case Add:
+            return project_add_command(coreConfig, tokens);
         default:
             return tempo_command::CommandStatus::forCondition(
                 tempo_command::CommandCondition::kCommandInvariant, "unexpected subcommand");

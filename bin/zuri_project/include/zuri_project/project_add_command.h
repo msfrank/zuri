@@ -1,5 +1,5 @@
-#ifndef ZURI_PROJECT_PROJECT_CREATE_COMMAND_H
-#define ZURI_PROJECT_PROJECT_CREATE_COMMAND_H
+#ifndef ZURI_PROJECT_PROJECT_ADD_COMMAND_H
+#define ZURI_PROJECT_PROJECT_ADD_COMMAND_H
 
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_utils/status.h>
@@ -7,9 +7,9 @@
 
 namespace zuri_project {
 
-    tempo_utils::Status project_new_command(
+    tempo_utils::Status project_add_command(
         std::shared_ptr<zuri_tooling::CoreConfig> coreConfig,
         tempo_command::TokenVector &tokens);
 }
 
-#endif // ZURI_PROJECT_PROJECT_CREATE_COMMAND_H
+#endif // ZURI_PROJECT_PROJECT_ADD_COMMAND_H

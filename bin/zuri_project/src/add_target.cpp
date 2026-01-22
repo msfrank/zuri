@@ -47,6 +47,7 @@ zuri_project::add_target(
 
     // target arguments
     templateArguments.set("target::name", std::string(name));
+    templateArguments.set("target::specifier", specifier.toString());
     templateArguments.set("target::packageName", specifier.getPackageName());
     templateArguments.set("target::packageDomain", specifier.getPackageDomain());
     templateArguments.set("target::packageVersion", specifier.getPackageVersion().toString());
@@ -145,4 +146,29 @@ zuri_project::add_target(
     }
 
     return outputNode.toMap();
+}
+
+tempo_utils::Status
+zuri_project::validate_user_arguments(
+    std::shared_ptr<TemplateConfig> templateConfig,
+    absl::flat_hash_map<std::string,std::string> &userArguments,
+    bool interactive)
+{
+    for (auto it = templateConfig->parametersBegin(); it != templateConfig->parametersEnd(); ++it) {
+        const auto &paramName = it->first;
+        const auto &paramEntry = it->second;
+        auto entry = userArguments.find(paramName);
+        if (entry == userArguments.cend()) {
+            if (interactive) {
+                TU_CONSOLE_OUT << "prompt for argument value";
+                continue;
+            }
+            if (paramEntry->optional) {
+                continue;
+            }
+            return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
+                "missing template argument for '{}'", paramName);
+        }
+    }
+    return {};
 }

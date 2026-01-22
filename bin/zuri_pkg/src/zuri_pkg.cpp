@@ -5,7 +5,6 @@
 #include <tempo_command/command_parser.h>
 #include <tempo_command/command_tokenizer.h>
 #include <tempo_config/base_conversions.h>
-#include <tempo_config/workspace_config.h>
 #include <tempo_utils/uuid.h>
 #include <zuri_pkg/pkg_cache_command.h>
 #include <zuri_pkg/pkg_install_command.h>

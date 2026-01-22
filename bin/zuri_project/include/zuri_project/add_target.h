@@ -11,6 +11,11 @@
 
 namespace zuri_project {
 
+    tempo_utils::Status validate_user_arguments(
+        std::shared_ptr<TemplateConfig> templateConfig,
+        absl::flat_hash_map<std::string,std::string> &userArguments,
+        bool interactive);
+
     tempo_utils::Result<tempo_config::ConfigMap> add_target(
         std::shared_ptr<TemplateConfig> templateConfig,
         std::string_view name,

@@ -6,6 +6,10 @@ set(CMAKE_AUTOMOC OFF)
 add_library(ZuriProjectRuntime STATIC
     include/zuri_project/add_target.h
     src/add_target.cpp
+    include/zuri_project/project_add_command.h
+    src/project_add_command.cpp
+    include/zuri_project/project_conversions.h
+    src/project_conversions.cpp
     include/zuri_project/project_new_command.h
     src/project_new_command.cpp
     include/zuri_project/project_result.h
