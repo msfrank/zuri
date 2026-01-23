@@ -10,6 +10,8 @@ add_library(ZuriProjectRuntime STATIC
     src/project_add_command.cpp
     include/zuri_project/project_conversions.h
     src/project_conversions.cpp
+    include/zuri_project/project_link_command.h
+    src/project_link_command.cpp
     include/zuri_project/project_new_command.h
     src/project_new_command.cpp
     include/zuri_project/project_result.h

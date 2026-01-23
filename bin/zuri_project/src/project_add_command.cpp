@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 #include <tempo_command/command_help.h>
 #include <tempo_command/command_parser.h>

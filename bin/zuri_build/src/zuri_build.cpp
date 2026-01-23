@@ -271,8 +271,9 @@ zuri_build::zuri_build(int argc, const char *argv[])
     builderOptions.cacheMode = buildToolConfig->getCacheMode();
     builderOptions.waitTimeout = buildToolConfig->getWaitTimeout();
     if (project.isLinked()) {
+        auto baseDirectory = project.getProjectDirectory();
         TU_ASSIGN_OR_RETURN (builderOptions.virtualFilesystem, lyric_build::LocalFilesystem::create(
-            projectRoot, /* allowSymlinksOutsideBase= */ true));
+            baseDirectory, /* allowSymlinksOutsideBase= */ true));
     }
 
     // determine the job parallelism

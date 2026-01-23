@@ -17,7 +17,8 @@ protected:
     std::shared_ptr<zuri_distributor::Runtime> runtime;
 
     void SetUp() override {
-        installRoot = std::make_unique<tempo_utils::TempdirMaker>("install.XXXXXXXX");
+        installRoot = std::make_unique<tempo_utils::TempdirMaker>(
+            std::filesystem::current_path(), "install.XXXXXXXX");
         TU_RAISE_IF_NOT_OK (installRoot->getStatus());
         auto runtimeDirectory = installRoot->getTempdir() / "runtime";
         std::filesystem::create_directory(runtimeDirectory);

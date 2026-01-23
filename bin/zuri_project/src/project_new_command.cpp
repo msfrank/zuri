@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 #include <tempo_command/command_help.h>
 #include <tempo_command/command_parser.h>
@@ -262,9 +263,10 @@ zuri_project::project_new_command(
         TU_ASSIGN_OR_RETURN (openOrCreateOptions.projectMap, tempo_config::read_config_map_file(copyProjectConfigFile));
         TU_LOG_INFO << "copying project config file " << copyProjectConfigFile;
     } else if (!linkProjectConfigFile.empty()) {
-        openOrCreateOptions.linked = true;
-        openOrCreateOptions.projectConfigTarget = linkProjectConfigFile;
-        TU_LOG_INFO << "linking to project config file " << linkProjectConfigFile;
+        //openOrCreateOptions.linked = true;
+        //openOrCreateOptions.projectConfigTarget = linkProjectConfigFile;
+        //TU_LOG_INFO << "linking to project config file " << linkProjectConfigFile;
+        TU_UNREACHABLE();
     }
 
     // create project directory structure

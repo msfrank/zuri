@@ -21,6 +21,11 @@ namespace zuri_tooling {
     constexpr const char * const kProjectBuildDirectoryName = ".zuribuild";
 
     /**
+     * The file name of the project config file within a project.
+     */
+    constexpr const char * const kSourceConfigName = "source.config";
+
+    /**
      * Options structure which controls the creation of a new Project.
      */
     struct ProjectOpenOrCreateOptions {
@@ -28,8 +33,10 @@ namespace zuri_tooling {
         Distribution distribution = {};
         std::vector<std::filesystem::path> extraLibDirs = {};
         tempo_config::ConfigMap projectMap = {};
-        bool linked = false;
-        std::filesystem::path projectConfigTarget = {};
+        std::filesystem::path linkedProject = {};
+        std::filesystem::path linkedProjectConfigFile = {};
+        std::filesystem::path linkedTargetsDirectory = {};
+        std::filesystem::path linkedConfigDirectory = {};
     };
 
     /**
@@ -64,6 +71,7 @@ namespace zuri_tooling {
             std::filesystem::path targetsDirectory;
             std::filesystem::path buildDirectory;
             std::filesystem::path buildEnvironmentDirectory;
+            bool linked;
         };
         std::shared_ptr<Priv> m_priv;
 
@@ -73,7 +81,15 @@ namespace zuri_tooling {
             const std::filesystem::path &configDirectory,
             const std::filesystem::path &targetsDirectory,
             const std::filesystem::path &buildDirectory,
-            const std::filesystem::path &buildEnvironmentDirectory);
+            const std::filesystem::path &buildEnvironmentDirectory,
+            bool linked);
+
+        static tempo_utils::Result<Project> create(
+            const std::filesystem::path &projectDirectory,
+            const ProjectOpenOrCreateOptions &options);
+        static tempo_utils::Result<Project> link(
+            const std::filesystem::path &projectDirectory,
+            const ProjectOpenOrCreateOptions &options);
     };
 }
 

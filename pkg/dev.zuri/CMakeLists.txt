@@ -12,28 +12,30 @@ get_directory_property(ZURI_STD_SYSTEM_PLUGIN_FILEPATH DIRECTORY plugins/system 
 get_directory_property(ZURI_STD_TEXT_PLUGIN_FILEPATH DIRECTORY plugins/text PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_TIME_PLUGIN_FILEPATH DIRECTORY plugins/time PLUGIN_FILEPATH)
 
+# the linked project directory
+set(ZURI_PROJECT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/project")
+
+# the recreate file
+set(ZURI_PROJECT_RECREATE_FILE "${CMAKE_CURRENT_BINARY_DIR}/project.recreate")
+
 # create the workspace config file used to build package
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/project.config.in ${CMAKE_CURRENT_BINARY_DIR}/project.config @ONLY)
 
+# build list of extra lib dirs to pass to zuri-project link
 list(TRANSFORM RUNTIME_LIB_DIRS PREPEND "--extra-lib-dir=" OUTPUT_VARIABLE EXTRA_LIB_DIR_LIST)
 
-#
-set(ZURI_PROJECT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/project")
-set(ZURI_PROJECT_RECREATE_FILE "${CMAKE_CURRENT_BINARY_DIR}/project.recreate")
-
-# create recreate file to signal
-#file(CONFIGURE OUTPUT ${ZURI_PROJECT_RECREATE_FILE} CONTENT "@BUILDGEN_TIMESTAMP@" @ONLY)
+# touch the recreate file whenever the build configuration is updated
 file(TOUCH ${ZURI_PROJECT_RECREATE_FILE})
 
 # generate the project directory
 add_custom_target(generate-project-directory
     COMMAND
-      zuri-project -vv new
+      zuri-project -vv link
         --if-existing Recreate
         --recreate-if-file-present ${ZURI_PROJECT_RECREATE_FILE}
         --link-project-config-file ${CMAKE_CURRENT_BINARY_DIR}/project.config
-        --link-targets-dir ${CMAKE_CURRENT_SOURCE_DIR}/targets
         ${EXTRA_LIB_DIR_LIST}
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${ZURI_PROJECT_DIRECTORY}
     COMMAND
       ${CMAKE_COMMAND} -E rm -f ${ZURI_PROJECT_RECREATE_FILE}

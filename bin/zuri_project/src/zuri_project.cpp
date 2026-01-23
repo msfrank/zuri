@@ -7,6 +7,7 @@
 #include <tempo_config/base_conversions.h>
 #include <tempo_utils/uuid.h>
 #include <zuri_project/project_add_command.h>
+#include <zuri_project/project_link_command.h>
 #include <zuri_project/project_new_command.h>
 #include <zuri_project/zuri_project.h>
 
@@ -40,11 +41,13 @@ zuri_project::zuri_project(int argc, const char *argv[])
 
     enum Subcommands {
         New,
+        Link,
         Add,
         NUM_SUBCOMMANDS,
     };
     std::vector<tempo_command::Subcommand> subcommands(NUM_SUBCOMMANDS);
     subcommands[New] = {"new", "Create a new project"};
+    subcommands[Link] = {"link", "Create a linked project"};
     subcommands[Add] = {"add", "Add a new target"};
 
     const std::vector<tempo_command::Mapping> optMappings = {
@@ -151,6 +154,8 @@ zuri_project::zuri_project(int argc, const char *argv[])
     switch (selected) {
         case New:
             return project_new_command(coreConfig, tokens);
+        case Link:
+            return project_link_command(coreConfig, tokens);
         case Add:
             return project_add_command(coreConfig, tokens);
         default:
