@@ -47,7 +47,7 @@ zuri_project::project_add_command(
 
     const std::vector<tempo_command::Grouping> groupings = {
         {"projectRoot", {"-P", "--project-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"projectRoot", {"-T", "--templates-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"templatesRoot", {"-T", "--templates-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"targetTemplate", {"-t", "--target-template"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"templateArgumentList", {"-a", "--template-argument"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"packageName", {"--package-name"}, tempo_command::GroupingType::SINGLE_ARGUMENT},

@@ -179,7 +179,7 @@ zuri_project::project_link_command(
     openOrCreateOptions.distribution = coreConfig->getDistribution();
     openOrCreateOptions.extraLibDirs = extraLibDirList;
 
-    TU_LOG_INFO << "linking to project " << targetPath;
+    TU_LOG_INFO << "linking to existing project at " << targetPath;
 
     // create project directory structure
     zuri_tooling::Project project;

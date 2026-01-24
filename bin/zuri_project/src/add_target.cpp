@@ -96,7 +96,7 @@ zuri_project::add_target(
 
     // iterate recursively over each entry in the content root
     auto contentRoot = templateConfig->getContentRoot();
-    std::filesystem::recursive_directory_iterator contentIt(contentRoot);
+    std::filesystem::recursive_directory_iterator contentIt(contentRoot, ec);
     if (ec)
         return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
             "failed to process content root {}; {}", contentRoot.string());

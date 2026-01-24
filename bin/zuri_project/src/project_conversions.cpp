@@ -27,11 +27,10 @@ zuri_project::ParameterEntryParser::convertValue(
         parameterConfig, "type"));
     if (parameterConfig.mapContains("default")) {
         value.dfl = parameterConfig.mapAt("default");
+        value.optional = true;
+    } else {
+        value.optional = false;
     }
-
-    tempo_config::BooleanParser optionalParser(false);
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(value.optional, optionalParser,
-        parameterConfig, "optional"));
 
     return {};
 }
