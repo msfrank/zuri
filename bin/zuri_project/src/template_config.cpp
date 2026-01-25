@@ -9,6 +9,8 @@
 #include <zuri_project/project_result.h>
 #include <zuri_project/template_config.h>
 
+#include "zuri_packager/packaging_conversions.h"
+
 zuri_project::TemplateConfig::TemplateConfig(const Template &tmpl, const tempo_config::ConfigMap &configMap)
     : m_template(tmpl),
       m_configMap(configMap)
@@ -38,9 +40,12 @@ zuri_project::TemplateConfig::configure()
     tempo_config::StringParser parameterNameParser;
     ParameterEntryParser parameterEntryParser;
     tempo_config::SharedPtrConstTParser sharedConstParameterEntryParser(&parameterEntryParser);
-    tempo_config::MapKVParser parameterEntriesParser(&parameterNameParser, &sharedConstParameterEntryParser);
+    tempo_config::MapKVParser parameterEntriesParser(&parameterNameParser, &sharedConstParameterEntryParser, {});
+    zuri_packager::PackageIdParser packageIdParser;
+    zuri_packager::PackageVersionParser packageVersionParser;
+    tempo_config::MapKVParser requirementEntriesParser(&packageIdParser, &packageVersionParser, {});
 
-    // parse the template name
+    // parse the required template name
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_name, nameParser,
         m_configMap, "name"));
 
@@ -53,7 +58,7 @@ zuri_project::TemplateConfig::configure()
     }
     m_contentRoot = std::move(contentRoot);
 
-    // parse the template parameters
+    // parse the optional template parameters map
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_parameterStore, parameterEntriesParser,
         m_configMap, "templateParameters"));
 
@@ -63,6 +68,10 @@ zuri_project::TemplateConfig::configure()
             return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
                 "invalid template parameter name '{}; name cannot contain '::'", entry.first);
     }
+
+    // parse the optional requirements map
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_requirements, requirementEntriesParser,
+        m_configMap, "requirements"));
 
     return {};
 }

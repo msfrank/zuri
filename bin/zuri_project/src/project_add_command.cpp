@@ -4,6 +4,7 @@
 #include <tempo_command/command_parser.h>
 #include <tempo_config/abstract_converter.h>
 #include <tempo_config/base_conversions.h>
+#include <tempo_config/config_builder.h>
 #include <tempo_config/config_file_editor.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_utils/result.h>
@@ -17,6 +18,8 @@
 #include <zuri_tooling/project.h>
 #include <zuri_tooling/project_config.h>
 
+#include "zuri_project/template_processor.h"
+
 tempo_utils::Status
 zuri_project::project_add_command(
     std::shared_ptr<zuri_tooling::CoreConfig> coreConfig,
@@ -27,8 +30,11 @@ zuri_project::project_add_command(
     tempo_config::StringParser targetTemplateParser;
     tempo_config::StringParser nameParser;
     tempo_config::StringParser valueParser;
-    PairKVParser templateArgumentParser(&nameParser, &valueParser);
-    tempo_config::SeqTParser templateArgumentListParser(&templateArgumentParser, {});
+    PairKVParser templateStringArgumentParser(&nameParser, &valueParser);
+    tempo_config::SeqTParser templateStringArgumentListParser(&templateStringArgumentParser, {});
+    tempo_config::ConfigStringParser configStringParser;
+    PairKVParser templateJsonArgumentParser(&nameParser, &configStringParser);
+    tempo_config::SeqTParser templateJsonArgumentListParser(&templateJsonArgumentParser, {});
     tempo_config::StringParser packageNameParser(std::string{});
     zuri_packager::PackageVersionParser packageVersionParser(zuri_packager::PackageVersion(0, 0, 1));
     tempo_config::StringParser packageDomainParser("localhost");
@@ -38,7 +44,8 @@ zuri_project::project_add_command(
         {"projectRoot", "Specify an alternative project root directory", "DIR"},
         {"templatesRoot", "Specify an alternative templates directory", "DIR"},
         {"targetTemplate", "Create target using the specified template", "TEMPLATE"},
-        {"templateArgumentList", "Specify template argument", "NAME:VALUE"},
+        {"templateStringArgumentList", "Specify template argument string value", "NAME:VALUE"},
+        {"templateJsonArgumentList", "Specify template argument JSON value", "NAME:JSON"},
         {"packageName", "The target package name", "NAME"},
         {"packageVersion", "The target package version", "VERSION"},
         {"packageDomain", "The target package domain", "DOMAIN"},
@@ -49,7 +56,8 @@ zuri_project::project_add_command(
         {"projectRoot", {"-P", "--project-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"templatesRoot", {"-T", "--templates-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"targetTemplate", {"-t", "--target-template"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"templateArgumentList", {"-a", "--template-argument"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"templateStringArgumentList", {"-s", "--string-argument"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+        {"templateJsonArgumentList", {"-j", "--json-argument"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"packageName", {"--package-name"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"packageVersion", {"--package-version"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
         {"packageDomain", {"--package-domain"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
@@ -60,7 +68,8 @@ zuri_project::project_add_command(
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "templatesRoot"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "targetTemplate"},
-        {tempo_command::MappingType::ANY_INSTANCES, "templateArgumentList"},
+        {tempo_command::MappingType::ANY_INSTANCES, "templateStringArgumentList"},
+        {tempo_command::MappingType::ANY_INSTANCES, "templateJsonArgumentList"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "packageName"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "packageVersion"},
         {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "packageDomain"},
@@ -119,26 +128,20 @@ zuri_project::project_add_command(
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(targetTemplate, targetTemplateParser,
         commandConfig, "targetTemplate"));
 
+    // determine list of string arguments to make available when processing templates
+    std::vector<std::pair<std::string,std::string>> templateStringArgumentList;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(templateStringArgumentList, templateStringArgumentListParser,
+        commandConfig, "templateStringArgumentList"));
+
     // determine list of template arguments to make available when processing templates
-    std::vector<std::pair<std::string,std::string>> templateArgumentList;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(templateArgumentList, templateArgumentListParser,
-        commandConfig, "templateArgumentList"));
+    std::vector<std::pair<std::string,tempo_config::ConfigNode>> templateJsonArgumentList;
+    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(templateJsonArgumentList, templateJsonArgumentListParser,
+        commandConfig, "templateJsonArgumentList"));
 
     // determine the name of the target to add
     std::string targetName;
     TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(targetName, targetNameParser,
         commandConfig, "targetName"));
-
-    // construct map of template arguments
-    absl::flat_hash_map<std::string,std::string> templateArguments;
-    for (const auto &kv : templateArgumentList) {
-        auto curr = templateArguments.find(kv.first);
-        if (curr != templateArguments.cend())
-            tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kInvalidConfiguration,
-                "--template-argument '{}' already specified; current value is '{}'",
-                curr->first, curr->second);
-        templateArguments[kv.first] = kv.second;
-    }
 
     // determine the package name
     std::string packageName;
@@ -196,26 +199,25 @@ zuri_project::project_add_command(
     std::shared_ptr<TemplateConfig> templateConfig;
     TU_ASSIGN_OR_RETURN (templateConfig, TemplateConfig::load(tmpl));
 
-    // ensure that all required template arguments are present
-    TU_RETURN_IF_NOT_OK (validate_user_arguments(templateConfig, templateArguments, false));
-
     // create new target from the specified template
     zuri_packager::PackageId packageId(packageName, packageDomain);
     zuri_packager::PackageSpecifier specifier(packageId, packageVersion);
     tempo_config::ConfigMap targetMap;
-    TU_ASSIGN_OR_RETURN (targetMap, add_target(
-        templateConfig, targetName, specifier, templateArguments, project.getTargetsDirectory()));
+    TU_ASSIGN_OR_RETURN (targetMap, add_target(templateConfig, targetName, specifier,
+        templateStringArgumentList, templateJsonArgumentList, project.getTargetsDirectory()));
 
-    // add the target config to the project
+    // load the project.config for editing
     tempo_config::ConfigFileEditor projectConfigEditor(project.getProjectConfigFile());
     TU_RETURN_IF_NOT_OK (projectConfigEditor.getStatus());
 
+    // add the target config to the project
     tempo_config::ConfigPath root;
     auto targetsPath = root.traverse("targets");
     if (!projectConfigEditor.hasNode(targetsPath)) {
         TU_RETURN_IF_NOT_OK (projectConfigEditor.insertNode(targetsPath, tempo_config::ConfigMap{}));
     }
 
+    // write the project.config to disk
     tempo_config::PrinterOptions printerOptions;
     TU_RETURN_IF_NOT_OK (projectConfigEditor.insertNode(targetsPath.traverse(targetName), targetMap));
     TU_RETURN_IF_NOT_OK (projectConfigEditor.writeFile(printerOptions));

@@ -2,6 +2,7 @@
 #define ZURI_PROJECT_PROJECT_CONVERSIONS_H
 
 #include <tempo_config/abstract_converter.h>
+#include <tempo_config/config_result.h>
 
 #include "template_config.h"
 

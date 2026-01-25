@@ -5,11 +5,11 @@
 #include <tempo_utils/result.h>
 
 #include "template.h"
+#include "zuri_packager/package_types.h"
 
 namespace zuri_project {
 
     struct ParameterEntry {
-        tempo_config::ConfigNodeType type;
         tempo_config::ConfigNode dfl;
         bool optional;
     };
@@ -33,12 +33,13 @@ namespace zuri_project {
         int numParameters() const;
 
     private:
-        zuri_project::Template m_template;
+        Template m_template;
         tempo_config::ConfigMap m_configMap;
 
         std::string m_name;
         std::filesystem::path m_contentRoot;
         absl::flat_hash_map<std::string,std::shared_ptr<const ParameterEntry>> m_parameterStore;
+        absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion> m_requirements;
 
         TemplateConfig(
             const Template &tmpl,

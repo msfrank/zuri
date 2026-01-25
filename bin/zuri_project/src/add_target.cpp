@@ -12,67 +12,47 @@
 #include <zuri_project/add_target.h>
 #include <zuri_project/project_result.h>
 #include <zuri_project/template_config.h>
-
-using namespace kainjow;
-
-static tempo_utils::Result<std::string>
-process_template(const std::filesystem::path &templateFile, mustache::data &templateArguments)
-{
-    tempo_utils::FileReader templateReader(templateFile);
-    TU_RETURN_IF_NOT_OK (templateReader.getStatus());
-    auto bytes = templateReader.getBytes();
-    std::string templateString(bytes->getStringView());
-
-    mustache::mustache mustacheTemplate(templateString);
-    if (!mustacheTemplate.is_valid())
-        return zuri_project::ProjectStatus::forCondition(
-            zuri_project::ProjectCondition::kProjectInvariant,
-            "template contains error; {}", mustacheTemplate.error_message());
-
-    auto templateOutput = mustacheTemplate.render(templateArguments);
-    return templateOutput;
-}
+#include <zuri_project/template_processor.h>
 
 tempo_utils::Result<tempo_config::ConfigMap>
 zuri_project::add_target(
     std::shared_ptr<TemplateConfig> templateConfig,
     std::string_view name,
     const zuri_packager::PackageSpecifier &specifier,
-    const absl::flat_hash_map<std::string,std::string> &userArguments,
+    const std::vector<std::pair<std::string,std::string>> &userArguments,
+    const std::vector<std::pair<std::string,tempo_config::ConfigNode>> &userJsonArguments,
     const std::filesystem::path &targetsDirectory)
 {
     auto tmpl = templateConfig->getTemplate();
     auto targetConfigTemplateFile = tmpl.getTargetConfigTemplateFile();
-    mustache::data templateArguments;
 
-    // target arguments
-    templateArguments.set("target::name", std::string(name));
-    templateArguments.set("target::specifier", specifier.toString());
-    templateArguments.set("target::packageName", specifier.getPackageName());
-    templateArguments.set("target::packageDomain", specifier.getPackageDomain());
-    templateArguments.set("target::packageVersion", specifier.getPackageVersion().toString());
-    templateArguments.set("target::majorVersion", specifier.getMajorVersion());
-    templateArguments.set("target::minorVersion", specifier.getMinorVersion());
-    templateArguments.set("target::patchVersion", specifier.getPatchVersion());
-    templateArguments.set("target::createdAt", absl::FormatTime(absl::Now()));
+    TemplateProcessor templateProcessor(templateConfig);
+
+    // target metadata
+    templateProcessor.putMetadata("target", "name", std::string(name));
+    templateProcessor.putMetadata("target", "specifier", specifier.toString());
+    templateProcessor.putMetadata("target", "packageName", specifier.getPackageName());
+    templateProcessor.putMetadata("target", "packageDomain", specifier.getPackageDomain());
+    templateProcessor.putMetadata("target", "packageVersion", specifier.getPackageVersion().toString());
+    templateProcessor.putMetadata("target", "majorVersion", absl::StrCat(specifier.getMajorVersion()));
+    templateProcessor.putMetadata("target", "minorVersion", absl::StrCat(specifier.getMinorVersion()));
+    templateProcessor.putMetadata("target", "patchVersion", absl::StrCat(specifier.getPatchVersion()));
+    templateProcessor.putMetadata("target", "createdAt", absl::FormatTime(absl::Now()));
 
     // user arguments
-    for (const auto &entry : userArguments) {
-        const auto &parameterName = entry.first;
-        if (absl::StrContains(parameterName, "::"))
-            return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-                "invalid template argument name '{}'; user argument name cannot contain '::'",
-                parameterName);
-        if (!templateConfig->hasParameter(parameterName))
-            return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-                "invalid user argument '{}'; template parameter not defined",
-                parameterName);
-        templateArguments.set(parameterName, entry.second);
+    for (const auto &p : userArguments) {
+        templateProcessor.putArgument(p.first, p.second);
     }
+    for (const auto &p : userJsonArguments) {
+        templateProcessor.putArgument(p.first, p.second);
+    }
+
+    // ensure that all required template arguments are present
+    //TU_RETURN_IF_NOT_OK (validate_user_arguments(templateConfig, templateArguments, false));
 
     // process the template
     std::string templateOutput;
-    TU_ASSIGN_OR_RETURN (templateOutput, process_template(targetConfigTemplateFile, templateArguments));
+    TU_ASSIGN_OR_RETURN (templateOutput, templateProcessor.processTemplate(targetConfigTemplateFile));
 
     // parse the output as a config map
     tempo_config::ConfigNode outputNode;
@@ -114,7 +94,7 @@ zuri_project::add_target(
                 destinationPath.replace_extension();
                 TU_LOG_V << "processing template at " << relativePath << " and write to " << destinationPath;
                 std::string renderedFile;
-                TU_ASSIGN_OR_RETURN (renderedFile, process_template(sourcePath, templateArguments));
+                TU_ASSIGN_OR_RETURN (renderedFile, templateProcessor.processTemplate(sourcePath));
                 tempo_utils::FileWriter fileWriter(destinationPath, renderedFile,
                     tempo_utils::FileWriterMode::CREATE_ONLY, sourcePerms);
                 TU_RETURN_IF_NOT_OK (fileWriter.getStatus());
@@ -146,29 +126,4 @@ zuri_project::add_target(
     }
 
     return outputNode.toMap();
-}
-
-tempo_utils::Status
-zuri_project::validate_user_arguments(
-    std::shared_ptr<TemplateConfig> templateConfig,
-    absl::flat_hash_map<std::string,std::string> &userArguments,
-    bool interactive)
-{
-    for (auto it = templateConfig->parametersBegin(); it != templateConfig->parametersEnd(); ++it) {
-        const auto &paramName = it->first;
-        const auto &paramEntry = it->second;
-        auto entry = userArguments.find(paramName);
-        if (entry == userArguments.cend()) {
-            if (interactive) {
-                TU_CONSOLE_OUT << "prompt for argument value";
-                continue;
-            }
-            if (paramEntry->optional) {
-                continue;
-            }
-            return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-                "missing template argument for '{}'", paramName);
-        }
-    }
-    return {};
 }

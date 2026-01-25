@@ -29,7 +29,6 @@ TEST_F(AddTargetTests, Add)
 {
     std::filesystem::path templateDirectory(TEST_TEMPLATE_DIRECTORY);
     zuri_packager::PackageSpecifier specifier("foo", "foocorp", 1, 2, 3);
-    absl::flat_hash_map<std::string,std::string> userArguments;
 
     auto openTemplateResult = zuri_project::Template::open(templateDirectory);
     ASSERT_THAT (openTemplateResult, tempo_test::IsResult());
@@ -39,10 +38,14 @@ TEST_F(AddTargetTests, Add)
     ASSERT_THAT (loadTemplateConfigResult, tempo_test::IsResult());
     auto templateConfig = loadTemplateConfigResult.getResult();
 
-    userArguments["foo"] = "Hello, world!";
+    std::vector<std::pair<std::string,std::string>> stringArguments = {
+        {"foo", "Hello, world!"},
+    };
+    std::vector<std::pair<std::string,tempo_config::ConfigNode>> jsonArguments = {
+    };
 
     auto addTargetResult = zuri_project::add_target(templateConfig, "targetName",
-        specifier, userArguments, outputDirectory);
+        specifier, stringArguments, jsonArguments, outputDirectory);
     ASSERT_THAT (addTargetResult, tempo_test::IsResult());
     auto targetMap = addTargetResult.getResult();
     TU_CONSOLE_OUT << targetMap.toString();
