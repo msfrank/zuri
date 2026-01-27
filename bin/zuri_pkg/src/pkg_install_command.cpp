@@ -1,6 +1,5 @@
 
-#include <tempo_command/command_help.h>
-#include <tempo_command/command_parser.h>
+#include <tempo_command/command.h>
 #include <tempo_config/abstract_converter.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/config_result.h>
@@ -78,66 +77,25 @@ zuri_pkg::pkg_install_command(
     tempo_config::SeqTParser packagesParser(&packageSpecifierOrIdOrUrlParser, {});
     tempo_config::BooleanParser dryRunParser(false);
 
-    std::vector<tempo_command::Default> defaults = {
-        {"dryRun", "Display what would be installed but make no changes"},
-        {"packages", "Packages to install", "PACKAGE"},
-    };
+    tempo_command::Command command(std::vector<std::string>{"zuri-pkg", "install"});
 
-    const std::vector<tempo_command::Grouping> groupings = {
-        {"dryRun", {"--dry-run"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
-    };
+    command.addArgument("packages", "PACKAGE", tempo_command::MappingType::ONE_OR_MORE_INSTANCES,
+        "Packages to install");
+    command.addFlag("dryRun", {"--dry-run"}, tempo_command::MappingType::TRUE_IF_INSTANCE,
+        "Display what would be installed but make no changes");
+    command.addHelpOption("help", {"-h", "--help"},
+        "Install a package");
 
-    const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "dryRun"},
-    };
-
-    std::vector<tempo_command::Mapping> argMappings = {
-        {tempo_command::MappingType::ONE_OR_MORE_INSTANCES, "packages"},
-    };
-
-    tempo_command::OptionsHash options;
-    tempo_command::ArgumentVector arguments;
-
-    // parse global options and arguments
-    auto status = tempo_command::parse_completely(tokens, groupings, options, arguments);
-    if (status.notOk()) {
-        tempo_command::CommandStatus commandStatus;
-        if (!status.convertTo(commandStatus))
-            return status;
-        switch (commandStatus.getCondition()) {
-            case tempo_command::CommandCondition::kHelpRequested:
-                tempo_command::display_help_and_exit({"zuri-pkg", "install"},
-                    "Install a package",
-                    {}, groupings, optMappings, argMappings, defaults);
-            case tempo_command::CommandCondition::kVersionRequested:
-                tempo_command::display_version_and_exit(PROJECT_VERSION);
-            default:
-                return status;
-        }
-    }
-
-    tempo_command::CommandConfig commandConfig;
-
-    // convert options to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
-
-    // convert arguments to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(arguments, argMappings, commandConfig));
-
-    // construct command map
-    tempo_config::ConfigMap commandMap(commandConfig);
+    TU_RETURN_IF_NOT_OK (command.parseCompletely(tokens));
 
     bool dryRun;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(dryRun, dryRunParser,
-        commandConfig, "dryRun"));
+    TU_RETURN_IF_NOT_OK (command.convert(dryRun, dryRunParser, "dryRun"));
+
+    std::vector<PackageSpecifierOrIdOrUrl> packages;
+    TU_RETURN_IF_NOT_OK (command.convert(packages, packagesParser, "packages"));
 
     InstallSolver installSolver(runtime, dryRun);
     TU_RETURN_IF_NOT_OK (installSolver.configure());
-
-    std::vector<PackageSpecifierOrIdOrUrl> packages;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(packages, packagesParser,
-        commandConfig, "packages"));
 
     for (const auto &package : packages) {
         switch (package.type) {

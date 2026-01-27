@@ -1,9 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-#include <tempo_command/command_config.h>
-#include <tempo_command/command_help.h>
-#include <tempo_command/command_parser.h>
-#include <tempo_command/command_tokenizer.h>
+#include <tempo_command/command.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/workspace_config.h>
 #include <tempo_utils/uuid.h>

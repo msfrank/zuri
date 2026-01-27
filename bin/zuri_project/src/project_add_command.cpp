@@ -1,10 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-#include <tempo_command/command_help.h>
-#include <tempo_command/command_parser.h>
+#include <tempo_command/command.h>
 #include <tempo_config/abstract_converter.h>
 #include <tempo_config/base_conversions.h>
-#include <tempo_config/config_builder.h>
 #include <tempo_config/config_file_editor.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_utils/result.h>
@@ -17,8 +15,6 @@
 #include <zuri_project/project_result.h>
 #include <zuri_tooling/project.h>
 #include <zuri_tooling/project_config.h>
-
-#include "zuri_project/template_processor.h"
 
 tempo_utils::Status
 zuri_project::project_add_command(
@@ -40,126 +36,68 @@ zuri_project::project_add_command(
     tempo_config::StringParser packageDomainParser("localhost");
     tempo_config::StringParser targetNameParser;
 
-    std::vector<tempo_command::Default> defaults = {
-        {"projectRoot", "Specify an alternative project root directory", "DIR"},
-        {"templatesRoot", "Specify an alternative templates directory", "DIR"},
-        {"targetTemplate", "Create target using the specified template", "TEMPLATE"},
-        {"templateStringArgumentList", "Specify template argument string value", "NAME:VALUE"},
-        {"templateJsonArgumentList", "Specify template argument JSON value", "NAME:JSON"},
-        {"packageName", "The target package name", "NAME"},
-        {"packageVersion", "The target package version", "VERSION"},
-        {"packageDomain", "The target package domain", "DOMAIN"},
-        {"targetName", "Name of the target", "TARGET-NAME"},
-    };
+    tempo_command::Command command(std::vector<std::string>{"zuri-project", "add"});
 
-    const std::vector<tempo_command::Grouping> groupings = {
-        {"projectRoot", {"-P", "--project-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"templatesRoot", {"-T", "--templates-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"targetTemplate", {"-t", "--target-template"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"templateStringArgumentList", {"-s", "--string-argument"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"templateJsonArgumentList", {"-j", "--json-argument"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"packageName", {"--package-name"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"packageVersion", {"--package-version"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"packageDomain", {"--package-domain"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
-    };
+    command.addArgument("targetName", "TARGET", tempo_command::MappingType::ONE_INSTANCE,
+        "Name of the target");
+    command.addOption("projectRoot", {"-P", "--project-root"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Specify an alternative project root directory", "DIR");
+    command.addOption("templatesRoot", {"-T", "--templates-root"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Specify an alternative templates directory", "DIR");
+    command.addOption("targetTemplate", {"-t", "--target-template"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Create target using the specified template", "TEMPLATE");
+    command.addOption("templateStringArgumentList", {"-s", "--string-argument"}, tempo_command::MappingType::ANY_INSTANCES,
+        "Specify template argument string value", "NAME:VALUE");
+    command.addOption("templateJsonArgumentList", {"-j", "--json-argument"}, tempo_command::MappingType::ANY_INSTANCES,
+        "Specify template argument JSON value", "NAME:JSON");
+    command.addOption("packageName", {"--package-name"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "The target package name", "NAME");
+    command.addOption("packageVersion", {"--package-version"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "The target package version", "VERSION");
+    command.addOption("packageDomain", {"--package-domain"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "The target package domain", "DOMAIN");
+    command.addHelpOption("help", {"-h", "--help"}, "Add a new target to the project");
 
-    const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "templatesRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "targetTemplate"},
-        {tempo_command::MappingType::ANY_INSTANCES, "templateStringArgumentList"},
-        {tempo_command::MappingType::ANY_INSTANCES, "templateJsonArgumentList"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "packageName"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "packageVersion"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "packageDomain"},
-    };
-
-    std::vector<tempo_command::Mapping> argMappings = {
-        {tempo_command::MappingType::ONE_INSTANCE, "targetName"},
-    };
-
-    tempo_command::OptionsHash options;
-    tempo_command::ArgumentVector arguments;
-
-    // parse global options and arguments
-    auto status = tempo_command::parse_completely(tokens, groupings, options, arguments);
-    if (status.notOk()) {
-        tempo_command::CommandStatus commandStatus;
-        if (!status.convertTo(commandStatus))
-            return status;
-        switch (commandStatus.getCondition()) {
-            case tempo_command::CommandCondition::kHelpRequested:
-                tempo_command::display_help_and_exit({"zuri-project", "new"},
-                    "Create a new project",
-                    {}, groupings, optMappings, argMappings, defaults);
-            case tempo_command::CommandCondition::kVersionRequested:
-                tempo_command::display_version_and_exit(PROJECT_VERSION);
-            default:
-                return status;
-        }
-    }
-
-    tempo_command::CommandConfig commandConfig;
-
-    // convert options to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
-
-    // convert arguments to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(arguments, argMappings, commandConfig));
-
-    TU_LOG_V << "new config:\n" << tempo_command::command_config_to_string(commandConfig);
-
-    // construct command map
-    tempo_config::ConfigMap commandMap(commandConfig);
+    TU_RETURN_IF_NOT_OK (command.parseCompletely(tokens));
 
     // determine the project root
     std::filesystem::path projectRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(projectRoot, projectRootParser,
-        commandConfig, "projectRoot"));
+    TU_RETURN_IF_NOT_OK(command.convert(projectRoot, projectRootParser, "projectRoot"));
 
     // determine the templates root
     std::filesystem::path templatesRoot;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(templatesRoot, templatesRootParser,
-        commandConfig, "templatesRoot"));
+    TU_RETURN_IF_NOT_OK (command.convert(templatesRoot, templatesRootParser, "templatesRoot"));
 
     // determine template to use when creating target
     std::string targetTemplate;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(targetTemplate, targetTemplateParser,
-        commandConfig, "targetTemplate"));
+    TU_RETURN_IF_NOT_OK (command.convert(targetTemplate, targetTemplateParser, "targetTemplate"));
 
     // determine list of string arguments to make available when processing templates
     std::vector<std::pair<std::string,std::string>> templateStringArgumentList;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(templateStringArgumentList, templateStringArgumentListParser,
-        commandConfig, "templateStringArgumentList"));
+    TU_RETURN_IF_NOT_OK (command.convert(templateStringArgumentList, templateStringArgumentListParser, "templateStringArgumentList"));
 
     // determine list of template arguments to make available when processing templates
     std::vector<std::pair<std::string,tempo_config::ConfigNode>> templateJsonArgumentList;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(templateJsonArgumentList, templateJsonArgumentListParser,
-        commandConfig, "templateJsonArgumentList"));
+    TU_RETURN_IF_NOT_OK (command.convert(templateJsonArgumentList, templateJsonArgumentListParser, "templateJsonArgumentList"));
 
     // determine the name of the target to add
     std::string targetName;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(targetName, targetNameParser,
-        commandConfig, "targetName"));
+    TU_RETURN_IF_NOT_OK (command.convert(targetName, targetNameParser, "targetName"));
 
     // determine the package name
     std::string packageName;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(packageName, packageNameParser,
-        commandConfig, "packageName"));
+    TU_RETURN_IF_NOT_OK (command.convert(packageName, packageNameParser, "packageName"));
     if (packageName.empty()) {
         packageName = targetName;
     }
 
     // determine the package version
     zuri_packager::PackageVersion packageVersion;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(packageVersion, packageVersionParser,
-        commandConfig, "packageVersion"));
+    TU_RETURN_IF_NOT_OK (command.convert(packageVersion, packageVersionParser, "packageVersion"));
 
     // determine the package domain
     std::string packageDomain;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(packageDomain, packageDomainParser,
-        commandConfig, "packageDomain"));
+    TU_RETURN_IF_NOT_OK (command.convert(packageDomain, packageDomainParser, "packageDomain"));
 
     // open the project
     zuri_tooling::Project project;

@@ -5,14 +5,10 @@
 #include <lyric_build/local_filesystem.h>
 #include <lyric_build/lyric_builder.h>
 #include <lyric_runtime/chain_loader.h>
-#include <tempo_command/command_config.h>
-#include <tempo_command/command_help.h>
-#include <tempo_command/command_parser.h>
-#include <tempo_command/command_tokenizer.h>
+#include <tempo_command/command.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/config_builder.h>
 #include <tempo_config/container_conversions.h>
-#include <tempo_config/parse_config.h>
 #include <tempo_config/time_conversions.h>
 #include <zuri_build/collect_modules_task.h>
 #include <zuri_build/import_solver.h>
@@ -38,87 +34,81 @@ zuri_build::zuri_build(int argc, const char *argv[])
     tempo_config::IntegerParser quietParser(0);
     tempo_config::BooleanParser silentParser(false);
 
-    std::vector<tempo_command::Default> defaults = {
-        {"projectRoot", "Specify an alternative project root directory", "DIR"},
-        {"projectConfigFile", "Specify an alternative project config file", "FILE"},
-        {"noHome", "ignore Zuri home"},
-        {"buildRoot", "Specify an alternative build root directory", "DIR"},
-        {"installRoot", "Specify an alternative install root directory", "DIR"},
-        {"jobParallelism", "Number of build worker threads", "COUNT"},
-        {"colorizeOutput", "Display colorized output"},
-        {"verbose", "Display verbose output (specify twice for even more verbose output)"},
-        {"quiet", "Display warnings and errors only (specify twice for errors only)"},
-        {"silent", "Suppress all output"},
-        {"targets", "Build targets to compute", "TARGET"},
-    };
+    // std::vector<tempo_command::Default> defaults = {
+    //     {"projectRoot", "Specify an alternative project root directory", "DIR"},
+    //     {"projectConfigFile", "Specify an alternative project config file", "FILE"},
+    //     {"noHome", "ignore Zuri home"},
+    //     {"buildRoot", "Specify an alternative build root directory", "DIR"},
+    //     {"installRoot", "Specify an alternative install root directory", "DIR"},
+    //     {"jobParallelism", "Number of build worker threads", "COUNT"},
+    //     {"colorizeOutput", "Display colorized output"},
+    //     {"verbose", "Display verbose output (specify twice for even more verbose output)"},
+    //     {"quiet", "Display warnings and errors only (specify twice for errors only)"},
+    //     {"silent", "Suppress all output"},
+    //     {"targets", "Build targets to compute", "TARGET"},
+    // };
+    //
+    // const std::vector<tempo_command::Grouping> groupings = {
+    //     {"projectRoot", {"-P", "--project-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+    //     {"projectConfigFile", {"--project-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+    //     {"noHome", {"--no-home"}, tempo_command::GroupingType::NO_ARGUMENT},
+    //     {"buildRoot", {"-B", "--build-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+    //     {"installRoot", {"-I", "--install-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+    //     {"jobParallelism", {"-J", "--job-parallelism"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
+    //     {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
+    //     {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
+    //     {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
+    //     {"silent", {"-s", "--silent"}, tempo_command::GroupingType::NO_ARGUMENT},
+    //     {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
+    //     {"version", {"--version"}, tempo_command::GroupingType::VERSION_FLAG},
+    // };
+    //
+    // const std::vector<tempo_command::Mapping> optMappings = {
+    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectRoot"},
+    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectConfigFile"},
+    //     {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
+    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "buildRoot"},
+    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "installRoot"},
+    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "jobParallelism"},
+    //     {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
+    //     {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
+    //     {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
+    //     {tempo_command::MappingType::TRUE_IF_INSTANCE, "silent"},
+    // };
+    //
+    // std::vector<tempo_command::Mapping> argMappings = {
+    //     {tempo_command::MappingType::ANY_INSTANCES, "targets"},
+    // };
 
-    const std::vector<tempo_command::Grouping> groupings = {
-        {"projectRoot", {"-P", "--project-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"projectConfigFile", {"--project-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"noHome", {"--no-home"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"buildRoot", {"-B", "--build-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"installRoot", {"-I", "--install-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"jobParallelism", {"-J", "--job-parallelism"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"silent", {"-s", "--silent"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
-        {"version", {"--version"}, tempo_command::GroupingType::VERSION_FLAG},
-    };
+    tempo_command::Command command("zuri-build");
 
-    const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectConfigFile"},
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "buildRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "installRoot"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "jobParallelism"},
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
-        {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
-        {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "silent"},
-    };
+    command.addArgument("targets", "TARGET", tempo_command::MappingType::ANY_INSTANCES,
+        "Build targets to compute");
+    command.addOption("projectRoot", {"-P", "--project-root"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Specify an alternative project root directory", "DIR");
+    command.addOption("projectConfigFile", {"--project-config-file"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Specify an alternative project.config file", "FILE");
+    command.addFlag("noHome", {"--no-home"}, tempo_command::MappingType::TRUE_IF_INSTANCE,
+        "Ignore Zuri home");
+    command.addOption("buildRoot", {"-B", "--build-root"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Specify an alternative build root directory", "DIR");
+    command.addOption("installRoot", {"-I", "--install-root"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Specify an alternative install root directory", "DIR");
+    command.addOption("jobParallelism", {"-J", "--job-parallelism"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Number of build worker threads", "COUNT");
+    command.addFlag("colorizeOutput", {"-c", "--colorize"}, tempo_command::MappingType::TRUE_IF_INSTANCE,
+        "Display colorized output");
+    command.addFlag("verbose", {"-v"}, tempo_command::MappingType::COUNT_INSTANCES,
+        "Display verbose output (specify twice for even more verbose output)");
+    command.addFlag("quiet", {"-q"}, tempo_command::MappingType::COUNT_INSTANCES,
+        "Display warnings and errors only (specify twice for errors only)");
+    command.addFlag("silent", {"-s", "--silent"}, tempo_command::MappingType::TRUE_IF_INSTANCE,
+        "Suppress all output");
+    command.addHelpOption("help", {"-h", "--help"},
+        "Build software for the Zuri ecosystem");
+    command.addVersionOption("version", {"--version"}, PROJECT_VERSION);
 
-    std::vector<tempo_command::Mapping> argMappings = {
-        {tempo_command::MappingType::ANY_INSTANCES, "targets"},
-    };
-
-    // parse argv array into a vector of tokens
-    tempo_command::TokenVector tokens;
-    TU_ASSIGN_OR_RETURN (tokens, tempo_command::tokenize_argv(argc - 1, &argv[1]));
-
-    tempo_command::OptionsHash options;
-    tempo_command::ArgumentVector arguments;
-
-    // parse global options and arguments
-    auto status = tempo_command::parse_completely(tokens, groupings, options, arguments);
-    if (status.notOk()) {
-        tempo_command::CommandStatus commandStatus;
-        if (!status.convertTo(commandStatus))
-            return status;
-        switch (commandStatus.getCondition()) {
-            case tempo_command::CommandCondition::kHelpRequested:
-                display_help_and_exit({"zuri-build"},
-                    "Build software for the Zuri ecosystem",
-                    {}, groupings, optMappings, argMappings, defaults);
-            case tempo_command::CommandCondition::kVersionRequested:
-                tempo_command::display_version_and_exit(PROJECT_VERSION);
-            default:
-                return status;
-        }
-    }
-
-    tempo_command::CommandConfig commandConfig;
-
-    // convert options to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
-
-    // convert arguments to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(arguments, argMappings, commandConfig));
-
-    // construct command map
-    tempo_config::ConfigMap commandMap(commandConfig);
+    TU_RETURN_IF_NOT_OK (command.parse(argc - 1, &argv[1]));
 
     // configure logging
     tempo_utils::LoggingConfiguration logging = {
@@ -127,16 +117,13 @@ zuri_build::zuri_build(int argc, const char *argv[])
     };
 
     bool silent;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(silent, silentParser,
-        commandConfig, "silent"));
+    TU_RETURN_IF_NOT_OK(command.convert(silent, silentParser, "silent"));
     if (silent) {
         logging.severityFilter = tempo_utils::SeverityFilter::kSilent;
     } else {
         int verbose, quiet;
-        TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(verbose, verboseParser,
-            commandConfig, "verbose"));
-        TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(quiet, quietParser,
-            commandConfig, "quiet"));
+        TU_RETURN_IF_NOT_OK(command.convert(verbose, verboseParser, "verbose"));
+        TU_RETURN_IF_NOT_OK(command.convert(quiet, quietParser, "quiet"));
         if (verbose && quiet)
             return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
                 "cannot specify both -v and -q");
@@ -153,43 +140,34 @@ zuri_build::zuri_build(int argc, const char *argv[])
     }
 
     bool colorizeOutput;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(colorizeOutput, colorizeOutputParser,
-        commandConfig, "colorizeOutput"));
+    TU_RETURN_IF_NOT_OK(command.convert(colorizeOutput, colorizeOutputParser, "colorizeOutput"));
 
     // initialize logging
     tempo_utils::init_logging(logging);
 
-    TU_LOG_V << "command config:\n" << tempo_command::command_config_to_string(commandConfig);
-
     // determine the project root
     std::filesystem::path projectRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(projectRoot, projectRootParser,
-        commandConfig, "projectRoot"));
+    TU_RETURN_IF_NOT_OK(command.convert(projectRoot, projectRootParser, "projectRoot"));
 
     // determine the project config file
     std::filesystem::path projectConfigFile;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(projectConfigFile, projectConfigFileParser,
-        commandConfig, "projectConfigFile"));
+    TU_RETURN_IF_NOT_OK(command.convert(projectConfigFile, projectConfigFileParser, "projectConfigFile"));
 
     // determine whether to load home
     bool noHome;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(noHome, noHomeParser,
-        commandConfig, "noHome"));
+    TU_RETURN_IF_NOT_OK(command.convert(noHome, noHomeParser, "noHome"));
 
     // determine the build root
     std::filesystem::path buildRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(buildRoot, buildRootParser,
-        commandConfig, "buildRoot"));
+    TU_RETURN_IF_NOT_OK(command.convert(buildRoot, buildRootParser, "buildRoot"));
 
     // determine the install root
     std::filesystem::path installRoot;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(installRoot, installRootParser,
-        commandConfig, "installRoot"));
+    TU_RETURN_IF_NOT_OK(command.convert(installRoot, installRootParser, "installRoot"));
 
     // determine the list of targets
     std::vector<std::string> targets;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(targets, targetsParser,
-        commandConfig, "targets"));
+    TU_RETURN_IF_NOT_OK(command.convert(targets, targetsParser, "targets"));
 
     // open the distribution
     zuri_tooling::Distribution distribution;
@@ -278,8 +256,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
 
     // determine the job parallelism
     tempo_config::IntegerParser jobParallelismParser(buildToolConfig->getJobParallelism());
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(builderOptions.numThreads, jobParallelismParser,
-        commandMap, "jobParallelism"));
+    TU_RETURN_IF_NOT_OK (command.convert(builderOptions.numThreads, jobParallelismParser, "jobParallelism"));
 
     // create the shortcut resolver
     auto importShortcuts = std::make_shared<lyric_importer::ShortcutResolver>();

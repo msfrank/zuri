@@ -1,15 +1,12 @@
 
 #include <stack>
 
-#include <tempo_command/command_help.h>
-#include <tempo_command/command_parser.h>
+#include <tempo_command/command.h>
 #include <tempo_config/abstract_converter.h>
 #include <tempo_config/base_conversions.h>
-#include <tempo_config/config_result.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_utils/result.h>
 #include <tempo_utils/url_path.h>
-#include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/package_fetcher.h>
 #include <zuri_packager/package_reader.h>
 #include <zuri_packager/package_specifier.h>
@@ -25,59 +22,19 @@ zuri_zpk::zpk_inspect_command(
     tempo_config::PathParser zpkFileParser;
     tempo_config::BooleanParser displayAllParser(false);
 
-    std::vector<tempo_command::Default> defaults = {
-        {"displayAll", "Display all information (overrides individual display flags)"},
-        {"zpkFile", "Package file to inspect", "FILE"},
-    };
+    tempo_command::Command command(std::vector<std::string>{"zuri-zpk", "inspect"});
 
-    const std::vector<tempo_command::Grouping> groupings = {
-        {"displayAll", {"-a", "--all"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
-    };
+    command.addArgument("zpkFile", "FILE", tempo_command::MappingType::ONE_INSTANCE,
+        "Package file to inspect");
+    command.addFlag("displayAll", {"-a", "--all"}, tempo_command::MappingType::TRUE_IF_INSTANCE,
+        "Display all information (overrides individual display flags)");
+    command.addHelpOption("help", {"-h", "--help"},
+        "Inspect the contents of a zpk file");
 
-    const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "displayAll"},
-    };
-
-    std::vector<tempo_command::Mapping> argMappings = {
-        {tempo_command::MappingType::ONE_INSTANCE, "zpkFile"},
-    };
-
-    tempo_command::OptionsHash options;
-    tempo_command::ArgumentVector arguments;
-
-    // parse global options and arguments
-    auto status = tempo_command::parse_completely(tokens, groupings, options, arguments);
-    if (status.notOk()) {
-        tempo_command::CommandStatus commandStatus;
-        if (!status.convertTo(commandStatus))
-            return status;
-        switch (commandStatus.getCondition()) {
-            case tempo_command::CommandCondition::kHelpRequested:
-                tempo_command::display_help_and_exit({"zuri-zpk", "inspect"},
-                    "Inspect the contents of a zpk file",
-                    {}, groupings, optMappings, argMappings, defaults);
-            case tempo_command::CommandCondition::kVersionRequested:
-                tempo_command::display_version_and_exit(PROJECT_VERSION);
-            default:
-                return status;
-        }
-    }
-
-    tempo_command::CommandConfig commandConfig;
-
-    // convert options to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
-
-    // convert arguments to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(arguments, argMappings, commandConfig));
-
-    // construct command map
-    tempo_config::ConfigMap commandMap(commandConfig);
+    TU_RETURN_IF_NOT_OK (command.parseCompletely(tokens));
 
     std::filesystem::path zpkFile;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(zpkFile, zpkFileParser,
-        commandConfig, "zpkFile"));
+    TU_RETURN_IF_NOT_OK (command.convert(zpkFile, zpkFileParser, "zpkFile"));
 
     std::shared_ptr<zuri_packager::PackageReader> reader;
     TU_ASSIGN_OR_RETURN (reader, zuri_packager::PackageReader::open(zpkFile));

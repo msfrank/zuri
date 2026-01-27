@@ -1,9 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-#include <tempo_command/command_config.h>
-#include <tempo_command/command_help.h>
-#include <tempo_command/command_parser.h>
-#include <tempo_command/command_tokenizer.h>
+#include <tempo_command/command.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
 #include <tempo_utils/uuid.h>
@@ -64,77 +61,29 @@ zuri_run::zuri_run(int argc, const char *argv[])
     tempo_config::StringParser mainArgParser;
     tempo_config::SeqTParser mainArgsParser(&mainArgParser);
 
-    std::vector<tempo_command::Default> defaults = {
-        {"searchStart", "Path to start search for environment", "PATH"},
-        {"noHome", "Ignore Zuri home"},
-        {"colorizeOutput", "Display colorized output"},
-        {"verbose", "Display verbose output (specify twice for even more verbose output)"},
-        {"quiet", "Display warnings and errors only (specify twice for errors only)"},
-        {"silent", "Suppress all output"},
-        {"mainPackageOrStdin", "Main package path, or '-' to run interactively", "MAIN-PKG | '-'"},
-        {"mainArgs", "List of arguments to pass to the program", "ARGS"},
-    };
+    tempo_command::Command command("zuri-run");
 
-    const std::vector<tempo_command::Grouping> groupings = {
-        {"searchStart", {"-S", "--search-start"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"noHome", {"--no-home"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"silent", {"-s", "--silent"}, tempo_command::GroupingType::NO_ARGUMENT},
-        {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
-        {"version", {"--version"}, tempo_command::GroupingType::VERSION_FLAG},
-    };
+    command.addArgument("mainPackageOrStdin", "MAIN-PKG | '-'", tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Main package path, or '-' to run interactively");
+    command.addArgument("mainArgs", "ARGS", tempo_command::MappingType::ANY_INSTANCES,
+        "List of arguments to pass to the program");
+    command.addOption("searchStart", {"-S", "--search-start"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Path to start search for environment", "PATH");
+    command.addFlag("noHome", {"--no-home"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Ignore Zuri home");
+    command.addFlag("colorizeOutput", {"-c", "--colorize"}, tempo_command::MappingType::TRUE_IF_INSTANCE,
+        "Display colorized output");
+    command.addFlag("verbose", {"-v"}, tempo_command::MappingType::COUNT_INSTANCES,
+        "Display verbose output (specify twice for even more verbose output)");
+    command.addFlag("quiet", {"-q"}, tempo_command::MappingType::COUNT_INSTANCES,
+        "Display warnings and errors only (specify twice for errors only)");
+    command.addFlag("silent", {"-s", "--silent"}, tempo_command::MappingType::TRUE_IF_INSTANCE,
+        "Suppress all output");
+    command.addHelpOption("help", {"-h", "--help"},
+        "Run a Zuri program");
+    command.addVersionOption("version", {"--version"}, PROJECT_VERSION);
 
-    const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "searchStart"},
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
-        {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
-        {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
-        {tempo_command::MappingType::TRUE_IF_INSTANCE, "silent"},
-    };
-
-    std::vector<tempo_command::Mapping> argMappings = {
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "mainPackageOrStdin"},
-        {tempo_command::MappingType::ANY_INSTANCES, "mainArgs"},
-    };
-
-    // parse argv array into a vector of tokens
-    tempo_command::TokenVector tokens;
-    TU_ASSIGN_OR_RETURN (tokens, tempo_command::tokenize_argv(argc - 1, &argv[1]));
-
-    tempo_command::OptionsHash options;
-    tempo_command::ArgumentVector arguments;
-
-    // parse options and arguments
-    auto status = tempo_command::parse_completely(tokens, groupings, options, arguments);
-    if (status.notOk()) {
-        tempo_command::CommandStatus commandStatus;
-        if (!status.convertTo(commandStatus))
-            return status;
-        switch (commandStatus.getCondition()) {
-            case tempo_command::CommandCondition::kHelpRequested:
-                display_help_and_exit({"zuri-run"},
-                    "Run a Zuri program",
-                    {}, groupings, optMappings, argMappings, defaults);
-            case tempo_command::CommandCondition::kVersionRequested:
-                tempo_command::display_version_and_exit(PROJECT_VERSION);
-            default:
-                return status;
-        }
-    }
-
-    tempo_command::CommandConfig commandConfig;
-
-    // convert options to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
-
-    // convert arguments to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(arguments, argMappings, commandConfig));
-
-    // construct command map
-    tempo_config::ConfigMap commandMap(commandConfig);
+    TU_RETURN_IF_NOT_OK (command.parse(argc - 1, &argv[1]));
 
     // configure logging
     tempo_utils::LoggingConfiguration logging = {
@@ -143,16 +92,13 @@ zuri_run::zuri_run(int argc, const char *argv[])
     };
 
     bool silent;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(silent, silentParser,
-        commandConfig, "silent"));
+    TU_RETURN_IF_NOT_OK(command.convert(silent, silentParser, "silent"));
     if (silent) {
         logging.severityFilter = tempo_utils::SeverityFilter::kSilent;
     } else {
         int verbose, quiet;
-        TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(verbose, verboseParser,
-            commandConfig, "verbose"));
-        TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(quiet, quietParser,
-            commandConfig, "quiet"));
+        TU_RETURN_IF_NOT_OK(command.convert(verbose, verboseParser, "verbose"));
+        TU_RETURN_IF_NOT_OK(command.convert(quiet, quietParser, "quiet"));
         if (verbose && quiet)
             return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
                 "cannot specify both -v and -q");
@@ -169,33 +115,26 @@ zuri_run::zuri_run(int argc, const char *argv[])
     }
 
     bool colorizeOutput;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(colorizeOutput, colorizeOutputParser,
-        commandConfig, "colorizeOutput"));
+    TU_RETURN_IF_NOT_OK(command.convert(colorizeOutput, colorizeOutputParser, "colorizeOutput"));
 
     // initialize logging
     tempo_utils::init_logging(logging);
 
-    TU_LOG_V << "command config:\n" << tempo_command::command_config_to_string(commandConfig);
-
     // determine the search start
     std::filesystem::path searchStart;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(searchStart, searchStartParser,
-        commandConfig, "searchStart"));
+    TU_RETURN_IF_NOT_OK(command.convert(searchStart, searchStartParser, "searchStart"));
 
     // determine whether to load home
     bool noHome;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(noHome, noHomeParser,
-        commandConfig, "noHome"));
+    TU_RETURN_IF_NOT_OK(command.convert(noHome, noHomeParser, "noHome"));
 
     // determine whether to run a specified package or run interactively
     MainPackageOrStdin mainPackageOrStdin;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(mainPackageOrStdin, mainPackageOrStdinParser,
-        commandConfig, "mainPackageOrStdin"));
+    TU_RETURN_IF_NOT_OK(command.convert(mainPackageOrStdin, mainPackageOrStdinParser, "mainPackageOrStdin"));
 
     // determine the program arguments
     std::vector<std::string> mainArgs;
-    TU_RETURN_IF_NOT_OK(tempo_command::parse_command_config(mainArgs, mainArgsParser,
-        commandConfig, "mainArgs"));
+    TU_RETURN_IF_NOT_OK(command.convert(mainArgs, mainArgsParser, "mainArgs"));
 
     // open the distribution
     zuri_tooling::Distribution distribution;

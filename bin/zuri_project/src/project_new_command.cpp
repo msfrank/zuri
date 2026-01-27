@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-#include <tempo_command/command_help.h>
-#include <tempo_command/command_parser.h>
+#include <tempo_command/command.h>
 #include <tempo_config/abstract_converter.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/container_conversions.h>
@@ -12,8 +11,6 @@
 #include <zuri_project/project_new_command.h>
 #include <zuri_project/project_result.h>
 #include <zuri_tooling/project.h>
-
-#include "zuri_project/project_conversions.h"
 
 tempo_utils::Status
 zuri_project::project_new_command(
@@ -38,91 +35,41 @@ zuri_project::project_new_command(
 
     tempo_config::PathParser recreateIfFilePresentParser(std::filesystem::path{});
 
-    std::vector<tempo_command::Default> defaults = {
-        {"copyProjectConfigFile", "Copy the specified project.config file", "FILE"},
-        {"extraLibDirList", "Additional component directories", "DIR"},
-        {"ifExisting", "Do nothing if project already exists"},
-        {"recreateIfFilePresent", "Recreate project if specified file is present", "PATH"},
-        {"projectPath", "Path to the new project", "PATH"},
-    };
+    tempo_command::Command command(std::vector<std::string>{"zuri-project", "new"});
 
-    const std::vector<tempo_command::Grouping> groupings = {
-        {"copyProjectConfigFile", {"--copy-project-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"extraLibDirList", {"--extra-lib-dir"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"ifExisting", {"--if-existing"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"recreateIfFilePresent", {"--recreate-if-file-present"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-        {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
-    };
+    command.addArgument("projectPath", "PATH", tempo_command::MappingType::ONE_INSTANCE,
+        "Path to the new project");
+    command.addOption("copyProjectConfigFile", {"--copy-project-config-file"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Copy the specified project.config file", "FILE");
+    command.addOption("extraLibDirList", {"--extra-lib-dir"}, tempo_command::MappingType::ANY_INSTANCES,
+        "Additional component directories", "DIR");
+    command.addOption("ifExisting", {"--if-existing"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Specify behavior if project already exists", "ENUM");
+    command.addOption("recreateIfFilePresent", {"--recreate-if-file-present"}, tempo_command::MappingType::ZERO_OR_ONE_INSTANCE,
+        "Recreate project if specified file is present", "PATH");
+    command.addHelpOption("help", {"-h", "--help"}, "Create a new Zuri project");
 
-    const std::vector<tempo_command::Mapping> optMappings = {
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "copyProjectConfigFile"},
-        {tempo_command::MappingType::ANY_INSTANCES, "extraLibDirList"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "ifExisting"},
-        {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "recreateIfFilePresent"},
-    };
-
-    std::vector<tempo_command::Mapping> argMappings = {
-        {tempo_command::MappingType::ONE_INSTANCE, "projectPath"},
-    };
-
-    tempo_command::OptionsHash options;
-    tempo_command::ArgumentVector arguments;
-
-    // parse global options and arguments
-    auto status = tempo_command::parse_completely(tokens, groupings, options, arguments);
-    if (status.notOk()) {
-        tempo_command::CommandStatus commandStatus;
-        if (!status.convertTo(commandStatus))
-            return status;
-        switch (commandStatus.getCondition()) {
-            case tempo_command::CommandCondition::kHelpRequested:
-                tempo_command::display_help_and_exit({"zuri-project", "new"},
-                    "Create a new project",
-                    {}, groupings, optMappings, argMappings, defaults);
-            case tempo_command::CommandCondition::kVersionRequested:
-                tempo_command::display_version_and_exit(PROJECT_VERSION);
-            default:
-                return status;
-        }
-    }
-
-    tempo_command::CommandConfig commandConfig;
-
-    // convert options to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_options(options, optMappings, commandConfig));
-
-    // convert arguments to config
-    TU_RETURN_IF_NOT_OK (tempo_command::convert_arguments(arguments, argMappings, commandConfig));
-
-    TU_LOG_V << "new config:\n" << tempo_command::command_config_to_string(commandConfig);
-
-    // construct command map
-    tempo_config::ConfigMap commandMap(commandConfig);
+    TU_RETURN_IF_NOT_OK (command.parseCompletely(tokens));
 
     // determine project config file  to copy from
     std::filesystem::path copyProjectConfigFile;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(copyProjectConfigFile, copyProjectConfigFileParser,
-        commandConfig, "copyProjectConfigFile"));
+    TU_RETURN_IF_NOT_OK (command.convert(copyProjectConfigFile, copyProjectConfigFileParser, "copyProjectConfigFile"));
 
     // determine list of extra lib directories
     std::vector<std::filesystem::path> extraLibDirList;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(extraLibDirList, extraLibDirListParser,
-        commandConfig, "extraLibDirList"));
+    TU_RETURN_IF_NOT_OK (command.convert(extraLibDirList, extraLibDirListParser, "extraLibDirList"));
 
     // determine what to do if project already exists
     IfExisting ifExisting;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(ifExisting, ifExistingParser,
-        commandConfig, "ifExisting"));
+    TU_RETURN_IF_NOT_OK (command.convert(ifExisting, ifExistingParser, "ifExisting"));
 
     // determine file to check for existence if Recreate is set
     std::filesystem::path recreateIfFilePresent;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(recreateIfFilePresent, recreateIfFilePresentParser,
-        commandConfig, "recreateIfFilePresent"));
+    TU_RETURN_IF_NOT_OK (command.convert(recreateIfFilePresent, recreateIfFilePresentParser, "recreateIfFilePresent"));
 
     // determine the path to the new project directory
     std::filesystem::path projectPath;
-    TU_RETURN_IF_NOT_OK (tempo_command::parse_command_config(projectPath, projectPathParser,
-        commandConfig, "projectPath"));
+    TU_RETURN_IF_NOT_OK (command.convert(projectPath, projectPathParser, "projectPath"));
 
     if (std::filesystem::exists(projectPath)) {
         switch (ifExisting) {

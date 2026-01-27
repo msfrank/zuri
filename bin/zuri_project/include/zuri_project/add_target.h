@@ -11,6 +11,13 @@
 
 namespace zuri_project {
 
+    struct AddTarget {
+        std::string name;
+        zuri_packager::PackageSpecifier specifier;
+        std::vector<std::pair<std::string,std::string>> stringArguments;
+        std::vector<std::pair<std::string,tempo_config::ConfigNode>> jsonArguments;
+    };
+
     tempo_utils::Result<tempo_config::ConfigMap> add_target(
         std::shared_ptr<TemplateConfig> templateConfig,
         std::string_view name,
