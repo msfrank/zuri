@@ -22,6 +22,8 @@ add_library(ZuriProjectRuntime STATIC
     src/template_config.cpp
     include/zuri_project/template_processor.h
     src/template_processor.cpp
+    include/zuri_project/update_requirements.h
+    src/update_requirements.cpp
     include/zuri_project/zuri_project.h
     src/zuri_project.cpp
     )

@@ -8,11 +8,11 @@
 #include <tempo_test/status_matchers.h>
 #include <tempo_utils/file_writer.h>
 #include <tempo_utils/tempdir_maker.h>
-#include <zuri_project/add_target.h>
+#include <zuri_project/update_requirements.h>
 #include <zuri_tooling/project.h>
 #include <zuri_tooling/tooling_conversions.h>
 
-class AddTargetTests : public ::testing::Test {
+class UpdateRequirementsTests : public ::testing::Test {
 protected:
     std::filesystem::path outputDirectory;
     std::filesystem::path projectConfigFile;
@@ -31,7 +31,7 @@ protected:
     }
 };
 
-TEST_F(AddTargetTests, AddTarget)
+TEST_F(UpdateRequirementsTests, AddRequirementToEmptyImportsMap)
 {
     std::filesystem::path templateDirectory(TEST_TEMPLATE_DIRECTORY);
     zuri_packager::PackageSpecifier specifier("foo", "foocorp", 1, 2, 3);
@@ -44,26 +44,30 @@ TEST_F(AddTargetTests, AddTarget)
     ASSERT_THAT (loadTemplateConfigResult, tempo_test::IsResult());
     auto templateConfig = loadTemplateConfigResult.getResult();
 
-    zuri_project::AddTargetOperation addTargetOp;
-    addTargetOp.name = "targetName";
-    addTargetOp.specifier = specifier;
-    addTargetOp.stringArguments = {
-        {"foo", "Hello, world!"},
+    zuri_project::UpdateRequirementsOperation updateRequirementsOp;
+    updateRequirementsOp.addRequirements = {
+        specifier,
     };
 
+    auto importsMap = tempo_config::startMap()
+        .buildMap();
+    auto importStore = std::make_shared<zuri_tooling::ImportStore>(importsMap);
+
+    TU_RAISE_IF_NOT_OK (tempo_config::write_config_file(
+        tempo_config::startMap()
+            .put("imports", importsMap)
+        .buildNode(),
+        projectConfigFile));
 
     tempo_config::ConfigFileEditor projectConfigEditor(projectConfigFile);
-    ASSERT_THAT (zuri_project::add_target(addTargetOp, templateConfig, outputDirectory, projectConfigEditor), tempo_test::IsOk());
+    ASSERT_THAT (zuri_project::update_requirements(updateRequirementsOp, importStore, projectConfigEditor), tempo_test::IsOk());
     ASSERT_THAT (projectConfigEditor.writeFile(), tempo_test::IsOk());
 
     tempo_config::ConfigMap projectMap;
     TU_ASSIGN_OR_RAISE (projectMap, tempo_config::read_config_map_file(projectConfigFile));
     TU_CONSOLE_OUT << projectMap.toString();
 
-    auto projectTargetsMap = projectMap.mapAt("targets").toMap();
-    ASSERT_TRUE (projectTargetsMap.mapContains(addTargetOp.name));
-
-    auto targetMap = projectTargetsMap.mapAt(addTargetOp.name).toMap();
-    ASSERT_EQ (tempo_config::valueNode("Library"), targetMap.mapAt("type"));
-    ASSERT_EQ (tempo_config::valueNode(specifier.toString()), targetMap.mapAt("specifier"));
+    auto projectImportsMap = projectMap.mapAt("imports").toMap();
+    ASSERT_TRUE (projectImportsMap.mapContains(specifier.getPackageId().toString()));
+    ASSERT_EQ (tempo_config::valueNode(specifier.getVersionString()), projectImportsMap.mapAt(specifier.getPackageId().toString()));
 }

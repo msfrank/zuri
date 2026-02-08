@@ -32,8 +32,9 @@ namespace zuri_tooling {
         Home getHome() const;
 
         std::shared_ptr<LoggingConfig> getLoggingConfig() const;
-
         std::shared_ptr<BuildToolConfig> getDefaultBuildConfig() const;
+
+        tempo_config::ConfigMap getRoot() const;
 
     private:
         Distribution m_distribution;

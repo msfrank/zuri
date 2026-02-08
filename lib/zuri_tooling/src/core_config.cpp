@@ -140,6 +140,12 @@ zuri_tooling::CoreConfig::getDefaultBuildConfig() const
 }
 
 tempo_config::ConfigMap
+zuri_tooling::CoreConfig::getRoot() const
+{
+    return m_configMap;
+}
+
+tempo_config::ConfigMap
 zuri_tooling::CoreConfig::getDefaultsMap() const
 {
     return m_defaultsMap;

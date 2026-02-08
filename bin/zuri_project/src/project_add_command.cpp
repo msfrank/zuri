@@ -16,6 +16,8 @@
 #include <zuri_tooling/project.h>
 #include <zuri_tooling/project_config.h>
 
+#include "zuri_project/update_requirements.h"
+
 tempo_utils::Status
 zuri_project::project_add_command(
     std::shared_ptr<zuri_tooling::CoreConfig> coreConfig,
@@ -72,23 +74,24 @@ zuri_project::project_add_command(
     std::string targetTemplate;
     TU_RETURN_IF_NOT_OK (command.convert(targetTemplate, targetTemplateParser, "targetTemplate"));
 
+    AddTargetOperation addTargetOp;
+
     // determine list of string arguments to make available when processing templates
-    std::vector<std::pair<std::string,std::string>> templateStringArgumentList;
-    TU_RETURN_IF_NOT_OK (command.convert(templateStringArgumentList, templateStringArgumentListParser, "templateStringArgumentList"));
+    TU_RETURN_IF_NOT_OK (command.convert(addTargetOp.stringArguments, templateStringArgumentListParser,
+        "templateStringArgumentList"));
 
     // determine list of template arguments to make available when processing templates
-    std::vector<std::pair<std::string,tempo_config::ConfigNode>> templateJsonArgumentList;
-    TU_RETURN_IF_NOT_OK (command.convert(templateJsonArgumentList, templateJsonArgumentListParser, "templateJsonArgumentList"));
+    TU_RETURN_IF_NOT_OK (command.convert(addTargetOp.jsonArguments, templateJsonArgumentListParser,
+        "templateJsonArgumentList"));
 
     // determine the name of the target to add
-    std::string targetName;
-    TU_RETURN_IF_NOT_OK (command.convert(targetName, targetNameParser, "targetName"));
+    TU_RETURN_IF_NOT_OK (command.convert(addTargetOp.name, targetNameParser, "targetName"));
 
     // determine the package name
     std::string packageName;
     TU_RETURN_IF_NOT_OK (command.convert(packageName, packageNameParser, "packageName"));
     if (packageName.empty()) {
-        packageName = targetName;
+        packageName = addTargetOp.name;
     }
 
     // determine the package version
@@ -98,6 +101,9 @@ zuri_project::project_add_command(
     // determine the package domain
     std::string packageDomain;
     TU_RETURN_IF_NOT_OK (command.convert(packageDomain, packageDomainParser, "packageDomain"));
+
+    zuri_packager::PackageId packageId(packageName, packageDomain);
+    addTargetOp.specifier = zuri_packager::PackageSpecifier(packageId, packageVersion);
 
     // open the project
     zuri_tooling::Project project;
@@ -118,12 +124,12 @@ zuri_project::project_add_command(
 
     // verify the target entry does not already exist in the target store
     auto targetStore = projectConfig->getTargetStore();
-    if (targetStore->hasTarget(targetName))
+    if (targetStore->hasTarget(addTargetOp.name))
         return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-            "target '{}' already exists in project.config", targetName);
+            "target '{}' already exists in project.config", addTargetOp.name);
 
     // verify the target directory does not already exist
-    auto targetPath = project.getTargetsDirectory() / targetName;
+    auto targetPath = project.getTargetsDirectory() / addTargetOp.name;
     if (std::filesystem::exists(targetPath))
         return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
             "target directory '{}' already exists", targetPath.string());
@@ -137,27 +143,25 @@ zuri_project::project_add_command(
     std::shared_ptr<TemplateConfig> templateConfig;
     TU_ASSIGN_OR_RETURN (templateConfig, TemplateConfig::load(tmpl));
 
-    // create new target from the specified template
-    zuri_packager::PackageId packageId(packageName, packageDomain);
-    zuri_packager::PackageSpecifier specifier(packageId, packageVersion);
-    tempo_config::ConfigMap targetMap;
-    TU_ASSIGN_OR_RETURN (targetMap, add_target(templateConfig, targetName, specifier,
-        templateStringArgumentList, templateJsonArgumentList, project.getTargetsDirectory()));
-
     // load the project.config for editing
     tempo_config::ConfigFileEditor projectConfigEditor(project.getProjectConfigFile());
     TU_RETURN_IF_NOT_OK (projectConfigEditor.getStatus());
 
-    // add the target config to the project
-    tempo_config::ConfigPath root;
-    auto targetsPath = root.traverse("targets");
-    if (!projectConfigEditor.hasNode(targetsPath)) {
-        TU_RETURN_IF_NOT_OK (projectConfigEditor.insertNode(targetsPath, tempo_config::ConfigMap{}));
+    // create new target from the specified template
+    TU_RETURN_IF_NOT_OK (add_target(addTargetOp, templateConfig, project.getTargetsDirectory(),
+        projectConfigEditor));
+
+    // if template specifies imports then add them
+    UpdateRequirementsOperation updateRequirementsOp;
+    for (auto it = templateConfig->importsBegin(); it != templateConfig->importsEnd(); ++it) {
+        updateRequirementsOp.addRequirements.emplace_back(it->first, it->second);
     }
+    TU_RETURN_IF_NOT_OK (update_requirements(updateRequirementsOp, projectConfig->getImportStore(),
+        projectConfigEditor));
 
     // write the project.config to disk
     tempo_config::PrinterOptions printerOptions;
-    TU_RETURN_IF_NOT_OK (projectConfigEditor.insertNode(targetsPath.traverse(targetName), targetMap));
+    printerOptions.reformat = tempo_config::Reformat::OnlyChanged;
     TU_RETURN_IF_NOT_OK (projectConfigEditor.writeFile(printerOptions));
 
     return {};

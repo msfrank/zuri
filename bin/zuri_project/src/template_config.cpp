@@ -43,7 +43,7 @@ zuri_project::TemplateConfig::configure()
     tempo_config::MapKVParser parameterEntriesParser(&parameterNameParser, &sharedConstParameterEntryParser, {});
     zuri_packager::PackageIdParser packageIdParser;
     zuri_packager::PackageVersionParser packageVersionParser;
-    tempo_config::MapKVParser requirementEntriesParser(&packageIdParser, &packageVersionParser, {});
+    tempo_config::MapKVParser importEntriesParser(&packageIdParser, &packageVersionParser, {});
 
     // parse the required template name
     TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_name, nameParser,
@@ -69,9 +69,9 @@ zuri_project::TemplateConfig::configure()
                 "invalid template parameter name '{}; name cannot contain '::'", entry.first);
     }
 
-    // parse the optional requirements map
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_requirements, requirementEntriesParser,
-        m_configMap, "requirements"));
+    // parse the optional imports map
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_imports, importEntriesParser,
+        m_configMap, "imports"));
 
     return {};
 }
@@ -125,4 +125,37 @@ int
 zuri_project::TemplateConfig::numParameters() const
 {
     return m_parameterStore.size();
+}
+
+bool
+zuri_project::TemplateConfig::hasImport(const zuri_packager::PackageId &id) const
+{
+    return m_imports.contains(id);
+}
+
+zuri_packager::PackageVersion
+zuri_project::TemplateConfig::getImport(const zuri_packager::PackageId &id) const
+{
+    auto entry = m_imports.find(id);
+    if (entry != m_imports.cend())
+        return entry->second;
+    return {};
+}
+
+absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion>::const_iterator
+zuri_project::TemplateConfig::importsBegin() const
+{
+    return m_imports.cbegin();
+}
+
+absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion>::const_iterator
+zuri_project::TemplateConfig::importsEnd() const
+{
+    return m_imports.cend();
+}
+
+int
+zuri_project::TemplateConfig::numImports() const
+{
+    return m_imports.size();
 }

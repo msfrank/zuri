@@ -23,6 +23,7 @@ namespace zuri_project {
         static tempo_utils::Result<std::shared_ptr<TemplateConfig>> load(const Template &tmpl);
 
         Template getTemplate() const;
+
         std::string getName() const;
         std::filesystem::path getContentRoot() const;
 
@@ -32,6 +33,12 @@ namespace zuri_project {
         absl::flat_hash_map<std::string,std::shared_ptr<const ParameterEntry>>::const_iterator parametersEnd() const;
         int numParameters() const;
 
+        bool hasImport(const zuri_packager::PackageId &id) const;
+        zuri_packager::PackageVersion getImport(const zuri_packager::PackageId &id) const;
+        absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion>::const_iterator importsBegin() const;
+        absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion>::const_iterator importsEnd() const;
+        int numImports() const;
+
     private:
         Template m_template;
         tempo_config::ConfigMap m_configMap;
@@ -39,7 +46,7 @@ namespace zuri_project {
         std::string m_name;
         std::filesystem::path m_contentRoot;
         absl::flat_hash_map<std::string,std::shared_ptr<const ParameterEntry>> m_parameterStore;
-        absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion> m_requirements;
+        absl::flat_hash_map<zuri_packager::PackageId,zuri_packager::PackageVersion> m_imports;
 
         TemplateConfig(
             const Template &tmpl,

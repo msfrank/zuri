@@ -7,6 +7,7 @@ include(GoogleTest)
 set(TEST_CASES
     add_target_tests.cpp
     template_processor_tests.cpp
+    update_requirements_tests.cpp
     )
 
 set(TEST_TEMPLATE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test-template)

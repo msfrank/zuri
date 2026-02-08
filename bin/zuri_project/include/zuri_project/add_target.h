@@ -2,6 +2,7 @@
 #define ZURI_PROJECT_ADD_TARGET_H
 
 #include <filesystem>
+#include <tempo_config/config_file_editor.h>
 
 #include <tempo_config/config_types.h>
 #include <tempo_utils/result.h>
@@ -11,20 +12,18 @@
 
 namespace zuri_project {
 
-    struct AddTarget {
+    struct AddTargetOperation {
         std::string name;
         zuri_packager::PackageSpecifier specifier;
         std::vector<std::pair<std::string,std::string>> stringArguments;
         std::vector<std::pair<std::string,tempo_config::ConfigNode>> jsonArguments;
     };
 
-    tempo_utils::Result<tempo_config::ConfigMap> add_target(
+    tempo_utils::Status add_target(
+        const AddTargetOperation &op,
         std::shared_ptr<TemplateConfig> templateConfig,
-        std::string_view name,
-        const zuri_packager::PackageSpecifier &specifier,
-        const std::vector<std::pair<std::string,std::string>> &stringArguments,
-        const std::vector<std::pair<std::string,tempo_config::ConfigNode>> &jsonArguments,
-        const std::filesystem::path &targetsDirectory);
+        const std::filesystem::path &targetsDirectory,
+        tempo_config::ConfigFileEditor &projectConfigEditor);
 }
 
 #endif // ZURI_PROJECT_ADD_TARGET_H

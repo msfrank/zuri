@@ -14,36 +14,38 @@
 #include <zuri_project/template_config.h>
 #include <zuri_project/template_processor.h>
 
-tempo_utils::Result<tempo_config::ConfigMap>
+tempo_utils::Status
 zuri_project::add_target(
+    const AddTargetOperation &op,
     std::shared_ptr<TemplateConfig> templateConfig,
-    std::string_view name,
-    const zuri_packager::PackageSpecifier &specifier,
-    const std::vector<std::pair<std::string,std::string>> &userArguments,
-    const std::vector<std::pair<std::string,tempo_config::ConfigNode>> &userJsonArguments,
-    const std::filesystem::path &targetsDirectory)
+    const std::filesystem::path &targetsDirectory,
+    tempo_config::ConfigFileEditor &projectConfigEditor)
 {
+    TU_ASSERT (!op.name.empty());
+    TU_ASSERT (op.specifier.isValid());
+    TU_ASSERT (templateConfig != nullptr);
+
     auto tmpl = templateConfig->getTemplate();
     auto targetConfigTemplateFile = tmpl.getTargetConfigTemplateFile();
 
     TemplateProcessor templateProcessor(templateConfig);
 
     // target metadata
-    templateProcessor.putMetadata("target", "name", std::string(name));
-    templateProcessor.putMetadata("target", "specifier", specifier.toString());
-    templateProcessor.putMetadata("target", "packageName", specifier.getPackageName());
-    templateProcessor.putMetadata("target", "packageDomain", specifier.getPackageDomain());
-    templateProcessor.putMetadata("target", "packageVersion", specifier.getPackageVersion().toString());
-    templateProcessor.putMetadata("target", "majorVersion", absl::StrCat(specifier.getMajorVersion()));
-    templateProcessor.putMetadata("target", "minorVersion", absl::StrCat(specifier.getMinorVersion()));
-    templateProcessor.putMetadata("target", "patchVersion", absl::StrCat(specifier.getPatchVersion()));
+    templateProcessor.putMetadata("target", "name", std::string(op.name));
+    templateProcessor.putMetadata("target", "specifier", op.specifier.toString());
+    templateProcessor.putMetadata("target", "packageName", op.specifier.getPackageName());
+    templateProcessor.putMetadata("target", "packageDomain", op.specifier.getPackageDomain());
+    templateProcessor.putMetadata("target", "packageVersion", op.specifier.getPackageVersion().toString());
+    templateProcessor.putMetadata("target", "majorVersion", absl::StrCat(op.specifier.getMajorVersion()));
+    templateProcessor.putMetadata("target", "minorVersion", absl::StrCat(op.specifier.getMinorVersion()));
+    templateProcessor.putMetadata("target", "patchVersion", absl::StrCat(op.specifier.getPatchVersion()));
     templateProcessor.putMetadata("target", "createdAt", absl::FormatTime(absl::Now()));
 
     // user arguments
-    for (const auto &p : userArguments) {
+    for (const auto &p : op.stringArguments) {
         templateProcessor.putArgument(p.first, p.second);
     }
-    for (const auto &p : userJsonArguments) {
+    for (const auto &p : op.jsonArguments) {
         templateProcessor.putArgument(p.first, p.second);
     }
 
@@ -62,10 +64,10 @@ zuri_project::add_target(
             "invalid template output; target config must be a map");
 
     // verify target does not exist
-    auto targetDirectory = targetsDirectory / name;
+    auto targetDirectory = targetsDirectory / op.name;
     if (std::filesystem::exists(targetDirectory))
         return ProjectStatus::forCondition(ProjectCondition::kProjectInvariant,
-            "target '{}' already exists at {}", name, targetDirectory.string());
+            "target '{}' already exists at {}", op.name, targetDirectory.string());
 
     // create the target directory
     std::error_code ec;
@@ -125,5 +127,19 @@ zuri_project::add_target(
         }
     }
 
-    return outputNode.toMap();
+    auto targetMap = outputNode.toMap();
+
+    tempo_config::ConfigPath root;
+
+    // if the targets node is not present in the project config then add it
+    auto targetsPath = root.traverse("targets");
+    if (!projectConfigEditor.hasNode(targetsPath)) {
+        TU_RETURN_IF_NOT_OK (projectConfigEditor.insertNode(targetsPath, tempo_config::ConfigMap{}));
+    }
+
+    // add the target config to the project
+    auto targetEntryPath = targetsPath.traverse(op.name);
+    TU_RETURN_IF_NOT_OK (projectConfigEditor.insertNode(targetEntryPath, targetMap));
+
+    return {};
 }
