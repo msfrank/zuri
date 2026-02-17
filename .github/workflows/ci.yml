@@ -1,0 +1,67 @@
+name: ci.yml
+run-name: Trigger Integration
+
+on:
+  workflow_call:
+    secrets:
+      CONAN_CLIENT_CERT:
+        required: true
+      CONAN_CLIENT_KEY:
+        required: true
+      CONAN_CREDENTIALS_JSON:
+        required: true
+      PAT_CONTENTS_RW_EXOCORTIC:
+        required: true
+
+jobs:
+  trigger-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Conan
+        uses: conan-io/setup-conan@v1
+        id: setup-conan
+        with:
+          config_urls: 'https://github.com/msfrank/conan-config.git'
+
+      - name: Configure Conan storage
+        id: configure-conan-storage
+        env:
+          CONAN_HOME_BIN: ${{ steps.setup-conan.outputs.conan-home }}/bin
+        run: |
+          sudo python3 $CONAN_HOME_BIN/make_conan_storage --owner $USER --output-path /tmp/conan_storage_path
+          echo "storage-path=$(cat /tmp/conan_storage_path)" >> "$GITHUB_OUTPUT"
+
+      - name: Configure Conan global.conf
+        env:
+          CONAN_HOME_BIN: ${{ steps.setup-conan.outputs.conan-home }}/bin
+          CONAN_CLIENT_CERT: ${{ secrets.CONAN_CLIENT_CERT }}
+          CONAN_CLIENT_KEY: ${{ secrets.CONAN_CLIENT_KEY }}
+          CONAN_CREDENTIALS_JSON: ${{ secrets.CONAN_CREDENTIALS_JSON }}
+        run: |
+          python3 $CONAN_HOME_BIN/generate_global_conf \
+            --conan-home ${{ steps.setup-conan.outputs.conan-home }} \
+            ${{ steps.configure-conan-storage.outputs.storage-path }}
+
+      - name: Get package parameters
+        id: get-parameters
+        env:
+          COMMIT_ID: ${{ github.sha }}
+        run: |
+          RECIPE=$(conan inspect -cc core:non_interactive=True -f json .)
+          NAME=$(echo $RECIPE | jq -Mr '.name')
+          VERSION=$(echo $RECIPE | jq -Mr '.version')
+          echo "package-name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "package-version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "package-ref=$NAME/$VERSION#$COMMIT_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger integration workflow
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PAT_CONTENTS_RW_EXOCORTIC }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"event_type": "integrate-dependency","client_payload": {"requires":"${{ steps.get-parameters.outputs.package-ref }}"}}' \
+            https://api.github.com/repos/msfrank/exocortic/dispatches
