@@ -191,7 +191,8 @@ vector_iterate(
 
     lyric_runtime::DataCell cell;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(cell));
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::CLASS);
+    TU_ASSERT (cell.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (cell.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);

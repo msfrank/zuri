@@ -37,7 +37,8 @@ treemap_ctor(
 
     lyric_runtime::DataCell compareCall;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(compareCall));
-    TU_ASSERT(compareCall.type == lyric_runtime::DataCellType::CALL);
+    TU_ASSERT (compareCall.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (compareCall.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Call);
     instance->initialize(TreeMapComparator(interp, state, ctxArgument, compareCall));
 
     return {};
@@ -176,7 +177,8 @@ treemap_iterate(
 
     lyric_runtime::DataCell cell;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(cell));
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::CLASS);
+    TU_ASSERT (cell.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (cell.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);

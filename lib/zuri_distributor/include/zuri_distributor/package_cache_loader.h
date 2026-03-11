@@ -19,9 +19,16 @@ namespace zuri_distributor {
             const lyric_common::ModuleLocation &location) const override;
         tempo_utils::Result<Option<lyric_object::LyricObject>> loadModule(
             const lyric_common::ModuleLocation &location) override;
+        tempo_utils::Result<bool> hasPlugin(
+            const lyric_common::ModuleLocation &location,
+            const lyric_object::PluginSpecifier &specifier) const override;
         tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>> loadPlugin(
             const lyric_common::ModuleLocation &location,
             const lyric_object::PluginSpecifier &specifier) override;
+        tempo_utils::Result<bool> hasResource(
+            const lyric_common::ModuleLocation &location) const override;
+        tempo_utils::Result<Option<std::shared_ptr<const tempo_utils::ImmutableBytes>>> loadResource(
+            const lyric_common::ModuleLocation &location) override;
 
     private:
         std::shared_ptr<AbstractPackageCache> m_readonlyPackageCache;
@@ -29,6 +36,8 @@ namespace zuri_distributor {
         tempo_utils::Result<std::filesystem::path> findModule(
             const lyric_common::ModuleLocation &location,
             std::string_view dotSuffix) const;
+        tempo_utils::Result<std::filesystem::path> findResource(
+            const lyric_common::ModuleLocation &location) const;
     };
 }
 

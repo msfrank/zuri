@@ -52,6 +52,29 @@ zuri_distributor::PackageCacheLoader::findModule(
     return modulePath;
 }
 
+tempo_utils::Result<std::filesystem::path>
+zuri_distributor::PackageCacheLoader::findResource(const lyric_common::ModuleLocation &location) const
+{
+    if (!location.isValid() || location.getScheme() != "dev.zuri.pkg")
+        return std::filesystem::path{};
+    auto specifier = zuri_packager::PackageSpecifier::fromAuthority(location.getAuthority());
+    if (!specifier.isValid())
+        return std::filesystem::path{};
+
+    Option<std::filesystem::path> pathOption;
+    TU_ASSIGN_OR_RETURN (pathOption, m_readonlyPackageCache->resolvePackage(specifier));
+    if (pathOption.isEmpty())
+        return std::filesystem::path{};
+
+    auto resourcePath = location.getPath().toFilesystemPath(pathOption.getValue());
+
+    if (resourcePath.empty())
+        return std::filesystem::path{};
+    if (!std::filesystem::is_regular_file(resourcePath))
+        return std::filesystem::path{};
+    return resourcePath;
+}
+
 tempo_utils::Result<bool>
 zuri_distributor::PackageCacheLoader::hasModule(const lyric_common::ModuleLocation &location) const
 {
@@ -81,6 +104,17 @@ zuri_distributor::PackageCacheLoader::loadModule(const lyric_common::ModuleLocat
     // return platform-specific LyricObject
     TU_LOG_V << "loaded module at " << absolutePath;
     return Option(lyric_object::LyricObject(bytes));
+}
+
+tempo_utils::Result<bool>
+zuri_distributor::PackageCacheLoader::hasPlugin(
+    const lyric_common::ModuleLocation &location,
+    const lyric_object::PluginSpecifier &specifier) const
+{
+    std::filesystem::path absolutePath;
+    TU_ASSIGN_OR_RETURN (absolutePath, findModule(location, absl::StrCat(
+        ".", tempo_utils::sharedLibraryPlatformId(), tempo_utils::sharedLibraryFileDotSuffix())));
+    return !absolutePath.empty();
 }
 
 tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>>
@@ -119,4 +153,27 @@ zuri_distributor::PackageCacheLoader::loadPlugin(
     TU_LOG_V << "loaded plugin " << absolutePath;
     auto plugin = std::make_shared<const lyric_runtime::LibraryPlugin>(loader, iface);
     return Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>(plugin);
+}
+
+tempo_utils::Result<bool>
+zuri_distributor::PackageCacheLoader::hasResource(const lyric_common::ModuleLocation &location) const
+{
+    std::filesystem::path absolutePath;
+    TU_ASSIGN_OR_RETURN (absolutePath, findResource(location));
+    return !absolutePath.empty();
+}
+
+tempo_utils::Result<Option<std::shared_ptr<const tempo_utils::ImmutableBytes>>>
+zuri_distributor::PackageCacheLoader::loadResource(const lyric_common::ModuleLocation &location)
+{
+    std::filesystem::path absolutePath;
+    TU_ASSIGN_OR_RETURN (absolutePath, findResource(location));
+    if (absolutePath.empty())
+        return Option<std::shared_ptr<const tempo_utils::ImmutableBytes>>();
+
+    tempo_utils::FileReader reader(absolutePath);
+    TU_RETURN_IF_NOT_OK (reader.getStatus());
+
+    TU_LOG_V << "loaded resource " << absolutePath;
+    return Option(reader.getBytes());
 }

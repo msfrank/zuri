@@ -33,6 +33,18 @@ zuri_test::PlaceholderLoader::loadModule(const lyric_common::ModuleLocation &loc
     return m_loader->loadModule(location);
 }
 
+tempo_utils::Result<bool>
+zuri_test::PlaceholderLoader::hasPlugin(
+    const lyric_common::ModuleLocation &location,
+    const lyric_object::PluginSpecifier &specifier) const
+{
+    if (m_loader == nullptr)
+        return lyric_runtime::InterpreterStatus::forCondition(
+            lyric_runtime::InterpreterCondition::kRuntimeInvariant,
+            "placeholder loader is not resolved");
+    return m_loader->hasPlugin(location, specifier);
+}
+
 tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>>
 zuri_test::PlaceholderLoader::loadPlugin(
     const lyric_common::ModuleLocation &location,
@@ -43,4 +55,24 @@ zuri_test::PlaceholderLoader::loadPlugin(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "placeholder loader is not resolved");
     return m_loader->loadPlugin(location, specifier);
+}
+
+tempo_utils::Result<bool>
+zuri_test::PlaceholderLoader::hasResource(const lyric_common::ModuleLocation &location) const
+{
+    if (m_loader == nullptr)
+        return lyric_runtime::InterpreterStatus::forCondition(
+            lyric_runtime::InterpreterCondition::kRuntimeInvariant,
+            "placeholder loader is not resolved");
+    return m_loader->hasResource(location);
+}
+
+tempo_utils::Result<Option<std::shared_ptr<const tempo_utils::ImmutableBytes>>>
+zuri_test::PlaceholderLoader::loadResource(const lyric_common::ModuleLocation &location)
+{
+    if (m_loader == nullptr)
+        return lyric_runtime::InterpreterStatus::forCondition(
+            lyric_runtime::InterpreterCondition::kRuntimeInvariant,
+            "placeholder loader is not resolved");
+    return m_loader->loadResource(location);
 }

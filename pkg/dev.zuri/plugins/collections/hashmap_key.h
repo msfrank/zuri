@@ -7,6 +7,7 @@
 
 #include <lyric_runtime/bytes_ref.h>
 #include <lyric_runtime/data_cell.h>
+#include <lyric_runtime/protocol_ref.h>
 #include <lyric_runtime/rest_ref.h>
 #include <lyric_runtime/status_ref.h>
 #include <lyric_runtime/string_ref.h>
@@ -48,6 +49,9 @@ H AbslHashValue(H state, const HashMapKey &key) {
         case lyric_runtime::DataCellType::STATUS:
             cell.data.status->hashValue(absl::HashState::Create(&state));
             return std::move(state);
+        case lyric_runtime::DataCellType::PROTOCOL:
+            cell.data.protocol->hashValue(absl::HashState::Create(&state));
+            return std::move(state);
         case lyric_runtime::DataCellType::REST:
             cell.data.rest->hashValue(absl::HashState::Create(&state));
             return std::move(state);
@@ -57,18 +61,7 @@ H AbslHashValue(H state, const HashMapKey &key) {
                 cell.data.type->getSegmentIndex(),
                 cell.data.type->getDescriptorIndex());
 
-        case lyric_runtime::DataCellType::ACTION:
-        case lyric_runtime::DataCellType::BINDING:
-        case lyric_runtime::DataCellType::CALL:
-        case lyric_runtime::DataCellType::CLASS:
-        case lyric_runtime::DataCellType::CONCEPT:
-        case lyric_runtime::DataCellType::ENUM:
-        case lyric_runtime::DataCellType::EXISTENTIAL:
-        case lyric_runtime::DataCellType::FIELD:
-        case lyric_runtime::DataCellType::INSTANCE:
-        case lyric_runtime::DataCellType::NAMESPACE:
-        case lyric_runtime::DataCellType::STATIC:
-        case lyric_runtime::DataCellType::STRUCT:
+        case lyric_runtime::DataCellType::DESCRIPTOR:
             return H::combine(std::move(state),
                 cell.data.descriptor->getSegmentIndex(),
                 cell.data.descriptor->getLinkageSection(),

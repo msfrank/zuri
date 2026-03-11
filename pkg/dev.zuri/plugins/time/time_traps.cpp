@@ -32,7 +32,8 @@ std_time_now(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CLASS);
+    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);
 
@@ -84,7 +85,8 @@ std_time_parse_timezone(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::CLASS);
+    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);
 
