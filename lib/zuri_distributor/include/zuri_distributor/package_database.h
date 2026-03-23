@@ -3,8 +3,6 @@
 
 #include <filesystem>
 
-#include <sqlite3.h>
-
 #include <tempo_utils/result.h>
 
 namespace zuri_distributor {
@@ -22,10 +20,9 @@ namespace zuri_distributor {
 
     private:
         std::filesystem::path m_databaseFilePath;
-        sqlite3 *m_db;
 
-        sqlite3_stmt *m_listSpecifiers = nullptr;
-        sqlite3_stmt *m_insertSpecifier = nullptr;
+        struct Priv;
+        std::unique_ptr<Priv> m_priv;
 
         static tempo_utils::Result<std::shared_ptr<PackageDatabase>> open(
             const std::filesystem::path &databaseFilePath,
@@ -33,7 +30,7 @@ namespace zuri_distributor {
 
         PackageDatabase(
             const std::filesystem::path &databaseFilePath,
-            sqlite3 *db);
+            std::unique_ptr<Priv> priv);
 
         tempo_utils::Status prepare();
     };

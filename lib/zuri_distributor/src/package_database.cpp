@@ -4,36 +4,48 @@
 #include <zuri_distributor/package_database.h>
 #include <zuri_distributor/distributor_result.h>
 
+struct zuri_distributor::PackageDatabase::Priv {
+    sqlite3 *db = nullptr;
+    sqlite3_stmt *listSpecifiers = nullptr;
+    sqlite3_stmt *insertSpecifier = nullptr;
+};
+
 zuri_distributor::PackageDatabase::PackageDatabase(
     const std::filesystem::path &databaseFilePath,
-    sqlite3 *db)
+    std::unique_ptr<Priv> priv)
     : m_databaseFilePath(databaseFilePath),
-      m_db(db)
+      m_priv(std::move(priv))
 {
     TU_ASSERT (!m_databaseFilePath.empty());
-    TU_ASSERT (m_db != nullptr);
+    TU_ASSERT (m_priv != nullptr);
 }
 
 zuri_distributor::PackageDatabase::~PackageDatabase()
 {
-    sqlite3_finalize(m_listSpecifiers);
-    sqlite3_finalize(m_insertSpecifier);
-
-    auto ret = sqlite3_close_v2(m_db);
-    TU_LOG_WARN_IF (ret != SQLITE_OK) << "sqlite close failed unexpectedly: " << sqlite3_errstr(ret);
+    if (m_priv->listSpecifiers) {
+        sqlite3_finalize(m_priv->listSpecifiers);
+    }
+    if (m_priv->insertSpecifier) {
+        sqlite3_finalize(m_priv->insertSpecifier);
+    }
+    if (m_priv->db) {
+        auto ret = sqlite3_close_v2(m_priv->db);
+        TU_LOG_WARN_IF (ret != SQLITE_OK) << "sqlite close failed unexpectedly: " << sqlite3_errstr(ret);
+    }
 }
 
 tempo_utils::Result<std::shared_ptr<zuri_distributor::PackageDatabase>>
 zuri_distributor::PackageDatabase::open(const std::filesystem::path &databaseFilePath, int flags)
 {
-    sqlite3 *db = nullptr;
-    auto ret = sqlite3_open_v2(databaseFilePath.c_str(), &db, flags, nullptr);
+    auto priv = std::make_unique<Priv>();
+
+    auto ret = sqlite3_open_v2(databaseFilePath.c_str(), &priv->db, flags, nullptr);
     if (ret != SQLITE_OK)
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "failed to open environment database {}: {}",
             databaseFilePath.string(), sqlite3_errstr(ret));
 
-    auto packageDatabase = std::shared_ptr<PackageDatabase>(new PackageDatabase(databaseFilePath, db));
+    auto packageDatabase = std::shared_ptr<PackageDatabase>(new PackageDatabase(databaseFilePath, std::move(priv)));
     TU_RETURN_IF_NOT_OK (packageDatabase->prepare());
     return packageDatabase;
 }
@@ -83,7 +95,7 @@ CREATE TABLE IF NOT EXISTS Specifiers (
 	patchVersion SMALLINT
     );)";
 
-    ret = sqlite3_exec(m_db, sqlCreateSpecifiersTable.c_str(), nullptr, nullptr, &err);
+    ret = sqlite3_exec(m_priv->db, sqlCreateSpecifiersTable.c_str(), nullptr, nullptr, &err);
     if (ret != SQLITE_OK)
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "failed to create 'Specifiers' table: {}", sqlite3_errstr(ret));
@@ -100,7 +112,7 @@ CREATE TABLE IF NOT EXISTS Packages (
 	FOREIGN KEY (specifier) REFERENCES Specifiers(specifier)
     );)";
 
-    ret = sqlite3_exec(m_db, sqlCreatePackagesTable.c_str(), nullptr, nullptr, &err);
+    ret = sqlite3_exec(m_priv->db, sqlCreatePackagesTable.c_str(), nullptr, nullptr, &err);
     if (ret != SQLITE_OK)
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "failed to create 'Packages' table: {}", sqlite3_errstr(ret));
@@ -117,7 +129,7 @@ CREATE TABLE IF NOT EXISTS Files (
     PRIMARY KEY (specifier, path)
     );)";
 
-    ret = sqlite3_exec(m_db, sqlCreateFilesTable.c_str(), nullptr, nullptr, &err);
+    ret = sqlite3_exec(m_priv->db, sqlCreateFilesTable.c_str(), nullptr, nullptr, &err);
     if (ret != SQLITE_OK)
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "failed to create 'Files' table: {}", sqlite3_errstr(ret));
@@ -128,8 +140,8 @@ CREATE TABLE IF NOT EXISTS Files (
     std::string sqlListSpecifiers = R"(
 SELECT specifier FROM Specifiers;)";
 
-    ret = sqlite3_prepare_v3(m_db, sqlListSpecifiers.c_str(), sqlListSpecifiers.size(),
-        0, &m_listSpecifiers, &tail);
+    ret = sqlite3_prepare_v3(m_priv->db, sqlListSpecifiers.c_str(), sqlListSpecifiers.size(),
+        0, &m_priv->listSpecifiers, &tail);
     if (ret != SQLITE_OK)
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "failed to prepare listSpecifiers statement: {}", sqlite3_errstr(ret));
@@ -144,8 +156,8 @@ INSERT INTO Specifiers
     (specifier, packageName, packageDomain, majorVersion, minorVersion, patchVersion)
     VALUES (?, ?, ?, ?, ?, ?);)";
 
-    ret = sqlite3_prepare_v3(m_db, sqlInsertSpecifier.c_str(), sqlInsertSpecifier.size(),
-        0, &m_insertSpecifier, &tail);
+    ret = sqlite3_prepare_v3(m_priv->db, sqlInsertSpecifier.c_str(), sqlInsertSpecifier.size(),
+        0, &m_priv->insertSpecifier, &tail);
     if (ret != SQLITE_OK)
         return DistributorStatus::forCondition(DistributorCondition::kDistributorInvariant,
             "failed to prepare insertSpecifier statement: {}", sqlite3_errstr(ret));

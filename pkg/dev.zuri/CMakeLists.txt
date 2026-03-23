@@ -31,7 +31,7 @@ file(TOUCH ${ZURI_PROJECT_RECREATE_FILE})
 # generate the project directory
 add_custom_target(generate-project-directory
     COMMAND
-      zuri-project -vv link
+      zuri-project link
         --if-existing Recreate
         --recreate-if-file-present ${ZURI_PROJECT_RECREATE_FILE}
         --link-project-config-file ${CMAKE_CURRENT_BINARY_DIR}/project.config
@@ -49,7 +49,7 @@ add_custom_target(generate-project-directory
 # build the std package
 add_custom_target(zuri-std-package
     COMMAND
-      zuri-build -vv
+      zuri-build
         -P ${ZURI_PROJECT_DIRECTORY}
         -I ${CMAKE_BINARY_DIR}
         "std"
@@ -76,7 +76,7 @@ set_target_properties(zuri-std-package PROPERTIES
 # build the fs package
 add_custom_target(zuri-fs-package
     COMMAND
-      zuri-build -vv
+      zuri-build
       -P ${ZURI_PROJECT_DIRECTORY}
       -I ${CMAKE_BINARY_DIR}
       "fs"
