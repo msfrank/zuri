@@ -66,7 +66,8 @@ zuri_distributor::HttpPackageResolver::performGet(
     auto &ctx = m_priv->ctx;
     ctx.reset();
 
-    curl_easy_setopt(ctx.handle, CURLOPT_URL, url.uriView());
+    std::string urlString(url.uriView());
+    curl_easy_setopt(ctx.handle, CURLOPT_URL, urlString.c_str());
 
     auto ret = curl_easy_perform(ctx.handle);
     if (ret != CURLE_OK)
