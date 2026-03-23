@@ -11,9 +11,9 @@ def _ElementCompare[T](lhs: T, rhs: T, ord: Ordered[T]): Bool {
 
 defclass Option[+T] {
 
-    val Value: T | Nil
+    val Value: T | Undef
 
-    init(value: T | Nil = nil) {
+    init(value: T | Undef = undef) {
         set this.Value = value
     }
 
@@ -24,7 +24,7 @@ defclass Option[+T] {
         }
     }
 
-    def Get(): T | Nil {
+    def Get(): T | Undef {
         this.Value
     }
 
@@ -95,24 +95,24 @@ defclass HashMap[K,+V] {
         }
     }
 
-    def Get(key: K): V | Nil {
+    def Get(key: K): V | Undef {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_GET")
-            PushResult(typeof V | Nil)
+            PushResult(typeof V | Undef)
         }
     }
 
-    def Put(key: K, value: V): V | Nil {
+    def Put(key: K, value: V): V | Undef {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_PUT")
-            PushResult(typeof V | Nil)
+            PushResult(typeof V | Undef)
         }
     }
 
-    def Remove(key: K): V | Nil {
+    def Remove(key: K): V | Undef {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_REMOVE")
-            PushResult(typeof V | Nil)
+            PushResult(typeof V | Undef)
         }
     }
 
@@ -193,24 +193,24 @@ defclass TreeMap[K,+V] {
         }
     }
 
-    def Get(key: K): V | Nil {
+    def Get(key: K): V | Undef {
         @{
             Trap("STD_COLLECTIONS_TREEMAP_GET")
-            PushResult(typeof V | Nil)
+            PushResult(typeof V | Undef)
         }
     }
 
-    def Put(key: K, value: V): V | Nil {
+    def Put(key: K, value: V): V | Undef {
         @{
             Trap("STD_COLLECTIONS_TREEMAP_PUT")
-            PushResult(typeof V | Nil)
+            PushResult(typeof V | Undef)
         }
     }
 
-    def Remove(key: K): V | Nil {
+    def Remove(key: K): V | Undef {
         @{
             Trap("STD_COLLECTIONS_TREEMAP_REMOVE")
-            PushResult(typeof V | Nil)
+            PushResult(typeof V | Undef)
         }
     }
 
@@ -291,10 +291,10 @@ defclass TreeSet[+T] {
         }
     }
 
-    def Replace(value: T): T | Nil {
+    def Replace(value: T): T | Undef {
         @{
             Trap("STD_COLLECTIONS_TREESET_REPLACE")
-            PushResult(typeof T | Nil)
+            PushResult(typeof T | Undef)
         }
     }
 
@@ -372,17 +372,17 @@ defclass Vector[+T] {
         }
     }
 
-    def Replace(index: Int, value: T): T | Nil {
+    def Replace(index: Int, value: T): T | Undef {
         @{
             Trap("STD_COLLECTIONS_VECTOR_REPLACE")
-            PushResult(typeof T | Nil)
+            PushResult(typeof T | Undef)
         }
     }
 
-    def Remove(index: Int): T | Nil {
+    def Remove(index: Int): T | Undef {
         @{
             Trap("STD_COLLECTIONS_VECTOR_REMOVE")
-            PushResult(typeof T | Nil)
+            PushResult(typeof T | Undef)
         }
     }
 

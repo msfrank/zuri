@@ -310,9 +310,6 @@ set(ZURI_BUILD_DOC_DIR                      "${ZURI_BUILD_OUTPUT_ROOT}/${ZURI_RU
 # test paths
 set(TESTER_CONFIG_PATH                      "${CMAKE_BINARY_DIR}/zuri_std/tester.config")
 
-# empty cpp file is used for targets which don't have any source files
-set(EMPTY_CPP "${CMAKE_BINARY_DIR}/empty.cpp")
-
 
 #######################################################################
 #
@@ -350,23 +347,32 @@ add_subdirectory(share)
 #
 #######################################################################
 
-add_custom_command(
-    OUTPUT ${EMPTY_CPP}
-    COMMAND cmake -E touch ${EMPTY_CPP}
-    )
+set(EMPTY_CPP ${CMAKE_CURRENT_BINARY_DIR}/empty.cpp)
+
+file(TOUCH ${EMPTY_CPP})
 
 add_executable(zuri_testsuite ${EMPTY_CPP})
 target_link_libraries(zuri_testsuite
-    PUBLIC gtest::gtest
+    PUBLIC
+      gtest::gtest
     PRIVATE
-    ZuriBuildTestSuite
-    ZuriDistributorTestSuite
-    ZuriPackagerTestSuite
-    ZuriToolingTestSuite
-    ZuriStdPackageTestSuite
-    ZuriFsPackageTestSuite
+      ZuriBuildTestSuite
+      ZuriDistributorTestSuite
+      ZuriPackagerTestSuite
+      ZuriToolingTestSuite
+      ZuriStdPackageTestSuite
+      ZuriFsPackageTestSuite
     )
-gtest_discover_tests(zuri_testsuite)
+gtest_discover_tests(zuri_testsuite DISCOVERY_TIMEOUT 30)
+
+add_custom_target(run-full-testsuite
+    COMMAND
+      zuri_testsuite
+        --gtest_output=xml:${CMAKE_BINARY_DIR}/full_testsuite_output.xml
+        --logging-option severityFilter VeryVerbose
+        --logging-option logSink LogFile
+        --logging-option logFilePath ${CMAKE_BINARY_DIR}/full_testsuite.log
+    )
 
 
 #######################################################################

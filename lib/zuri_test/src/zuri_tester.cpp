@@ -102,7 +102,7 @@ zuri_test::ZuriTester::runModule(
     TU_CONSOLE_OUT << "";
 
     auto *builder = m_runner->getBuilder();
-    auto cache = builder->getCache();
+    auto artifactCache = builder->getArtifactCache();
     auto tempRoot = builder->getTempRoot();
 
     lyric_runtime::InterpreterStateOptions options;
@@ -123,7 +123,7 @@ zuri_test::ZuriTester::runModule(
     lyric_build::TempDirectory tempDirectory(tempRoot, targetGen);
     std::shared_ptr<lyric_build::DependencyLoader> dependencyLoader;
     TU_ASSIGN_OR_RETURN (dependencyLoader, lyric_build::DependencyLoader::create(
-        origin, targetComputation, cache, &tempDirectory));
+        origin, targetComputation, artifactCache, &tempDirectory));
 
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
     loaderChain.push_back(dependencyLoader);

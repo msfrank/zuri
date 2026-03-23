@@ -51,9 +51,20 @@ TEST_F(StdText, EvaluateTextAt)
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/text" ...
         val text: Text = Text{"Hello, world!"}
-        text.At(0)
+        text.At(4)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellChar(static_cast<char32_t>('H')))));
+        RunModule(DataCellChar(static_cast<char32_t>('o')))));
+}
+
+TEST_F(StdText, EvaluateTextAtOutOfRange)
+{
+    auto result = tester->runModule(R"(
+        import from "dev.zuri.pkg://std-0.0.1@zuri.dev/text" ...
+        val text: Text = Text{"Hello, world!"}
+        text.At(42)
+    )");
+
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellUndef())));
 }

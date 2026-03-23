@@ -95,9 +95,10 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
             "failed to compile fragment");
     }
 
-    auto cache = m_builder->getCache();
+    auto artifactCache = m_builder->getArtifactCache();
     lyric_build::TraceId moduleTrace(targetState.getHash(), target.getDomain(), target.getId());
-    auto generation = cache->loadTrace(moduleTrace);
+    tempo_utils::UUID generation;
+    TU_ASSIGN_OR_RETURN (generation, artifactCache->loadTrace(moduleTrace));
     auto modulePath = moduleLocation.getPath().toFilesystemPath(std::filesystem::path("/"));
     modulePath.replace_extension(lyric_common::kObjectFileSuffix);
     lyric_build::ArtifactId moduleArtifact(generation, targetState.getHash(),
@@ -105,7 +106,7 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
 
     // read the object from the build cache
     std::shared_ptr<const tempo_utils::ImmutableBytes> content;
-    TU_ASSIGN_OR_RETURN (content, cache->loadContentFollowingLinks(moduleArtifact));
+    TU_ASSIGN_OR_RETURN (content, artifactCache->loadContentFollowingLinks(moduleArtifact));
     lyric_object::LyricObject object(content);
     if (!object.isValid())
         return RunStatus::forCondition(RunCondition::kRunInvariant,

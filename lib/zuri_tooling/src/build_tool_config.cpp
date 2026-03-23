@@ -19,9 +19,9 @@ zuri_tooling::BuildToolConfig::configure()
         m_buildMap, "jobParallelism"));
 
     // determine the cache mode
-    CacheModeParser cacheModeParser(lyric_build::CacheMode::Default);
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_cacheMode, cacheModeParser,
-        m_buildMap, "cacheMode"));
+    CacheTypeParser cacheTypeParser(CacheType::Memory);
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_cacheType, cacheTypeParser,
+        m_buildMap, "cacheType"));
 
     // set the wait timeout if it was provided
     tempo_config::DurationParser waitTimeoutParser(absl::Duration{});
@@ -37,10 +37,10 @@ zuri_tooling::BuildToolConfig::configure()
     return {};
 }
 
-lyric_build::CacheMode
-zuri_tooling::BuildToolConfig::getCacheMode() const
+zuri_tooling::CacheType
+zuri_tooling::BuildToolConfig::getCacheType() const
 {
-    return m_cacheMode;
+    return m_cacheType;
 }
 
 absl::Duration

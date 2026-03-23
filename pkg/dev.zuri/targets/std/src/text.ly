@@ -17,10 +17,10 @@ defclass Text {
         }
     }
 
-    def At(index: Int): Char {
+    def At(index: Int): Char | Undef {
         @{
             Trap("STD_TEXT_TEXT_AT")
-            PushResult(typeof Char)
+            PushResult(typeof Char | Undef)
         }
     }
 }

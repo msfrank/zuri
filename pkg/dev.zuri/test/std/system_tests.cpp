@@ -101,11 +101,11 @@ TEST_F(StdSystemSystem, EvaluateAwaitSleep)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val fut: Future[Nil] = Sleep(1000)
+        val fut: Future[Undef] = Sleep(1000)
         Await(fut)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellNil())));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellUndef())));
 }
 
 TEST_F(StdSystemSystem, EvaluateAwaitSpawn)

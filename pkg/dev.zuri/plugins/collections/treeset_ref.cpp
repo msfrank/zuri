@@ -91,8 +91,8 @@ TreeSetRef::replace(const lyric_runtime::DataCell &value)
 {
     // remove the prev value if it exists
     auto result = m_set.extract(value);
-    // result is either prev value or nil
-    lyric_runtime::DataCell prev = result.empty()? lyric_runtime::DataCell::nil(): result.value();
+    // result is either prev value or undef
+    lyric_runtime::DataCell prev = result.empty()? lyric_runtime::DataCell::undef(): result.value();
     // insert the new value
     m_set.insert(value);
     ++m_gen;

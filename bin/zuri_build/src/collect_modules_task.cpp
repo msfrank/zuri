@@ -25,7 +25,7 @@ zuri_build::CollectModulesTask::CollectModulesTask(
 tempo_utils::Status
 zuri_build::CollectModulesTask::configure(
     const lyric_build::TaskSettings *config,
-    lyric_build::AbstractFilesystem *virtualFilesystem)
+    lyric_build::AbstractVirtualFilesystem *virtualFilesystem)
 {
     auto taskId = getId();
 
@@ -59,7 +59,7 @@ zuri_build::CollectModulesTask::configure(
 tempo_utils::Result<std::string>
 zuri_build::CollectModulesTask::configureTask(
     const lyric_build::TaskSettings *config,
-    lyric_build::AbstractFilesystem *virtualFilesystem)
+    lyric_build::AbstractVirtualFilesystem *virtualFilesystem)
 {
     auto merged = config->merge(lyric_build::TaskSettings({}, {}, {{getId(), getParams()}}));
     TU_RETURN_IF_NOT_OK (configure(&merged, virtualFilesystem));
@@ -78,7 +78,7 @@ zuri_build::CollectModulesTask::collectModules(
     const absl::flat_hash_map<lyric_build::TaskKey,lyric_build::TaskState> &depStates,
     lyric_build::BuildState *buildState)
 {
-    auto cache = buildState->getCache();
+    auto artifactCache = buildState->getArtifactCache();
 
     absl::flat_hash_set<lyric_common::ModuleLocation> modulesNeeded;
 
@@ -99,7 +99,8 @@ zuri_build::CollectModulesTask::collectModules(
                 "dependent task {} has invalid hash", taskKey.toString());
 
         lyric_build::TraceId artifactTrace(hash, taskKey.getDomain(), taskKey.getId());
-        auto generation = cache->loadTrace(artifactTrace);
+        tempo_utils::UUID generation;
+        TU_ASSIGN_OR_RETURN (generation, artifactCache->loadTrace(artifactTrace));
 
         std::vector<lyric_build::ArtifactId> objectArtifacts;
 
@@ -109,7 +110,7 @@ zuri_build::CollectModulesTask::collectModules(
         objectFilterWriter.putAttr(lyric_build::kLyricBuildContentType, std::string(lyric_common::kObjectContentType));
         lyric_build::LyricMetadata objectFilter;
         TU_ASSIGN_OR_RETURN (objectFilter, objectFilterWriter.toMetadata());
-        TU_ASSIGN_OR_RETURN (objectArtifacts, cache->findArtifacts(generation, hash, {}, objectFilter));
+        TU_ASSIGN_OR_RETURN (objectArtifacts, artifactCache->findArtifacts(generation, hash, {}, objectFilter));
 
         if (objectArtifacts.size() != 1)
             return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
@@ -118,7 +119,7 @@ zuri_build::CollectModulesTask::collectModules(
         auto objectDepId = objectArtifacts.front();
 
         lyric_build::LyricMetadata objectMetadata;
-        TU_ASSIGN_OR_RETURN (objectMetadata, cache->loadMetadataFollowingLinks(objectDepId));
+        TU_ASSIGN_OR_RETURN (objectMetadata, artifactCache->loadMetadataFollowingLinks(objectDepId));
 
         lyric_common::ModuleLocation moduleLocation;
         TU_RETURN_IF_NOT_OK (objectMetadata.parseAttr(lyric_build::kLyricBuildModuleLocation, moduleLocation));
@@ -134,7 +135,7 @@ zuri_build::CollectModulesTask::collectModules(
 
         // load the object
         std::shared_ptr<const tempo_utils::ImmutableBytes> content;
-        TU_ASSIGN_OR_RETURN (content, cache->loadContentFollowingLinks(objectDepId));
+        TU_ASSIGN_OR_RETURN (content, artifactCache->loadContentFollowingLinks(objectDepId));
         lyric_object::LyricObject object(content);
 
         // add unencountered relative imports to the list of modules needed
@@ -162,7 +163,7 @@ zuri_build::CollectModulesTask::collectModules(
         pluginFilterWriter.putAttr(lyric_build::kLyricBuildContentType, std::string(lyric_common::kPluginContentType));
         lyric_build::LyricMetadata pluginFilter;
         TU_ASSIGN_OR_RETURN (pluginFilter, pluginFilterWriter.toMetadata());
-        TU_ASSIGN_OR_RETURN (pluginArtifacts, cache->findArtifacts(generation, hash, {}, pluginFilter));
+        TU_ASSIGN_OR_RETURN (pluginArtifacts, artifactCache->findArtifacts(generation, hash, {}, pluginFilter));
 
         if (pluginArtifacts.size() != 1)
             return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kBuildInvariant,
@@ -204,12 +205,12 @@ zuri_build::CollectModulesTask::runTask(
     TU_LOG_V << "linking collected modules for " << getId().toString();
 
     // otherwise collection is done, so link all collected artifacts
-    auto cache = buildState->getCache();
+    auto artifactCache = buildState->getArtifactCache();
     auto generation = getGeneration();
     for (const auto &entry : m_artifactsToLink) {
         lyric_build::ArtifactId dstId(generation, taskHash, entry.first);
         const auto &depId = entry.second;
-        status = cache->linkArtifact(dstId, depId);
+        status = artifactCache->linkArtifact(dstId, depId);
         if (status.notOk())
             return Option(status);
         TU_LOG_V << "linked " << depId << " to " << dstId;

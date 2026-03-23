@@ -119,7 +119,7 @@ on_sleep_accept(
     const lyric_runtime::Waiter *waiter,
     lyric_runtime::InterpreterState *state)
 {
-    promise->complete(lyric_runtime::DataCell::nil());
+    promise->complete(lyric_runtime::DataCell::undef());
 }
 
 tempo_utils::Status

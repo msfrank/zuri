@@ -20,7 +20,7 @@ namespace zuri_build {
 
         tempo_utils::Result<std::string> configureTask(
             const lyric_build::TaskSettings *config,
-            lyric_build::AbstractFilesystem *virtualFilesystem) override;
+            lyric_build::AbstractVirtualFilesystem *virtualFilesystem) override;
         tempo_utils::Result<absl::flat_hash_set<lyric_build::TaskKey>> checkDependencies() override;
         Option<tempo_utils::Status> runTask(
             const std::string &taskHash,
@@ -35,7 +35,7 @@ namespace zuri_build {
 
         tempo_utils::Status configure(
             const lyric_build::TaskSettings *config,
-            lyric_build::AbstractFilesystem *virtualFilesystem);
+            lyric_build::AbstractVirtualFilesystem *virtualFilesystem);
         tempo_utils::Status collectModules(
             const std::string &taskHash,
             const absl::flat_hash_map<lyric_build::TaskKey,lyric_build::TaskState> &depStates,

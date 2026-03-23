@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
+#include <lyric_build/memory_cache.h>
 #include <lyric_parser/lyric_parser.h>
 #include <lyric_runtime/chain_loader.h>
 #include <zuri_distributor/runtime.h>
@@ -36,7 +37,8 @@ zuri_run::run_interactive_command(
 
     // construct the builder used to compile fragments
     lyric_build::BuilderOptions builderOptions;
-    builderOptions.cacheMode = lyric_build::CacheMode::InMemory;
+    builderOptions.artifactCache = std::make_shared<lyric_build::MemoryCache>();
+    builderOptions.disableBuildRoot = true;
     builderOptions.fallbackLoader = applicationLoader;
     builderOptions.virtualFilesystem = fragmentStore;
     auto builder = std::make_unique<lyric_build::LyricBuilder>(

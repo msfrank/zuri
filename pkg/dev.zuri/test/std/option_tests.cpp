@@ -84,7 +84,7 @@ TEST_F(StdCollectionsOption, TestEvaluateOptionGetWhenEmpty)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellNil())));
+        RunModule(DataCellUndef())));
 }
 
 TEST_F(StdCollectionsOption, TestEvaluateOptionGetWhenNotEmpty)

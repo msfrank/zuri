@@ -2,8 +2,11 @@
 
 #include <iostream>
 
+#include <lyric_build/filesystem_cache.h>
 #include <lyric_build/local_filesystem.h>
 #include <lyric_build/lyric_builder.h>
+#include <lyric_build/memory_cache.h>
+#include <lyric_build/rocksdb_cache.h>
 #include <lyric_runtime/chain_loader.h>
 #include <tempo_command/command.h>
 #include <tempo_config/base_conversions.h>
@@ -33,52 +36,6 @@ zuri_build::zuri_build(int argc, const char *argv[])
     tempo_config::IntegerParser verboseParser(0);
     tempo_config::IntegerParser quietParser(0);
     tempo_config::BooleanParser silentParser(false);
-
-    // std::vector<tempo_command::Default> defaults = {
-    //     {"projectRoot", "Specify an alternative project root directory", "DIR"},
-    //     {"projectConfigFile", "Specify an alternative project config file", "FILE"},
-    //     {"noHome", "ignore Zuri home"},
-    //     {"buildRoot", "Specify an alternative build root directory", "DIR"},
-    //     {"installRoot", "Specify an alternative install root directory", "DIR"},
-    //     {"jobParallelism", "Number of build worker threads", "COUNT"},
-    //     {"colorizeOutput", "Display colorized output"},
-    //     {"verbose", "Display verbose output (specify twice for even more verbose output)"},
-    //     {"quiet", "Display warnings and errors only (specify twice for errors only)"},
-    //     {"silent", "Suppress all output"},
-    //     {"targets", "Build targets to compute", "TARGET"},
-    // };
-    //
-    // const std::vector<tempo_command::Grouping> groupings = {
-    //     {"projectRoot", {"-P", "--project-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-    //     {"projectConfigFile", {"--project-config-file"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-    //     {"noHome", {"--no-home"}, tempo_command::GroupingType::NO_ARGUMENT},
-    //     {"buildRoot", {"-B", "--build-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-    //     {"installRoot", {"-I", "--install-root"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-    //     {"jobParallelism", {"-J", "--job-parallelism"}, tempo_command::GroupingType::SINGLE_ARGUMENT},
-    //     {"colorizeOutput", {"-c", "--colorize"}, tempo_command::GroupingType::NO_ARGUMENT},
-    //     {"verbose", {"-v"}, tempo_command::GroupingType::NO_ARGUMENT},
-    //     {"quiet", {"-q"}, tempo_command::GroupingType::NO_ARGUMENT},
-    //     {"silent", {"-s", "--silent"}, tempo_command::GroupingType::NO_ARGUMENT},
-    //     {"help", {"-h", "--help"}, tempo_command::GroupingType::HELP_FLAG},
-    //     {"version", {"--version"}, tempo_command::GroupingType::VERSION_FLAG},
-    // };
-    //
-    // const std::vector<tempo_command::Mapping> optMappings = {
-    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectRoot"},
-    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "projectConfigFile"},
-    //     {tempo_command::MappingType::TRUE_IF_INSTANCE, "noHome"},
-    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "buildRoot"},
-    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "installRoot"},
-    //     {tempo_command::MappingType::ZERO_OR_ONE_INSTANCE, "jobParallelism"},
-    //     {tempo_command::MappingType::TRUE_IF_INSTANCE, "colorizeOutput"},
-    //     {tempo_command::MappingType::COUNT_INSTANCES, "verbose"},
-    //     {tempo_command::MappingType::COUNT_INSTANCES, "quiet"},
-    //     {tempo_command::MappingType::TRUE_IF_INSTANCE, "silent"},
-    // };
-    //
-    // std::vector<tempo_command::Mapping> argMappings = {
-    //     {tempo_command::MappingType::ANY_INSTANCES, "targets"},
-    // };
 
     tempo_command::Command command("zuri-build");
 
@@ -244,9 +201,27 @@ zuri_build::zuri_build(int argc, const char *argv[])
 
     lyric_build::BuilderOptions builderOptions;
 
+    // construct artifact cache implementation based on cache type
+    std::shared_ptr<lyric_build::AbstractArtifactCache> artifactCache;
+    switch (buildToolConfig->getCacheType()) {
+        case zuri_tooling::CacheType::Memory:
+            artifactCache = std::make_shared<lyric_build::MemoryCache>();
+            break;
+        case zuri_tooling::CacheType::Filesystem:
+            artifactCache = std::make_shared<lyric_build::FilesystemCache>();
+            break;
+        case zuri_tooling::CacheType::RocksDb:
+            artifactCache = std::make_shared<lyric_build::RocksdbCache>(/* copyReadBuffers= */ false);
+            break;
+        default:
+            return tempo_command::CommandStatus::forCondition(
+                tempo_command::CommandCondition::kInvalidConfiguration,
+                "invalid zuri build cache type");
+    }
+
     // set builder options
     builderOptions.buildRoot = buildRoot;
-    builderOptions.cacheMode = buildToolConfig->getCacheMode();
+    builderOptions.artifactCache = artifactCache;
     builderOptions.waitTimeout = buildToolConfig->getWaitTimeout();
     if (project.isLinked()) {
         auto baseDirectory = project.getProjectDirectory();

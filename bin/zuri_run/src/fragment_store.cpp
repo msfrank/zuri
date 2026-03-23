@@ -70,7 +70,15 @@ zuri_run::FragmentStore::loadModule(const lyric_common::ModuleLocation &location
     auto entry = m_objects.find(location);
     if (entry != m_objects.cend())
         return Option(entry->second);
-    return {};
+    return Option<lyric_object::LyricObject>();
+}
+
+tempo_utils::Result<bool>
+zuri_run::FragmentStore::hasPlugin(
+    const lyric_common::ModuleLocation &location,
+    const lyric_object::PluginSpecifier &specifier) const
+{
+    return false;
 }
 
 tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>>
@@ -78,7 +86,19 @@ zuri_run::FragmentStore::loadPlugin(
     const lyric_common::ModuleLocation &location,
     const lyric_object::PluginSpecifier &specifier)
 {
-    return {};
+    return Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>();
+}
+
+tempo_utils::Result<bool>
+zuri_run::FragmentStore::hasResource( const lyric_common::ModuleLocation &location) const
+{
+    return false;
+}
+
+tempo_utils::Result<Option<std::shared_ptr<const tempo_utils::ImmutableBytes>>>
+zuri_run::FragmentStore::loadResource(const lyric_common::ModuleLocation &location)
+{
+    return Option<std::shared_ptr<const tempo_utils::ImmutableBytes>>();
 }
 
 std::string

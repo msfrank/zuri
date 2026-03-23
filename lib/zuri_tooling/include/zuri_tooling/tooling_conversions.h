@@ -5,6 +5,7 @@
 #include <tempo_config/abstract_converter.h>
 #include <tempo_config/enum_conversions.h>
 
+#include "build_tool_config.h"
 #include "import_store.h"
 #include "repository_store.h"
 #include "target_store.h"
@@ -37,15 +38,15 @@ namespace zuri_tooling {
     /**
      *
      */
-    class CacheModeParser : public tempo_config::EnumTParser<lyric_build::CacheMode> {
+    class CacheTypeParser : public tempo_config::EnumTParser<CacheType> {
     public:
-        explicit CacheModeParser(lyric_build::CacheMode defaultMode)
+        explicit CacheTypeParser(CacheType defaultMode)
             : EnumTParser({
-            {"Default", lyric_build::CacheMode::Default},
-            {"Persistent", lyric_build::CacheMode::Persistent},
-            {"InMemory", lyric_build::CacheMode::InMemory}}, defaultMode)
+            {"Memory", CacheType::Memory},
+            {"Filesystem", CacheType::Filesystem},
+            {"RocksDb", CacheType::RocksDb}}, defaultMode)
         {}
-        CacheModeParser() : CacheModeParser(lyric_build::CacheMode::Default) {}
+        CacheTypeParser() : CacheTypeParser(CacheType::Memory) {}
     };
 }
 

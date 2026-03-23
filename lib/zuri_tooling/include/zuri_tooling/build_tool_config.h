@@ -8,13 +8,20 @@
 
 namespace zuri_tooling {
 
+    enum class CacheType {
+        Memory,
+        Filesystem,
+        RocksDb,
+        Custom,
+    };
+
     class BuildToolConfig {
     public:
         explicit BuildToolConfig(const tempo_config::ConfigMap &buildMap);
 
         tempo_utils::Status configure();
 
-        lyric_build::CacheMode getCacheMode() const;
+        CacheType getCacheType() const;
         absl::Duration getWaitTimeout() const;
         int getJobParallelism() const;
         lyric_build::TaskSettings getTaskSettings() const;
@@ -22,7 +29,7 @@ namespace zuri_tooling {
     private:
         tempo_config::ConfigMap m_buildMap;
 
-        lyric_build::CacheMode m_cacheMode;
+        CacheType m_cacheType;
         absl::Duration m_waitTimeout;
         int m_jobParallelism;
         lyric_build::TaskSettings m_taskSettings;

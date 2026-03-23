@@ -45,17 +45,28 @@ TextRef::toString() const
 lyric_runtime::DataCell
 TextRef::textAt(int index) const
 {
-    if (m_data == nullptr)
-        return lyric_runtime::DataCell::nil();
-    UChar32 char32;
-    U16_GET(m_data, 0, index, m_size, char32);
-    return lyric_runtime::DataCell((char32_t) char32);
+    if (m_data == nullptr || m_size == 0)
+        return lyric_runtime::DataCell::undef();
+
+    if (index >= 0) {
+        int curr = 0, i = 0;
+        do {
+            UChar32 char32;
+            U16_NEXT(m_data, i, m_size, char32);
+            if (curr == index)
+                return lyric_runtime::DataCell((char32_t) char32);
+            curr++;
+        } while (i < m_size);
+    } else {
+    }
+
+    return lyric_runtime::DataCell::undef();
 }
 
 lyric_runtime::DataCell
 TextRef::textSize() const
 {
-    if (m_data == nullptr)
+    if (m_data == nullptr || m_size == 0)
         return lyric_runtime::DataCell(static_cast<int64_t>(0));
     return lyric_runtime::DataCell(static_cast<int64_t>(u_countChar32(m_data, m_size)));
 }

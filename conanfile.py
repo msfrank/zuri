@@ -26,6 +26,7 @@ class Zuri(ConanFile):
         'docker_tempo_image': ['ANY', None],
         'docker_lyric_image': ['ANY', None],
         'docker_registry': ['ANY', None],
+        'disable_testing': [True, False, None],
         }
     default_options = {
         'runtime_distribution_root': None,
@@ -40,6 +41,7 @@ class Zuri(ConanFile):
         'docker_tempo_image': None,
         'docker_lyric_image': None,
         'docker_registry': None,
+        'disable_testing': None,
         }
 
     exports = ('meta/*',)
@@ -139,6 +141,9 @@ class Zuri(ConanFile):
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
+
+        if not self.options.disable_testing:
+            cmake.build(target='run-full-testsuite')
 
     def package(self):
         cmake = CMake(self)

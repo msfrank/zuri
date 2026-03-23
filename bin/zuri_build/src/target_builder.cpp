@@ -142,20 +142,20 @@ zuri_build::TargetBuilder::buildProgramTarget(
     // set the main location
     targetWriter.setProgramMain(program.main);
 
-    auto cache = m_builder->getCache();
+    auto artifactCache = m_builder->getArtifactCache();
     std::vector<lyric_build::ArtifactId> targetArtifacts;
 
     // write collected modules
     auto collectModulesComputation = targetComputationSet.getTarget(collectModules);
     auto collectModulesState = collectModulesComputation.getState();
 
-    TU_ASSIGN_OR_RETURN (targetArtifacts, cache->findArtifacts(
+    TU_ASSIGN_OR_RETURN (targetArtifacts, artifactCache->findArtifacts(
         collectModulesState.getGeneration(), collectModulesState.getHash(), {}, {}));
     for (const auto &artifactId : targetArtifacts) {
         lyric_build::LyricMetadata metadata;
-        TU_ASSIGN_OR_RETURN (metadata, cache->loadMetadataFollowingLinks(artifactId));
+        TU_ASSIGN_OR_RETURN (metadata, artifactCache->loadMetadataFollowingLinks(artifactId));
         std::shared_ptr<const tempo_utils::ImmutableBytes> content;
-        TU_ASSIGN_OR_RETURN (content, cache->loadContentFollowingLinks(artifactId));
+        TU_ASSIGN_OR_RETURN (content, artifactCache->loadContentFollowingLinks(artifactId));
         targetWriter.writeModule(artifactId.getLocation().toPath(), metadata, content);
     }
 
@@ -209,20 +209,20 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     TargetWriter targetWriter(m_runtime, m_installRoot, library.specifier);
     TU_RETURN_IF_NOT_OK (targetWriter.configure());
 
-    auto cache = m_builder->getCache();
+    auto artifactCache = m_builder->getArtifactCache();
     std::vector<lyric_build::ArtifactId> targetArtifacts;
 
     // write collected modules
     auto collectModulesComputation = targetComputationSet.getTarget(collectModules);
     auto collectModulesState = collectModulesComputation.getState();
 
-    TU_ASSIGN_OR_RETURN (targetArtifacts, cache->findArtifacts(
+    TU_ASSIGN_OR_RETURN (targetArtifacts, artifactCache->findArtifacts(
         collectModulesState.getGeneration(), collectModulesState.getHash(), {}, {}));
     for (const auto &artifactId : targetArtifacts) {
         lyric_build::LyricMetadata metadata;
-        TU_ASSIGN_OR_RETURN (metadata, cache->loadMetadataFollowingLinks(artifactId));
+        TU_ASSIGN_OR_RETURN (metadata, artifactCache->loadMetadataFollowingLinks(artifactId));
         std::shared_ptr<const tempo_utils::ImmutableBytes> content;
-        TU_ASSIGN_OR_RETURN (content, cache->loadContentFollowingLinks(artifactId));
+        TU_ASSIGN_OR_RETURN (content, artifactCache->loadContentFollowingLinks(artifactId));
         TU_RETURN_IF_NOT_OK (targetWriter.writeModule(artifactId.getLocation().toPath(), metadata, content));
     }
 

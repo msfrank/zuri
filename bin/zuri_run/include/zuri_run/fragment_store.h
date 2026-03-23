@@ -3,12 +3,12 @@
 #ifndef ZURI_RUN_FRAGMENT_STORE_H
 #define ZURI_RUN_FRAGMENT_STORE_H
 
-#include <lyric_build/abstract_filesystem.h>
+#include <lyric_build/abstract_virtual_filesystem.h>
 #include <lyric_runtime/abstract_loader.h>
 
 namespace zuri_run {
 
-    class FragmentStore : public lyric_build::AbstractFilesystem, public lyric_runtime::AbstractLoader {
+    class FragmentStore : public lyric_build::AbstractVirtualFilesystem, public lyric_runtime::AbstractLoader {
 
     public:
         FragmentStore();
@@ -30,9 +30,16 @@ namespace zuri_run {
             const lyric_common::ModuleLocation &location) const override;
         tempo_utils::Result<Option<lyric_object::LyricObject>> loadModule(
             const lyric_common::ModuleLocation &location) override;
+        tempo_utils::Result<bool> hasPlugin(
+            const lyric_common::ModuleLocation &location,
+            const lyric_object::PluginSpecifier &specifier) const override;
         tempo_utils::Result<Option<std::shared_ptr<const lyric_runtime::AbstractPlugin>>> loadPlugin(
             const lyric_common::ModuleLocation &location,
             const lyric_object::PluginSpecifier &specifier) override;
+        tempo_utils::Result<bool> hasResource(
+            const lyric_common::ModuleLocation &location) const override;
+        tempo_utils::Result<Option<std::shared_ptr<const tempo_utils::ImmutableBytes>>> loadResource(
+            const lyric_common::ModuleLocation &location) override;
 
         virtual std::string insertFragment(
             const tempo_utils::Url &fragmentUrl,
