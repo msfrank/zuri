@@ -23,6 +23,7 @@ target_link_libraries(zuri_project_testsuite PUBLIC
     ZuriProjectRuntime
     lyric::lyric_test
     tempo::tempo_test
+    tempo::tempo_test_main
     gtest::gtest
     )
 gtest_discover_tests(zuri_project_testsuite DISCOVERY_TIMEOUT 30)

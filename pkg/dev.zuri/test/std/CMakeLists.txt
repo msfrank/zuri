@@ -39,6 +39,7 @@ target_link_libraries(zuri_std_package_testsuite
     test_utils
     lyric::lyric_test
     tempo::tempo_test
+    tempo::tempo_test_main
     zuri::zuri_test
     )
 gtest_discover_tests(zuri_std_package_testsuite)

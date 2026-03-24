@@ -22,6 +22,7 @@ target_include_directories(zuri_distributor_testsuite PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/../src
     )
 target_link_libraries(zuri_distributor_testsuite PUBLIC
+    tempo::tempo_test_main
     zuri::zuri_distributor
     zuri::zuri_test
     gtest::gtest

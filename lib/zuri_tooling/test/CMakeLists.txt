@@ -18,6 +18,7 @@ target_include_directories(zuri_tooling_testsuite PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/../src
     )
 target_link_libraries(zuri_tooling_testsuite PUBLIC
+    tempo::tempo_test_main
     zuri::zuri_tooling
     zuri::zuri_test
     gtest::gtest

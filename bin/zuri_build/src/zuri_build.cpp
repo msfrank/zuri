@@ -272,6 +272,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
     // build each target (and its dependencies) in the order specified on the command line
     TargetBuilder targetBuilder(runtime, buildGraph, &builder, std::move(targetBases), installRoot);
     for (const auto &target : targets) {
+        TU_CONSOLE_OUT << "building target " << target;
         TU_RETURN_IF_STATUS (targetBuilder.buildTarget(target));
     }
 

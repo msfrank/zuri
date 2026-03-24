@@ -354,6 +354,7 @@ file(TOUCH ${EMPTY_CPP})
 add_executable(zuri_testsuite ${EMPTY_CPP})
 target_link_libraries(zuri_testsuite
     PUBLIC
+      tempo::tempo_test_main
       gtest::gtest
     PRIVATE
       ZuriBuildTestSuite

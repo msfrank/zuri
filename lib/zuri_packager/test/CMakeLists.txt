@@ -23,8 +23,9 @@ target_include_directories(zuri_packager_testsuite PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/../src
     )
 target_link_libraries(zuri_packager_testsuite PUBLIC
+    tempo::tempo_test_main
     zuri::zuri_packager
-    tempo::tempo_test
+    zuri::zuri_test
     gtest::gtest
     )
 gtest_discover_tests(zuri_packager_testsuite DISCOVERY_TIMEOUT 30)
@@ -38,6 +39,6 @@ target_include_directories(ZuriPackagerTestSuite PRIVATE
     )
 target_link_libraries(ZuriPackagerTestSuite PUBLIC
     zuri::zuri_packager
-    tempo::tempo_test
+    zuri::zuri_test
     gtest::gtest
     )
