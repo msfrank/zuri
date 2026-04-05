@@ -6,12 +6,11 @@
 #include <lyric_runtime/interpreter_state.h>
 #include <tempo_utils/big_endian.h>
 #include <tempo_utils/log_stream.h>
+#include <tempo_utils/memory_bytes.h>
 #include <tempo_utils/unicode.h>
 
 #include "future_ref.h"
 #include "port_ref.h"
-
-#include <tempo_utils/memory_bytes.h>
 
 PortRef::PortRef(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable),
@@ -36,15 +35,15 @@ PortRef::PortRef(
     const lyric_runtime::VirtualTable *vtable,
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
-    std::shared_ptr<lyric_runtime::DuplexPort> port)
+    std::shared_ptr<lyric_runtime::Connection> conn)
     : BaseRef(vtable),
       m_interp(interp),
       m_state(state),
-      m_port(port)
+      m_conn(std::move(conn))
 {
-    TU_ASSERT (m_interp != nullptr);
-    TU_ASSERT (m_state != nullptr);
-    TU_ASSERT (port != nullptr);
+    TU_NOTNULL (m_interp);
+    TU_NOTNULL (m_state);
+    TU_NOTNULL (m_conn);
 }
 
 PortRef::~PortRef()
@@ -58,37 +57,33 @@ PortRef::toString() const
     return absl::Substitute("<$0: Port>", this);
 }
 
-std::shared_ptr<lyric_runtime::DuplexPort>
+std::shared_ptr<lyric_runtime::Connection>
 PortRef::duplexPort()
 {
-    return m_port;
+    return m_conn;
 }
 
 bool
 PortRef::send(std::shared_ptr<tempo_utils::ImmutableBytes> payload)
 {
-    // if port is not attached then this is the null protocol, so drop the message
-    if (!m_port)
-        return true;
-    // otherwise if a port is attached, then send the message through it
-    m_port->send(std::move(payload));
+    m_conn->send(std::move(payload));
     return true;
 }
 
-bool
-PortRef::waitForReceive(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async)
-{
-    if (m_port) {
-        // if port is attached then signal the port that we are ready to receive
-        m_port->readyToReceive(async);
-    } else {
-        // otherwise if this is the null protocol then signal a receive immediately
-        promise->complete(lyric_runtime::DataCell::nil());
-        uv_async_send(async);
-    }
-
-    return true;
-}
+// bool
+// PortRef::waitForReceive(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async)
+// {
+//     if (m_port) {
+//         // if port is attached then signal the port that we are ready to receive
+//         m_port->readyToReceive(async);
+//     } else {
+//         // otherwise if this is the null protocol then signal a receive immediately
+//         promise->complete(lyric_runtime::DataCell::nil());
+//         uv_async_send(async);
+//     }
+//
+//     return true;
+// }
 
 void
 PortRef::setMembersReachable()
@@ -153,52 +148,61 @@ port_send(
     return {};
 }
 
-struct ResolveData {
-    std::shared_ptr<lyric_runtime::DuplexPort> port;
-    std::shared_ptr<tempo_utils::ImmutableBytes> payload;
-    lyric_runtime::DataCell ref;
+class ReceiveCompleter : public lyric_runtime::AbstractReceiveCompleter {
+public:
+    ReceiveCompleter(
+        std::shared_ptr<lyric_runtime::Promise> promise,
+        lyric_runtime::HeapManager *heapManager)
+        : m_promise(std::move(promise)),
+          m_heapManager(heapManager)
+    {
+        TU_NOTNULL (m_promise);
+        TU_NOTNULL (m_heapManager);
+    }
+    void
+    receiveComplete(std::shared_ptr<const tempo_utils::ImmutableBytes> payload) override
+    {
+        auto result = m_heapManager->allocateBytes(payload->getSpan());
+        m_promise->complete(result);
+    }
+    void
+    error(const tempo_utils::Status &status) override
+    {
+        auto result = m_heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
+        m_promise->reject(result);
+    }
+    void close() override
+    {
+    }
+private:
+    std::shared_ptr<lyric_runtime::Promise> m_promise;
+    lyric_runtime::HeapManager *m_heapManager;
 };
 
-static void
-complete_promise(
-    lyric_runtime::Promise *promise,
-    lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state)
-{
-    auto *heapManager = state->heapManager();
-
-    auto *data = static_cast<ResolveData *>(promise->getData());
-
-    // construct a Bytes instance containing the payload
-    auto payload = heapManager->allocateBytes(data->payload->getSpan());
-
-    // free the ResolveData
-    delete data;
-
-    // complete the promise
-    promise->complete(payload);
-}
-
-static void
-on_async_accept(
-    lyric_runtime::Promise *promise,
-    const lyric_runtime::Waiter *waiter,
-    lyric_runtime::InterpreterState *state)
-{
-    auto *data = static_cast<ResolveData *>(promise->getData());
-    TU_ASSERT (data->port->hasPending());
-    data->payload = data->port->nextPending();
-}
+// static void
+// on_async_accept(
+//     lyric_runtime::Promise *promise,
+//     const lyric_runtime::Waiter *waiter,
+//     lyric_runtime::InterpreterState *state)
+// {
+//     auto *completer = static_cast<ReceiveCompleter *>(promise->getData());
+//     if (completer->isComplete()) {
+//         promise->complete(completer->getResult());
+//     } else {
+//         promise->reject(completer->getResult());
+//     }
+// }
 
 tempo_utils::Status
 port_receive(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
-    const lyric_runtime::VirtualTable *unused)
+    const lyric_runtime::VirtualTable *)
 {
     auto *currentCoro = state->currentCoro();
     auto *segmentManager = state->segmentManager();
-    auto *scheduler = state->systemScheduler();
+    auto *systemScheduler = state->systemScheduler();
+    auto *heapManager = state->heapManager();
 
     auto &frame = currentCoro->currentCallOrThrow();
 
@@ -226,26 +230,15 @@ port_receive(
     currentCoro->pushData(ref);
     auto *fut = ref.data.ref;
 
-    //
-    auto *data = static_cast<ResolveData *>(std::malloc(sizeof(ResolveData)));
-    data->port = instance->duplexPort();
+    auto conn = instance->duplexPort();
 
-    //
-    lyric_runtime::PromiseOptions options;
-    options.adapt = complete_promise;
-    options.data = data;
-    options.release = std::free;
-    auto promise = lyric_runtime::Promise::create(on_async_accept, options);
-
-    // register a waiter bound to the current task
-    uv_async_t *async = nullptr;
-    scheduler->registerAsync(&async, promise);
+    // register receive
+    auto promise = lyric_runtime::Promise::create();
+    auto completer = std::make_shared<ReceiveCompleter>(promise, heapManager);
+    conn->registerReceive(systemScheduler, promise, completer);
 
     // attach the waiter to the future
     fut->prepareFuture(promise);
-
-    // set port to await a message from the remote side
-    instance->waitForReceive(promise, async);
 
     return {};
 }

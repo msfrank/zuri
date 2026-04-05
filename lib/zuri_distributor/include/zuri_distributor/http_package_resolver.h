@@ -9,6 +9,8 @@ namespace zuri_distributor {
 
     class HttpPackageResolver : public AbstractPackageResolver {
     public:
+        ~HttpPackageResolver() override;
+
         static tempo_utils::Result<std::shared_ptr<HttpPackageResolver>> create(
             const HttpPackageResolverOptions &options = {});
 

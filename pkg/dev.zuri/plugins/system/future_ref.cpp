@@ -144,20 +144,20 @@ FutureRef::sourcesEnd() const
 }
 
 tempo_utils::Status
-FutureRef::forward(uv_async_t *target)
+FutureRef::forward(std::shared_ptr<lyric_runtime::AsyncHandle> target)
 {
-    TU_ASSERT (target != nullptr);
+    TU_NOTNULL (target);
 
     switch (m_state) {
 
         case FutureState::Initial:
         case FutureState::Ready:
         case FutureState::Waiting:
-            m_targets.push_back(target);
+            m_targets.push_back(std::move(target));
             return {};
 
         case FutureState::Resolved:
-            uv_async_send(target);
+            target->sendSignal();
             return {};
     }
 }
@@ -170,8 +170,8 @@ FutureRef::complete(const lyric_runtime::DataCell &result)
         case FutureState::Initial:
             m_promise = lyric_runtime::Promise::completed(result);
             m_state = FutureState::Resolved;
-            for (auto *target : m_targets) {
-                uv_async_send(target);
+            for (auto &target : m_targets) {
+                target->sendSignal();
             }
             m_targets.clear();
             return {};
@@ -308,62 +308,62 @@ future_reject(
     return {};
 }
 
-struct ThenData {
-    FutureRef *fut;
-    lyric_runtime::DataCell fn;
-};
-
-static void
-on_then_adapt(
-    lyric_runtime::Promise *promise,
-    lyric_runtime::BytecodeInterpreter *interp,
-    lyric_runtime::InterpreterState *state)
-{
-    auto *thenData = static_cast<ThenData *>(promise->getData());
-
-    // construct closure args
-    auto *sourceFut = *thenData->fut->sourcesBegin();
-    auto sourceResult = sourceFut->getPromise()->getResult();;
-    std::vector args{sourceResult};
-
-    // push a new frame onto the current task call stack
-    auto *currentTask = state->systemScheduler()->currentTask();
-    if (!thenData->fn.data.ref->applyClosure(currentTask, args, state)) {
-        TU_LOG_FATAL << "failed to apply closure";
-    }
-
-    // run the interpreter until the closure completes
-    auto runClosureResult = interp->runSubinterpreter();
-    if (runClosureResult.isStatus()) {
-        TU_LOG_FATAL << "failed to run closure: " << runClosureResult.getStatus();
-    }
-
-    auto result = runClosureResult.getResult();
-
-    // complete or reject the promise based on the fn result
-    if (result.type == lyric_runtime::DataCellType::REF
-        && result.data.ref->errorStatusCode() != tempo_utils::StatusCode::kOk) {
-        promise->reject(result);
-    } else {
-        promise->complete(result);
-    }
-}
-
-static void
-on_then_reachable(void *data)
-{
-    auto *thenData = static_cast<ThenData *>(data);
-    thenData->fut->setReachable();
-}
-
-static void
-on_future_accept(
-    lyric_runtime::Promise *promise,
-    const lyric_runtime::Waiter *waiter,
-    lyric_runtime::InterpreterState *state)
-{
-    // this callback must exist but does nothing
-}
+// struct ThenData {
+//     FutureRef *fut;
+//     lyric_runtime::DataCell fn;
+// };
+//
+// static void
+// on_then_adapt(
+//     lyric_runtime::Promise *promise,
+//     lyric_runtime::BytecodeInterpreter *interp,
+//     lyric_runtime::InterpreterState *state)
+// {
+//     auto *thenData = static_cast<ThenData *>(promise->getData());
+//
+//     // construct closure args
+//     auto *sourceFut = *thenData->fut->sourcesBegin();
+//     auto sourceResult = sourceFut->getPromise()->getResult();;
+//     std::vector args{sourceResult};
+//
+//     // push a new frame onto the current task call stack
+//     auto *currentTask = state->systemScheduler()->currentTask();
+//     if (!thenData->fn.data.ref->applyClosure(currentTask, args, state)) {
+//         TU_LOG_FATAL << "failed to apply closure";
+//     }
+//
+//     // run the interpreter until the closure completes
+//     auto runClosureResult = interp->runSubinterpreter();
+//     if (runClosureResult.isStatus()) {
+//         TU_LOG_FATAL << "failed to run closure: " << runClosureResult.getStatus();
+//     }
+//
+//     auto result = runClosureResult.getResult();
+//
+//     // complete or reject the promise based on the fn result
+//     if (result.type == lyric_runtime::DataCellType::REF
+//         && result.data.ref->errorStatusCode() != tempo_utils::StatusCode::kOk) {
+//         promise->reject(result);
+//     } else {
+//         promise->complete(result);
+//     }
+// }
+//
+// static void
+// on_then_reachable(void *data)
+// {
+//     auto *thenData = static_cast<ThenData *>(data);
+//     thenData->fut->setReachable();
+// }
+//
+// static void
+// on_future_accept(
+//     lyric_runtime::Promise *promise,
+//     const lyric_runtime::Waiter *waiter,
+//     lyric_runtime::InterpreterState *state)
+// {
+//     // this callback must exist but does nothing
+// }
 
 tempo_utils::Status
 future_then(
@@ -371,50 +371,52 @@ future_then(
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *unused)
 {
-    auto *currentCoro = state->currentCoro();
-    auto *scheduler = state->systemScheduler();
-
-    auto &frame = currentCoro->currentCallOrThrow();
-
-    TU_ASSERT(frame.numArguments() == 1);
-    const auto arg0 = frame.getArgument(0);
-
-    auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
-    auto *instance = static_cast<FutureRef *>(receiver.data.ref);
-
-    // construct the dependent future
-    const auto *vtable = instance->getVirtualTable();
-    TU_ASSERT(vtable != nullptr);
-    auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
-    auto *fut = (FutureRef *) ref.data.ref;
-
-    // allocate the promise data
-    auto *data = static_cast<ThenData *>(std::malloc(sizeof(ThenData)));
-    data->fut = fut;
-    data->fn = arg0;
-
-    // allocate the promise
-    lyric_runtime::PromiseOptions options;
-    options.adapt = on_then_adapt;
-    options.release = std::free;
-    options.reachable = on_then_reachable;
-    options.data = data;
-    auto promise = lyric_runtime::Promise::create(on_future_accept, options);
-
-    // register an async handle and bind it to the promise
-    uv_async_t *async = nullptr;
-    scheduler->registerAsync(&async, promise);
-    instance->forward(async);
-
-    // attach the promise to the future
-    fut->prepareFuture(promise);
-
-    // add the instance as a source for the future
-    fut->addSource(instance);
-
-    // return reference to the dependent future
-    currentCoro->pushData(ref);
-
-    return {};
+    // auto *currentCoro = state->currentCoro();
+    // auto *scheduler = state->systemScheduler();
+    //
+    // auto &frame = currentCoro->currentCallOrThrow();
+    //
+    // TU_ASSERT(frame.numArguments() == 1);
+    // const auto arg0 = frame.getArgument(0);
+    //
+    // auto receiver = frame.getReceiver();
+    // TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    // auto *instance = static_cast<FutureRef *>(receiver.data.ref);
+    //
+    // // construct the dependent future
+    // const auto *vtable = instance->getVirtualTable();
+    // TU_ASSERT(vtable != nullptr);
+    // auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
+    // auto *fut = (FutureRef *) ref.data.ref;
+    //
+    // // allocate the promise data
+    // auto *data = static_cast<ThenData *>(std::malloc(sizeof(ThenData)));
+    // data->fut = fut;
+    // data->fn = arg0;
+    //
+    // // allocate the promise
+    // lyric_runtime::PromiseOptions options;
+    // options.adapt = on_then_adapt;
+    // options.release = std::free;
+    // options.reachable = on_then_reachable;
+    // options.data = data;
+    // auto promise = lyric_runtime::Promise::create(on_future_accept, options);
+    //
+    // // register an async handle and bind it to the promise
+    // std::shared_ptr<lyric_runtime::AsyncHandle> async;
+    // TU_ASSIGN_OR_RETURN (async, scheduler->registerAsync(promise));
+    // instance->forward(std::move(async));
+    //
+    // // attach the promise to the future
+    // fut->prepareFuture(promise);
+    //
+    // // add the instance as a source for the future
+    // fut->addSource(instance);
+    //
+    // // return reference to the dependent future
+    // currentCoro->pushData(ref);
+    //
+    // return {};
+    return lyric_runtime::InterpreterStatus::forCondition(
+        lyric_runtime::InterpreterCondition::kRuntimeInvariant, "Future.Then unimplemented");
 }

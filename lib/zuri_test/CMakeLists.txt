@@ -8,12 +8,14 @@ add_library(zuri::zuri_test ALIAS zuri_test)
 
 set(ZURI_TEST_INCLUDES
     include/zuri_test/placeholder_loader.h
+    include/zuri_test/test_transport.h
     include/zuri_test/zuri_tester.h
     )
 set_target_properties(zuri_test PROPERTIES PUBLIC_HEADER "${ZURI_TEST_INCLUDES}")
 
 target_sources(zuri_test PRIVATE
     src/placeholder_loader.cpp
+    src/test_transport.cpp
     src/zuri_tester.cpp
     ${ZURI_TEST_INCLUDES}
     )

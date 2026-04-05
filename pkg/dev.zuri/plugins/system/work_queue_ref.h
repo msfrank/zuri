@@ -23,7 +23,9 @@ public:
     bool containsAvailableElement() const;
     lyric_runtime::DataCell takeAvailableElement();
 
-    bool waitForPush(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async);
+    bool waitForPush(
+        std::shared_ptr<lyric_runtime::Promise> promise,
+        std::shared_ptr<lyric_runtime::AsyncHandle> async);
     bool completePop();
 
 protected:
@@ -32,7 +34,9 @@ protected:
 
 private:
     std::vector<lyric_runtime::DataCell> m_elements;
-    std::vector<std::pair<std::shared_ptr<lyric_runtime::Promise>, uv_async_t *>> m_waiting;
+    std::vector<
+        std::pair<std::shared_ptr<lyric_runtime::Promise>, std::shared_ptr<lyric_runtime::AsyncHandle>>
+    > m_waiting;
 };
 
 tempo_utils::Status work_queue_alloc(

@@ -36,12 +36,12 @@ WorkQueueRef::push(const lyric_runtime::DataCell &element)
     }
 
     // otherwise pop the topmost future
-    auto waiting = m_waiting.front();
+    auto [promise, async] = m_waiting.front();
     m_waiting.erase(m_waiting.begin());
 
     // set the result of the future and signal the scheduler to resume task
-    waiting.first->complete(element);
-    uv_async_send(waiting.second);
+    promise->complete(element);
+    async->sendSignal();
 
     return true;
 }
@@ -62,9 +62,11 @@ WorkQueueRef::takeAvailableElement()
 }
 
 bool
-WorkQueueRef::waitForPush(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async)
+WorkQueueRef::waitForPush(
+    std::shared_ptr<lyric_runtime::Promise> promise,
+    std::shared_ptr<lyric_runtime::AsyncHandle> async)
 {
-    m_waiting.push_back({promise, async});
+    m_waiting.emplace_back(promise, async);
     return true;
 }
 
@@ -177,8 +179,8 @@ work_queue_pop(
     auto promise = lyric_runtime::Promise::create(on_async_accept);
 
     // register an async waiter
-    uv_async_t *async = nullptr;
-    scheduler->registerAsync(&async, promise);
+    std::shared_ptr<lyric_runtime::AsyncHandle> async;
+    TU_ASSIGN_OR_RETURN (async, scheduler->registerAsync(promise));
 
     // attach the promise to the future
     fut->prepareFuture(promise);

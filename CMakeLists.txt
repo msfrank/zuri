@@ -56,11 +56,6 @@ endif()
 #
 #######################################################################
 
-set(RUNTIME_DISTRIBUTION_ROOT "${CMAKE_INSTALL_PREFIX}"
-    CACHE STRING
-    "The runtime distribution root directory. Defaults to CMAKE_INSTALL_PREFIX.")
-message(STATUS "runtime distribution root is ${RUNTIME_DISTRIBUTION_ROOT}")
-
 set(RUNTIME_LIB_DIRS ""
     CACHE STRING
     "List of runtime library directories. Defaults to empty list.")
@@ -77,6 +72,11 @@ set(SANITIZER_IGNORELIST ""
 
 option(ENABLE_PROFILER "Enable gperftools profiler." OFF)
 
+set(LIBCPP_HARDENING_MODE ""
+    CACHE STRING
+    "Specify the libcpp hardening mode. Must be one of 'fast', 'extensive', or 'debug'."
+)
+
 
 #######################################################################
 #
@@ -85,35 +85,35 @@ option(ENABLE_PROFILER "Enable gperftools profiler." OFF)
 #######################################################################
 
 # configure common compiler flags
-set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD 23)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_EXTENSIONS OFF)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Werror -Wno-deprecated-declarations")
 
 # by default do not specify -O
-set (OPTIMIZATION_LEVEL "")
+set (OPTIMIZATION_FLAGS "")
 
 # enable one of the sanitizer libraries if specified
 if (ENABLE_SANITIZER)
     if ("${SANITIZER}" STREQUAL "address")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-        set (OPTIMIZATION_LEVEL "-O1")
+        set (OPTIMIZATION_FLAGS "-O1")
         message(STATUS "enabling address sanitizer library")
     elseif ("${SANITIZER}" STREQUAL "thread")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
-        set (OPTIMIZATION_LEVEL "-O1")
+        set (OPTIMIZATION_FLAGS "-O1")
         message(STATUS "enabling thread sanitizer library")
     elseif ("${SANITIZER}" STREQUAL "memory")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory")
-        set (OPTIMIZATION_LEVEL "-O1")
+        set (OPTIMIZATION_FLAGS "-O1")
         message(STATUS "enabling memory sanitizer library")
     elseif ("${SANITIZER}" STREQUAL "ub")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
-        set (OPTIMIZATION_LEVEL "-O1")
+        set (OPTIMIZATION_FLAGS "-O1")
         message(STATUS "enabling ub sanitizer library")
     elseif ("${SANITIZER}" STREQUAL "leak")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
-        set (OPTIMIZATION_LEVEL "-O1")
+        set (OPTIMIZATION_FLAGS "-O1")
         message(STATUS "enabling leak sanitizer library")
     else()
         message(WARNING "skipping unknown sanitizer ${SANITIZER}")
@@ -130,13 +130,34 @@ else()
     message(STATUS "sanitizer not enabled")
 endif (ENABLE_SANITIZER)
 
-#
-if (NOT OPTIMIZATION_LEVEL)
-    set(OPTIMIZATION_LEVEL "-O0 -fno-eliminate-unused-debug-types")
+# set default optimization flags if not overridden by sanitizer
+if (NOT OPTIMIZATION_FLAGS)
+    set(OPTIMIZATION_FLAGS "-O0 -fno-eliminate-unused-debug-types")
 endif()
 
-# set the optimization level
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZATION_LEVEL}")
+# by default do not specify any hardening flags
+set(HARDENING_FLAGS "")
+
+# enable hardening mode if specified
+if (LIBCPP_HARDENING_MODE)
+    if ("${LIBCPP_HARDENING_MODE}" STREQUAL "fast")
+        set(HARDENING_FLAGS "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST")
+        message(STATUS "enabling libcpp hardening mode: fast")
+    elseif ("${LIBCPP_HARDENING_MODE}" STREQUAL "extensive")
+        set(HARDENING_FLAGS "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE")
+        message(STATUS "enabling libcpp hardening mode: extensive")
+    elseif ("${LIBCPP_HARDENING_MODE}" STREQUAL "debug")
+        set(HARDENING_FLAGS "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
+        message(STATUS "enabling libcpp hardening mode: debug")
+    else()
+        message(WARNING "skipping unknown libcpp hardening mode: ${LIBCPP_HARDENING_MODE}")
+    endif ()
+else ()
+    message(STATUS "libcpp hardening mode disabled")
+endif ()
+
+# set compiler flags based on options
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZATION_FLAGS} ${HARDENING_FLAGS}")
 
 # define the rpath for executable and library targets
 if (APPLE)

@@ -38,7 +38,7 @@ public:
     absl::flat_hash_set<FutureRef *>::const_iterator sourcesBegin() const;
     absl::flat_hash_set<FutureRef *>::const_iterator sourcesEnd() const;
 
-    tempo_utils::Status forward(uv_async_t *target);
+    tempo_utils::Status forward(std::shared_ptr<lyric_runtime::AsyncHandle> target);
     tempo_utils::Status complete(const lyric_runtime::DataCell &result);
     tempo_utils::Status reject(const lyric_runtime::DataCell &result);
 
@@ -50,7 +50,7 @@ private:
     FutureState m_state;
     std::shared_ptr<lyric_runtime::Promise> m_promise;
     absl::flat_hash_set<FutureRef *> m_sources;
-    std::vector<uv_async_t *> m_targets;
+    std::vector<std::shared_ptr<lyric_runtime::AsyncHandle>> m_targets;
 
     void checkState();
 };

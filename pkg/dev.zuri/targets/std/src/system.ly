@@ -83,12 +83,14 @@ defclass Port sealed {
     }
 }
 
+/*
 def Acquire(url: Url): Port {
     @{
         Trap("STD_SYSTEM_ACQUIRE")
         PushResult(typeof Port)
     }
 }
+*/
 
 def Await[T](fut: Future[T]): T | Status {
     @{
@@ -112,10 +114,10 @@ def AwaitOrDefault[T](fut: Future[T], default: T): T {
     }
 }
 
-def Sleep(millis: Int): Future[Undef] {
+def Sleep[T](millis: Int, result: T): Future[T] {
     @{
         Trap("STD_SYSTEM_SLEEP")
-        PushResult(typeof Future[Undef])
+        PushResult(typeof Future[T])
     }
 }
 

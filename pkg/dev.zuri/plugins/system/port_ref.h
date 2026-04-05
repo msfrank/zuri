@@ -20,15 +20,14 @@ public:
         const lyric_runtime::VirtualTable *vtable,
         lyric_runtime::BytecodeInterpreter *interp,
         lyric_runtime::InterpreterState *state,
-        std::shared_ptr<lyric_runtime::DuplexPort> port);
+        std::shared_ptr<lyric_runtime::Connection> conn);
     ~PortRef() override;
 
     std::string toString() const override;
 
-    std::shared_ptr<lyric_runtime::DuplexPort> duplexPort();
+    std::shared_ptr<lyric_runtime::Connection> duplexPort();
 
     bool send(std::shared_ptr<tempo_utils::ImmutableBytes> payload);
-    bool waitForReceive(std::shared_ptr<lyric_runtime::Promise> promise, uv_async_t *async);
 
 protected:
     void setMembersReachable() override;
@@ -37,7 +36,7 @@ protected:
 private:
     lyric_runtime::BytecodeInterpreter *m_interp;
     lyric_runtime::InterpreterState *m_state;
-    std::shared_ptr<lyric_runtime::DuplexPort> m_port;
+    std::shared_ptr<lyric_runtime::Connection> m_conn;
     std::vector<lyric_runtime::DataCell> m_values;
 };
 

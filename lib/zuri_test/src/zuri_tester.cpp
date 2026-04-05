@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include <lyric_build/dependency_loader.h>
-#include <lyric_test/mock_binder.h>
 #include <lyric_test/test_result.h>
 #include <lyric_runtime/bytecode_interpreter.h>
 #include <lyric_runtime/chain_loader.h>
@@ -11,6 +10,8 @@
 #include <zuri_distributor/package_cache_loader.h>
 #include <zuri_test/placeholder_loader.h>
 #include <zuri_test/zuri_tester.h>
+
+#include "zuri_test/test_transport.h"
 
 zuri_test::ZuriTester::ZuriTester(
     std::shared_ptr<zuri_distributor::Runtime> runtime,
@@ -125,10 +126,25 @@ zuri_test::ZuriTester::runModule(
     TU_ASSIGN_OR_RETURN (dependencyLoader, lyric_build::DependencyLoader::create(
         origin, targetComputation, artifactCache, &tempDirectory));
 
+    // construct the loader chain
     std::vector<std::shared_ptr<lyric_runtime::AbstractLoader>> loaderChain;
     loaderChain.push_back(dependencyLoader);
     loaderChain.push_back(m_runtime->getLoader());
     auto applicationLoader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
+
+    // construct the transport registry and add the test transport
+    auto transportRegistry = std::make_shared<lyric_runtime::TransportRegistry>();
+    auto transport = std::make_shared<TestTransport>();
+
+    // register transports
+    for (const auto &scheme : m_options.remoteTransportSchemes) {
+        TU_RETURN_IF_NOT_OK (transportRegistry->registerRemoteTransport(scheme, transport));
+    }
+    for (const auto &protocolUrl : m_options.localTransportProtocols) {
+        TU_RETURN_IF_NOT_OK (transportRegistry->registerLocalTransport(protocolUrl, transport));
+    }
+
+    options.transportRegistry = transportRegistry;
 
     // construct the interpreter state
     std::shared_ptr<lyric_runtime::InterpreterState> state;
@@ -138,9 +154,8 @@ zuri_test::ZuriTester::runModule(
     // run the module in the interpreter
     lyric_test::TestInspector inspector;
     lyric_runtime::BytecodeInterpreter interp(state, &inspector);
-    lyric_test::MockBinder mockBinder(m_options.protocolMocks);
     lyric_runtime::InterpreterExit exit;
-    TU_ASSIGN_OR_RETURN (exit, mockBinder.run(&interp));
+    TU_ASSIGN_OR_RETURN (exit, interp.run());
 
     // return the interpreter result
     return lyric_test::RunModule(m_runner, targetComputation, targetComputationSet.getDiagnostics(), state, exit);

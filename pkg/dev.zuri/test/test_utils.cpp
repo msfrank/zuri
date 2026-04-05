@@ -1,9 +1,12 @@
 
-#include "lib_dir_paths.h"
-#include "test_utils.h"
+#include <mutex>
 
 #include <absl/strings/str_split.h>
+
 #include <tempo_utils/tempdir_maker.h>
+
+#include "lib_dir_paths.h"
+#include "test_utils.h"
 
 std::shared_ptr<zuri_distributor::Runtime>
 create_test_runtime(const std::filesystem::path &runtimeRoot)

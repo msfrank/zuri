@@ -7,7 +7,6 @@
 
 #include <lyric_build/task_settings.h>
 #include <lyric_compiler/compiler_result.h>
-#include <lyric_test/base_protocol_mock.h>
 #include <lyric_test/test_runner.h>
 #include <zuri_distributor/runtime.h>
 
@@ -23,10 +22,10 @@ namespace zuri_test {
         std::shared_ptr<lyric_runtime::AbstractLoader> fallbackLoader = {};
         lyric_build::TaskSettings taskSettings = {};
         std::vector<std::filesystem::path> localPackages = {};
-        absl::flat_hash_map<
-            tempo_utils::Url,
-            std::shared_ptr<lyric_test::BaseProtocolMock>> protocolMocks = {};
         std::vector<std::string> mainArguments = {};
+        absl::flat_hash_set<tempo_utils::Url> localTransportProtocols;
+        absl::flat_hash_set<std::string> remoteTransportSchemes;
+        absl::flat_hash_map<tempo_utils::Url,lyric_runtime::ConnectorPolicy> protocolConnectors = {};
     };
 
     class ZuriTester {

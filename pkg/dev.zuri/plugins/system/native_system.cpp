@@ -20,7 +20,7 @@ std::array<lyric_runtime::NativeTrap,16> kStdSystemTraps = {{
     {work_queue_alloc, "STD_SYSTEM_WORK_QUEUE_ALLOC", 0},
     {work_queue_pop, "STD_SYSTEM_WORK_QUEUE_POP", 0},
     {work_queue_push, "STD_SYSTEM_WORK_QUEUE_PUSH", 0},
-    {std_system_acquire, "STD_SYSTEM_ACQUIRE", 0},
+    {nullptr, "STD_SYSTEM_ACQUIRE", 0},
     {std_system_await, "STD_SYSTEM_AWAIT", 0},
     {std_system_get_result, "STD_SYSTEM_GET_RESULT", 0},
     {std_system_sleep, "STD_SYSTEM_SLEEP", 0},

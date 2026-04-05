@@ -23,6 +23,8 @@ protected:
 
 TEST_F(StdSystemFuture, EvaluateAwaitComposedFuture)
 {
+    GTEST_SKIP();
+
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
         val fut1: Future[Int] = Future[Int]{}

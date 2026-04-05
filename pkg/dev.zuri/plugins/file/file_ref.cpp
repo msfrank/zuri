@@ -78,114 +78,200 @@ FileRef::open(int flags, int mode, lyric_runtime::SystemScheduler *systemSchedul
     return m_status;
 }
 
-struct ReadContext {
-    lyric_runtime::DataCell file;
-    std::string data;
-    uv_buf_t buf;
-    ReadContext(const lyric_runtime::DataCell &file, size_t size)
+// struct ReadContext {
+//     lyric_runtime::DataCell file;
+//     std::string data;
+//     uv_buf_t buf;
+//     ReadContext(const lyric_runtime::DataCell &file, size_t size)
+//     {
+//         this->file = file;
+//         data.resize(size);
+//         buf = uv_buf_init(data.data(), data.size());
+//     }
+// };
+//
+// void
+// read_context_free(void *data)
+// {
+//     delete static_cast<ReadContext *>(data);
+// }
+//
+// void
+// on_read_reachable(void *data)
+// {
+//     auto *ctx = static_cast<ReadContext *>(data);
+//     ctx->file.data.ref->setReachable();
+// }
+//
+// static void
+// on_read_accept(
+//     lyric_runtime::Promise *promise,
+//     const lyric_runtime::Waiter *waiter,
+//     lyric_runtime::InterpreterState *state)
+// {
+//     auto *heapManager = state->heapManager();
+//
+//     auto *req = waiter->peekReq();
+//     TU_NOTNULL (req);
+//     auto ret = req->result;
+//     if (ret >= 0) {
+//         auto *ctx = (ReadContext *) promise->getData();
+//         std::span bytes((const tu_uint8 *) ctx->buf.base, ret);
+//         auto data = heapManager->allocateBytes(bytes);
+//         promise->complete(data);
+//     } else {
+//         auto status = heapManager->allocateStatus(
+//             tempo_utils::StatusCode::kInternal, uv_strerror(ret));
+//         promise->reject(status);
+//     }
+// }
+
+class ReadOperations : public lyric_runtime::PromiseOperations {
+public:
+    ReadOperations(FileRef *file, size_t size)
+        : m_file(file)
     {
-        this->file = file;
-        data.resize(size);
-        buf = uv_buf_init(data.data(), data.size());
+        TU_NOTNULL (m_file);
+        m_data.resize(size);
+        m_buf = uv_buf_init(m_data.data(), m_data.size());
     }
+    uv_buf_t getBuf() const
+    {
+        return m_buf;
+    }
+    void onAccept(
+        lyric_runtime::Promise *promise,
+        const lyric_runtime::Waiter *waiter,
+        lyric_runtime::InterpreterState *state) override
+    {
+        auto *heapManager = state->heapManager();
+        auto *req = waiter->peekReq();
+        TU_NOTNULL (req);
+        auto ret = req->result;
+        if (ret >= 0) {
+            std::span bytes((const tu_uint8 *) m_buf.base, ret);
+            auto data = heapManager->allocateBytes(bytes);
+            promise->complete(data);
+        } else {
+            auto status = heapManager->allocateStatus(
+                tempo_utils::StatusCode::kInternal, uv_strerror(ret));
+            promise->reject(status);
+        }
+    }
+    void setReachable() override
+    {
+        m_file->setReachable();
+    }
+private:
+    FileRef *m_file;
+    std::string m_data;
+    uv_buf_t m_buf;
 };
-
-void
-read_context_free(void *data)
-{
-    delete static_cast<ReadContext *>(data);
-}
-
-void
-on_read_reachable(void *data)
-{
-    auto *ctx = static_cast<ReadContext *>(data);
-    ctx->file.data.ref->setReachable();
-}
-
-static void
-on_read_accept(
-    lyric_runtime::Promise *promise,
-    const lyric_runtime::Waiter *waiter,
-    lyric_runtime::InterpreterState *state)
-{
-    auto *heapManager = state->heapManager();
-
-    auto ret = waiter->req->result;
-    if (ret >= 0) {
-        auto *ctx = (ReadContext *) promise->getData();
-        std::span bytes((const tu_uint8 *) ctx->buf.base, ret);
-        auto data = heapManager->allocateBytes(bytes);
-        promise->complete(data);
-    } else {
-        auto status = heapManager->allocateStatus(
-            tempo_utils::StatusCode::kInternal, uv_strerror(ret));
-        promise->reject(status);
-    }
-}
 
 tempo_utils::Status
 FileRef::readAsync(int size, AbstractRef *fut, lyric_runtime::SystemScheduler *systemScheduler)
 {
-    auto *ctx = new ReadContext(lyric_runtime::DataCell::forRef(this), size);
+    auto ops = std::make_unique<ReadOperations>(this, size);
+    auto buf = ops->getBuf();
+    auto promise = lyric_runtime::Promise::create(std::move(ops));
 
-    lyric_runtime::PromiseOptions options;
-    options.data = ctx;
-    options.reachable = on_read_reachable;
-    options.release = read_context_free;
-    auto promise = lyric_runtime::Promise::create(on_read_accept, options);
-
-    TU_RETURN_IF_NOT_OK (systemScheduler->registerRead(m_file, ctx->buf, promise));
+    TU_RETURN_IF_NOT_OK (systemScheduler->registerRead(m_file, buf, promise));
     fut->prepareFuture(promise);
 
     return {};
 }
 
-struct WriteContext {
-    FileRef *file;
-    lyric_runtime::BytesRef *bytes;
-    uv_buf_t buf;
-    WriteContext(FileRef *file, lyric_runtime::BytesRef *bytes)
+// struct WriteContext {
+//     FileRef *file;
+//     lyric_runtime::BytesRef *bytes;
+//     uv_buf_t buf;
+//     WriteContext(FileRef *file, lyric_runtime::BytesRef *bytes)
+//     {
+//         this->file = file;
+//         this->bytes = bytes;
+//         auto *data = (char *) bytes->getBytesData();
+//         auto size = bytes->getBytesSize();
+//         buf = uv_buf_init(data, size);
+//     }
+// };
+//
+// void
+// write_context_free(void *data)
+// {
+//     delete static_cast<WriteContext *>(data);
+// }
+//
+// void
+// on_write_reachable(void *data)
+// {
+//     auto *ctx = static_cast<WriteContext *>(data);
+//     ctx->file->setReachable();
+//     ctx->bytes->setReachable();
+// }
+//
+// static void
+// on_write_accept(
+//     lyric_runtime::Promise *promise,
+//     const lyric_runtime::Waiter *waiter,
+//     lyric_runtime::InterpreterState *state)
+// {
+//     auto *heapManager = state->heapManager();
+//
+//     auto *req = waiter->peekReq();
+//     TU_NOTNULL (req);
+//     auto ret = req->result;
+//     if (ret >= 0) {
+//         promise->complete(lyric_runtime::DataCell(static_cast<tu_int64>(ret)));
+//     } else {
+//         auto status = heapManager->allocateStatus(
+//             tempo_utils::StatusCode::kInternal, uv_strerror(ret));
+//         promise->reject(status);
+//     }
+// }
+
+class WriteOperations : public lyric_runtime::PromiseOperations {
+public:
+    WriteOperations(FileRef *file, lyric_runtime::BytesRef *bytes)
+        : m_file(file),
+          m_bytes(bytes)
     {
-        this->file = file;
-        this->bytes = bytes;
+        TU_NOTNULL (m_file);
+        TU_NOTNULL (m_bytes);
         auto *data = (char *) bytes->getBytesData();
         auto size = bytes->getBytesSize();
-        buf = uv_buf_init(data, size);
+        m_buf = uv_buf_init(data, size);
     }
+    uv_buf_t getBuf() const
+    {
+        return m_buf;
+    }
+    void onAccept(
+        lyric_runtime::Promise *promise,
+        const lyric_runtime::Waiter *waiter,
+        lyric_runtime::InterpreterState *state) override
+    {
+        auto *heapManager = state->heapManager();
+        auto *req = waiter->peekReq();
+        TU_NOTNULL (req);
+        auto ret = req->result;
+        if (ret >= 0) {
+            promise->complete(lyric_runtime::DataCell(static_cast<tu_int64>(ret)));
+        } else {
+            auto status = heapManager->allocateStatus(
+                tempo_utils::StatusCode::kInternal, uv_strerror(ret));
+            promise->reject(status);
+        }
+    }
+    void setReachable() override
+    {
+        m_file->setReachable();
+        m_bytes->setReachable();
+    }
+private:
+    FileRef *m_file;
+    lyric_runtime::BytesRef *m_bytes;
+    uv_buf_t m_buf;
 };
-
-void
-write_context_free(void *data)
-{
-    delete static_cast<WriteContext *>(data);
-}
-
-void
-on_write_reachable(void *data)
-{
-    auto *ctx = static_cast<WriteContext *>(data);
-    ctx->file->setReachable();
-    ctx->bytes->setReachable();
-}
-
-static void
-on_write_accept(
-    lyric_runtime::Promise *promise,
-    const lyric_runtime::Waiter *waiter,
-    lyric_runtime::InterpreterState *state)
-{
-    auto *heapManager = state->heapManager();
-
-    auto ret = waiter->req->result;
-    if (ret >= 0) {
-        promise->complete(lyric_runtime::DataCell(static_cast<tu_int64>(ret)));
-    } else {
-        auto status = heapManager->allocateStatus(
-            tempo_utils::StatusCode::kInternal, uv_strerror(ret));
-        promise->reject(status);
-    }
-}
 
 tempo_utils::Status
 FileRef::writeAsync(
@@ -194,15 +280,11 @@ FileRef::writeAsync(
     AbstractRef *fut,
     lyric_runtime::SystemScheduler *systemScheduler)
 {
-    auto *ctx = new WriteContext(this, bytes);
+    auto ops = std::make_unique<WriteOperations>(this, bytes);
+    auto buf = ops->getBuf();
+    auto promise = lyric_runtime::Promise::create(std::move(ops));
 
-    lyric_runtime::PromiseOptions options;
-    options.data = ctx;
-    options.reachable = on_write_reachable;
-    options.release = write_context_free;
-    auto promise = lyric_runtime::Promise::create(on_write_accept, options);
-
-    TU_RETURN_IF_NOT_OK (systemScheduler->registerWrite(m_file, ctx->buf, promise, offset));
+    TU_RETURN_IF_NOT_OK (systemScheduler->registerWrite(m_file, buf, promise, offset));
     fut->prepareFuture(promise);
 
     return {};

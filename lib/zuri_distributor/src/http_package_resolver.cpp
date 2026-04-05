@@ -25,7 +25,7 @@ struct Context {
     absl::flat_hash_map<std::string,Location> locations;
 
     // per-request state
-    long responseCode;
+    long responseCode = 0;
     std::string contentType;
     absl::Time lastModified;
     absl::Time expires;
@@ -49,6 +49,10 @@ struct Context {
 struct zuri_distributor::HttpPackageResolver::Priv {
     Context ctx;
 };
+
+zuri_distributor::HttpPackageResolver::~HttpPackageResolver()
+{
+}
 
 static size_t
 write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)

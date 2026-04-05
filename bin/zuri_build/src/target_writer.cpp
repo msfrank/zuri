@@ -1,6 +1,8 @@
 
 #include <filesystem>
 
+// NOTE: lief is missing <exception> header so we include it first
+#include <exception>
 #include <LIEF/MachO.hpp>
 #include <LIEF/ELF.hpp>
 
