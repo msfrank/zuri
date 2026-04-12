@@ -3,13 +3,22 @@
 #include <tempo_utils/log_stream.h>
 #include <zuri_run/log_proto_writer.h>
 
-zuri_run::LogProtoWriter::LogProtoWriter(bool logToStderr)
+zuri_run::LogTransport::LogTransport(bool logToStderr)
     : m_logToStderr(logToStderr)
 {
 }
 
 tempo_utils::Status
-zuri_run::LogProtoWriter::write(std::shared_ptr<tempo_utils::ImmutableBytes> payload)
+zuri_run::LogTransport::connect(
+    std::shared_ptr<lyric_runtime::AbstractStream> stream,
+    const tempo_utils::Url &nodeUrl)
+{
+    stream->connectComplete(this);
+    return {};
+}
+
+tempo_utils::Status
+zuri_run::LogTransport::send(std::shared_ptr<const tempo_utils::ImmutableBytes> payload)
 {
     if (payload != nullptr) {
         std::string utf8((const char *) payload->getData(), payload->getSize());
@@ -20,4 +29,15 @@ zuri_run::LogProtoWriter::write(std::shared_ptr<tempo_utils::ImmutableBytes> pay
         }
     }
     return {};
+}
+
+tempo_utils::Status
+zuri_run::LogTransport::shutdown()
+{
+    return {};
+}
+
+void
+zuri_run::LogTransport::reset()
+{
 }

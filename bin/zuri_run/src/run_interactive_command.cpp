@@ -47,8 +47,18 @@ zuri_run::run_interactive_command(
     // initialize the builder
     TU_RETURN_IF_NOT_OK (builder->configure());
 
+    // construct the log transport
+    auto logProtoUrl = tempo_utils::Url::fromString("dev.zuri.proto:log");
+    auto logTransport = std::make_shared<LogTransport>(false);
+    lyric_runtime::ConnectorPolicy logPolicy;
+
+    // register the log transport
+    auto transportRegistry = std::make_shared<lyric_runtime::TransportRegistry>();
+    TU_RETURN_IF_NOT_OK (transportRegistry->registerLocalTransport(logProtoUrl, logTransport));
+
     // construct the interpreter state
     lyric_runtime::InterpreterStateOptions interpreterOptions;
+    interpreterOptions.transportRegistry = transportRegistry;
     interpreterOptions.mainArguments = mainArgs;
     std::shared_ptr<lyric_runtime::InterpreterState> interpreterState;
     TU_ASSIGN_OR_RETURN(interpreterState, lyric_runtime::InterpreterState::create(
@@ -56,13 +66,9 @@ zuri_run::run_interactive_command(
 
     // handle log protocol messages
     auto *portMultiplexer = interpreterState->portMultiplexer();
-    auto logProtoUrl = tempo_utils::Url::fromString("dev.zuri.proto:log");
-    std::shared_ptr<lyric_runtime::DuplexPort> logPort;
-    TU_ASSIGN_OR_RETURN (logPort, portMultiplexer->registerPort(logProtoUrl));
-    LogProtoWriter logProtoWriter(false);
-    TU_RETURN_IF_NOT_OK (logPort->attach(&logProtoWriter));
+    TU_RETURN_IF_NOT_OK (portMultiplexer->registerConnector(logProtoUrl, logPolicy));
 
-    auto sessionId = tempo_utils::UUID::randomUUID().toString();
+    auto sessionId = tempo_utils::UUID::randomUUID().toCompactString();
 
     // construct the session
     auto ephemeralSession = std::make_shared<EphemeralSession>(sessionId,

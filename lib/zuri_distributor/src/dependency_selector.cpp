@@ -15,7 +15,7 @@ zuri_distributor::DependencySelector::addDirectDependency(
     const zuri_packager::PackageId &packageId,
     std::string_view shortcut)
 {
-    auto id = tempo_utils::UUID::randomUUID().toString();
+    auto id = tempo_utils::UUID::randomUUID().toCompactString();
     PendingSelection pendingSelection;
     pendingSelection.type = PendingSelection::Type::Id;
     pendingSelection.id = id;
@@ -30,7 +30,7 @@ zuri_distributor::DependencySelector::addDirectDependency(
     const zuri_packager::PackageSpecifier &packageSpecifier,
     std::string_view shortcut)
 {
-    auto id = tempo_utils::UUID::randomUUID().toString();
+    auto id = tempo_utils::UUID::randomUUID().toCompactString();
     PendingSelection pendingSelection;
     pendingSelection.type = PendingSelection::Type::Specifier;
     pendingSelection.id = id;
@@ -45,7 +45,7 @@ zuri_distributor::DependencySelector::addDirectDependency(
     const std::filesystem::path &packagePath,
     std::string_view shortcut)
 {
-    auto id = tempo_utils::UUID::randomUUID().toString();
+    auto id = tempo_utils::UUID::randomUUID().toCompactString();
     PendingSelection pendingSelection;
     pendingSelection.type = PendingSelection::Type::Path;
     pendingSelection.id = id;
@@ -96,7 +96,7 @@ zuri_distributor::DependencySelector::dependOnSpecifiedVersion(
     for (const auto &requested : packageDescriptor.dependencies) {
         PendingSelection pendingSelection;
         pendingSelection.type = PendingSelection::Type::Transitive;
-        pendingSelection.id = tempo_utils::UUID::randomUUID().toString();
+        pendingSelection.id = tempo_utils::UUID::randomUUID().toCompactString();
         pendingSelection.requestedSpecifier = requested;
         pendingSelection.target = specifier;
         m_pending.push(std::move(pendingSelection));
@@ -127,7 +127,7 @@ zuri_distributor::DependencySelector::dependOnSpecifiedPath(
         zuri_packager::PackageSpecifier requested(it->first, it->second);
         PendingSelection pendingSelection;
         pendingSelection.type = PendingSelection::Type::Transitive;
-        pendingSelection.id = tempo_utils::UUID::randomUUID().toString();
+        pendingSelection.id = tempo_utils::UUID::randomUUID().toCompactString();
         pendingSelection.requestedSpecifier = requested;
         pendingSelection.target = specifier;
         m_pending.push(std::move(pendingSelection));
@@ -154,7 +154,7 @@ zuri_distributor::DependencySelector::dependTransitively(
     for (const auto &requested : packageDescriptor.dependencies) {
         PendingSelection pendingSelection;
         pendingSelection.type = PendingSelection::Type::Transitive;
-        pendingSelection.id = tempo_utils::UUID::randomUUID().toString();
+        pendingSelection.id = tempo_utils::UUID::randomUUID().toCompactString();
         pendingSelection.requestedSpecifier = requested;
         pendingSelection.target = dependency;
         m_pending.push(std::move(pendingSelection));

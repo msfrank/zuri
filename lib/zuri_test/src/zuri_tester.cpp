@@ -89,7 +89,7 @@ zuri_test::ZuriTester::runModule(
     lyric_common::ModuleLocation moduleLocation;
     TU_ASSIGN_OR_RETURN (moduleLocation, m_runner->writeModuleInternal(code, modulePath, baseDir));
 
-    lyric_build::TaskId target("compile_module", moduleLocation.toString());
+    lyric_build::TaskId target("compile_object", moduleLocation.toString());
 
     // compile the module file
     lyric_build::TargetComputationSet targetComputationSet;
@@ -110,7 +110,7 @@ zuri_test::ZuriTester::runModule(
 
     // define the module origin
     auto origin = lyric_common::ModuleLocation::fromString(
-        absl::StrCat("dev.zuri.tester://", tempo_utils::UUID::randomUUID().toString()));
+        absl::StrCat("dev.zuri.tester://", tempo_utils::UUID::randomUUID().toCompactString()));
 
     // resolve the main location
     options.mainLocation = origin.resolve(moduleLocation);

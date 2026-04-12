@@ -108,7 +108,7 @@ zuri_run::FragmentStore::insertFragment(
     tu_uint64 lastModifiedMillis)
 {
     lyric_build::Resource resource;
-    resource.id = tempo_utils::UUID::randomUUID().toString();
+    resource.id = tempo_utils::UUID::randomUUID().toRfc4122String();
     resource.entityTag = tempo_security::Sha256Hash::hash(fragment);
     resource.lastModifiedMillis = lastModifiedMillis;
 

@@ -4,12 +4,24 @@ set(CMAKE_AUTOMOC OFF)
 
 # build ZuriBuildRuntime static archive
 add_library(ZuriBuildRuntime STATIC
+    src/build_conversions.cpp
+    include/zuri_build/build_conversions.h
     src/build_result.cpp
     include/zuri_build/build_result.h
     src/collect_modules_task.cpp
     include/zuri_build/collect_modules_task.h
+    src/generate_protocol_task.cpp
+    include/zuri_build/generate_protocol_task.h
     src/import_solver.cpp
     include/zuri_build/import_solver.h
+    src/provide_module_task.cpp
+    include/zuri_build/provide_module_task.h
+    src/provide_object_task.cpp
+    include/zuri_build/provide_object_task.h
+    src/provide_plugin_task.cpp
+    include/zuri_build/provide_plugin_task.h
+    src/provider_task_operations.cpp
+    include/zuri_build/provider_task_operations.h
     src/target_builder.cpp
     include/zuri_build/target_builder.h
     src/target_writer.cpp

@@ -69,7 +69,7 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
     auto environmentModules = m_environmentModules.buildSeq();
 
     // configure the build task
-    lyric_build::TaskId target("compile_module", fragmentUrl.toString());
+    lyric_build::TaskId target("compile_object", fragmentUrl.toString());
     auto paramsBuilder = tempo_config::startMap()
         .put("moduleLocation", tempo_config::valueNode(moduleLocation.toString()));
     if (environmentModules.seqSize() > 0) {
@@ -88,7 +88,7 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
     auto targetComputation = targetComputationSet.getTarget(target);
     auto targetState = targetComputation.getState();
 
-    if (targetState.getStatus() != lyric_build::TaskState::Status::COMPLETED) {
+    if (targetState.getState() != lyric_build::TaskState::COMPLETED) {
         auto diagnostics = targetComputationSet.getDiagnostics();
         diagnostics->printDiagnostics();
         return RunStatus::forCondition(RunCondition::kRunInvariant,
@@ -96,8 +96,8 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
     }
 
     auto artifactCache = m_builder->getArtifactCache();
-    lyric_build::TraceId moduleTrace(targetState.getHash(), target.getDomain(), target.getId());
-    tempo_utils::UUID generation;
+    lyric_build::TraceId moduleTrace(targetState.getHash(), lyric_build::TaskKey(target.getDomain(), target.getId()));
+    lyric_build::BuildGeneration generation;
     TU_ASSIGN_OR_RETURN (generation, artifactCache->loadTrace(moduleTrace));
     auto modulePath = moduleLocation.getPath().toFilesystemPath(std::filesystem::path("/"));
     modulePath.replace_extension(lyric_common::kObjectFileSuffix);

@@ -106,14 +106,14 @@ zuri_build::TargetBuilder::buildProgramTarget(
     lyric_build::TaskId collectModules("collect_modules", targetName);
     auto collectModulesOverridesBuilder = tempo_config::startMap();
 
-    auto modulePathsBuilder = tempo_config::startSeq()
+    auto objectPathsBuilder = tempo_config::startSeq()
         .append(tempo_config::valueNode(program.main.getPath().toString()));
     for (const auto &programModule : program.modules) {
-        modulePathsBuilder = modulePathsBuilder
+        objectPathsBuilder = objectPathsBuilder
             .append(tempo_config::valueNode(programModule.getPath().toString()));
     }
     collectModulesOverridesBuilder = collectModulesOverridesBuilder
-        .put("modulePaths", modulePathsBuilder.buildNode());
+        .put("objectPaths", objectPathsBuilder.buildNode());
 
     absl::flat_hash_map<lyric_build::TaskId, tempo_config::ConfigMap> taskOverrides;
     taskOverrides[collectModules] = collectModulesOverridesBuilder.buildMap();
@@ -128,7 +128,7 @@ zuri_build::TargetBuilder::buildProgramTarget(
     TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTarget(collectModules, overrides));
 
     auto targetComputation = targetComputationSet.getTarget(collectModules);
-    if (targetComputation.getState().getStatus() != lyric_build::TaskState::Status::COMPLETED) {
+    if (targetComputation.getState().getState() != lyric_build::TaskState::COMPLETED) {
         auto diagnostics = targetComputationSet.getDiagnostics();
         diagnostics->printDiagnostics();
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
@@ -177,13 +177,13 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     lyric_build::TaskId collectModules("collect_modules", targetName);
     auto collectModulesOverridesBuilder = tempo_config::startMap();
 
-    auto modulePathsBuilder = tempo_config::startSeq();
+    auto objectPathsBuilder = tempo_config::startSeq();
     for (const auto &libraryModule : library.modules) {
-        modulePathsBuilder = modulePathsBuilder
+        objectPathsBuilder = objectPathsBuilder
             .append(tempo_config::valueNode(libraryModule.getPath().toString()));
     }
     collectModulesOverridesBuilder = collectModulesOverridesBuilder
-        .put("modulePaths", modulePathsBuilder.buildNode());
+        .put("objectPaths", objectPathsBuilder.buildNode());
 
     absl::flat_hash_map<lyric_build::TaskId, tempo_config::ConfigMap> taskOverrides;
     taskOverrides[collectModules] = collectModulesOverridesBuilder.buildMap();
@@ -198,7 +198,7 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTarget(collectModules, overrides));
 
     auto targetComputation = targetComputationSet.getTarget(collectModules);
-    if (targetComputation.getState().getStatus() != lyric_build::TaskState::Status::COMPLETED) {
+    if (targetComputation.getState().getState() != lyric_build::TaskState::COMPLETED) {
         auto diagnostics = targetComputationSet.getDiagnostics();
         diagnostics->printDiagnostics();
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,

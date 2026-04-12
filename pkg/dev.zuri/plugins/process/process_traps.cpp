@@ -15,7 +15,7 @@ std_process_get_program_id(
     auto *currentCoro = state->currentCoro();
 
     auto uuid = tempo_utils::UUID::randomUUID();
-    auto programId = heapManager->allocateString(uuid.toString());
+    auto programId = heapManager->allocateString(uuid.toRfc4122String());
     currentCoro->pushData(programId);
 
     return {};

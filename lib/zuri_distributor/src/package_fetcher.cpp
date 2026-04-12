@@ -244,7 +244,7 @@ tempo_utils::Result<std::string>
 zuri_distributor::PackageFetcher::requestFile(const tempo_utils::Url &url)
 {
     auto uuid = tempo_utils::UUID::randomUUID();
-    auto id = uuid.toString();
+    auto id = uuid.toCompactString();
     TU_RETURN_IF_NOT_OK (requestFile(url, id));
     return id;
 }

@@ -15,6 +15,9 @@
 #include <tempo_config/time_conversions.h>
 #include <zuri_build/collect_modules_task.h>
 #include <zuri_build/import_solver.h>
+#include <zuri_build/provide_module_task.h>
+#include <zuri_build/provide_object_task.h>
+#include <zuri_build/provide_plugin_task.h>
 #include <zuri_build/target_builder.h>
 #include <zuri_build/zuri_build.h>
 #include <zuri_distributor/distributor_result.h>
@@ -260,6 +263,9 @@ zuri_build::zuri_build(int argc, const char *argv[])
     // create task registry and register build task domains
     auto taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
     taskRegistry->registerTaskDomain("collect_modules", new_collect_modules_task);
+    taskRegistry->registerTaskDomain("provide_module", new_provide_module_task);
+    taskRegistry->registerTaskDomain("provide_object", new_provide_object_task);
+    taskRegistry->registerTaskDomain("provide_plugin", new_provide_plugin_task);
     builderOptions.taskRegistry = std::move(taskRegistry);
 
     // set the fallback loader to load from the package cache hierarchy
