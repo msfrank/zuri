@@ -5,15 +5,14 @@
 #include <lyric_test/matchers.h>
 #include <tempo_test/tempo_test.h>
 #include <zuri_test/zuri_tester.h>
-
-#include "test_utils.h"
+#include <zuri_test_runtime/zuri_test_runtime.h>
 
 class StdFlagsFlags : public ::testing::Test {
 protected:
     std::unique_ptr<zuri_test::ZuriTester> tester;
 
     void SetUp() override {
-        auto runtime = get_global_test_runtime();
+        auto runtime = zuri_test_runtime::get_global_test_runtime();
         zuri_test::TesterOptions options;
         options.localPackages.emplace_back(ZURI_STD_PACKAGE_PATH);
         tester = std::make_unique<zuri_test::ZuriTester>(runtime, options);

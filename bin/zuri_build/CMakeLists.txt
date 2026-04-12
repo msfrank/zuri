@@ -43,6 +43,7 @@ target_compile_definitions(ZuriBuildRuntime PRIVATE
 
 target_link_libraries(ZuriBuildRuntime
     PUBLIC
+    lyric::lyric_bootstrap
     lyric::lyric_build
     tempo::tempo_command
     tempo::tempo_utils

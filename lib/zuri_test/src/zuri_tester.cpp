@@ -75,6 +75,60 @@ zuri_test::ZuriTester::getRunner() const
     return m_runner.get();
 }
 
+tempo_utils::Result<std::filesystem::path>
+zuri_test::ZuriTester::writeNamedFile(
+    const std::string &code,
+    const std::filesystem::path &filePath,
+    const std::filesystem::path &baseDir)
+{
+    if (!m_runner->isConfigured())
+        return lyric_test::TestStatus::forCondition(lyric_test::TestCondition::kTestInvariant,
+            "tester is unconfigured");
+    return m_runner->writeTempFileInternal(code, filePath, baseDir);
+}
+
+tempo_utils::Result<std::filesystem::path>
+zuri_test::ZuriTester::writeTempFile(
+    const std::string &code,
+    const std::filesystem::path &templatePath,
+    const std::filesystem::path &baseDir)
+{
+    if (!m_runner->isConfigured())
+        return lyric_test::TestStatus::forCondition(lyric_test::TestCondition::kTestInvariant,
+            "tester is unconfigured");
+    return m_runner->writeTempFileInternal(code, templatePath, baseDir);
+}
+
+tempo_utils::Result<lyric_common::ModuleLocation>
+zuri_test::ZuriTester::writeModule(
+    const std::string &code,
+    const std::filesystem::path &modulePath,
+    const std::filesystem::path &baseDir)
+{
+    if (!m_runner->isConfigured())
+        return lyric_test::TestStatus::forCondition(lyric_test::TestCondition::kTestInvariant,
+            "tester is unconfigured");
+    return m_runner->writeModuleInternal(code, modulePath, baseDir);
+}
+
+tempo_utils::Result<lyric_test::TestComputation>
+zuri_test::ZuriTester::computeTarget(
+    const lyric_build::TaskId &target,
+    const lyric_build::ComputeTargetOverrides &overrides)
+{
+    if (!m_runner->isConfigured())
+        return lyric_test::TestStatus::forCondition(lyric_test::TestCondition::kTestInvariant,
+            "tester is unconfigured");
+
+    lyric_build::TargetComputationSet targetComputationSet;
+    TU_ASSIGN_OR_RETURN (targetComputationSet, m_runner->computeTargetInternal(target, overrides));
+
+    auto targetComputation = targetComputationSet.getTarget(target);
+    TU_ASSERT (targetComputation.isValid());
+
+    return lyric_test::TestComputation(m_runner, targetComputation, targetComputationSet.getDiagnostics());
+}
+
 tempo_utils::Result<lyric_test::RunModule>
 zuri_test::ZuriTester::runModule(
     const std::string &code,
@@ -87,7 +141,7 @@ zuri_test::ZuriTester::runModule(
 
     // write the code to a module file in the src directory
     lyric_common::ModuleLocation moduleLocation;
-    TU_ASSIGN_OR_RETURN (moduleLocation, m_runner->writeModuleInternal(code, modulePath, baseDir));
+    TU_ASSIGN_OR_RETURN (moduleLocation, writeModule(code, modulePath, baseDir));
 
     lyric_build::TaskId target("compile_object", moduleLocation.toString());
 

@@ -37,11 +37,23 @@ zuri_build::ProvideObjectTask::configureTask(const lyric_build::TaskSettings &ta
 
     // if task has a provider.config, then use it to configure the task
     if (m_objectLocation.isRelative()) {
+        auto providerConfigPath = m_objectLocation.getPath();
         auto buildState = getBuildState();
         auto vfs = buildState->getVirtualFilesystem();
 
+        // determine the base path containing source files
+        tempo_config::UrlPathParser sourceBasePathParser(tempo_utils::UrlPath{});
+        tempo_utils::UrlPath sourceBasePath;
+        TU_RETURN_IF_NOT_OK(parse_config(sourceBasePath, sourceBasePathParser,
+            settings, taskId, "sourceBasePath"));
+
+        // if the source base path was specified then augment the source path
+        if (sourceBasePath.isValid()) {
+            providerConfigPath = sourceBasePath.toAbsolute().traverse(providerConfigPath.toRelative());
+        }
+
         Option<lyric_build::Resource> resourceOption;
-        TU_ASSIGN_OR_RETURN (resourceOption, findProviderConfig(m_objectLocation.getPath(), vfs));
+        TU_ASSIGN_OR_RETURN (resourceOption, findProviderConfig(providerConfigPath, vfs));
 
         if (resourceOption.hasValue()) {
             auto resource = resourceOption.getValue();

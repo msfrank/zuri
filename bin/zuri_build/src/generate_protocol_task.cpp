@@ -7,6 +7,7 @@
 #include <lyric_assembler/object_state.h>
 #include <lyric_assembler/protocol_symbol.h>
 #include <lyric_assembler/symbol_cache.h>
+#include <lyric_bootstrap/bootstrap_helpers.h>
 #include <lyric_build/build_attrs.h>
 #include <lyric_build/build_result.h>
 #include <lyric_build/task_hasher.h>
@@ -26,8 +27,8 @@ zuri_build::GenerateProtocolTask::GenerateProtocolTask(
     std::weak_ptr<lyric_build::BuildState> buildState,
     std::shared_ptr<tempo_tracing::TraceSpan> span)
     : BaseTask(generation, key, std::move(buildState), std::move(span)),
-      m_type(lyric_object::PortType::Invalid),
-      m_direction(lyric_object::CommunicationType::Invalid)
+      m_protocolType(lyric_object::PortType::Invalid),
+      m_communicationDirection(lyric_object::CommunicationType::Invalid)
 {
 }
 
@@ -44,11 +45,10 @@ zuri_build::GenerateProtocolTask::configureTask(const lyric_build::TaskSettings 
 
     m_moduleLocation = lyric_common::ModuleLocation::fromString(modulePath.toString());
 
-    // determine the base path containing protocol files
-    tempo_config::UrlPathParser protocolBasePathParser(tempo_utils::UrlPath{});
-    tempo_utils::UrlPath protocolBasePath;
-    TU_RETURN_IF_NOT_OK(parse_config(protocolBasePath, protocolBasePathParser,
-        settings, taskId, "protocolBasePath"));
+    // set the prelude location
+    lyric_common::ModuleLocationParser preludeLocationParser(lyric_bootstrap::preludeLocation());
+    TU_RETURN_IF_NOT_OK(parse_config(m_preludeLocation, preludeLocationParser,
+        settings, taskId, "preludeLocation"));
 
     //
     // config below comes only from the task section, it is not resolved from domain or global sections
@@ -56,41 +56,15 @@ zuri_build::GenerateProtocolTask::configureTask(const lyric_build::TaskSettings 
 
     auto taskSection = settings.getTaskSection(taskId);
 
-    auto defaultConfigName = std::filesystem::path(modulePath.getLast().getPart(), std::filesystem::path::generic_format);
-    defaultConfigName.replace_extension(".config");
-    auto defaultConfigPath = protocolBasePath.traverse(tempo_utils::UrlPath::fromString(defaultConfigName.string()));
-    tempo_config::UrlPathParser configPathParser(defaultConfigPath);
-
-    tempo_utils::UrlPath configPath;
-    TU_RETURN_IF_NOT_OK(parse_config(configPath, configPathParser, settings, taskId, "configPath"));
-
-    auto buildState = getBuildState();
-    auto vfs = buildState->getVirtualFilesystem();
-
-    Option<lyric_build::Resource> resourceOption;
-    TU_ASSIGN_OR_RETURN (resourceOption, vfs->fetchResource(configPath));
-
-    // fail the task if the config file resource was not found
-    if (resourceOption.isEmpty())
-        return lyric_build::BuildStatus::forCondition(lyric_build::BuildCondition::kMissingInput,
-            "resource {} not found", configPath.toString());
-    m_resource = resourceOption.getValue();
-
-    std::shared_ptr<const tempo_utils::ImmutableBytes> content;
-    TU_ASSIGN_OR_RETURN (content, vfs->loadResource(m_resource.id));
-
-    tempo_config::ConfigMap protocolMap;
-    TU_ASSIGN_OR_RETURN (protocolMap, tempo_config::read_config_map_string(content->getStringView()));
-
     tempo_config::StringParser nameParser;
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_name, nameParser, protocolMap, "name"));
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_protocolName, nameParser, taskSection, "protocolName"));
 
     tempo_config::EnumTParser<lyric_object::PortType> typeParser(
         {
             {"Accept", lyric_object::PortType::Accept},
             {"Connect", lyric_object::PortType::Connect},
         });
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_type, typeParser, protocolMap, "type"));
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_protocolType, typeParser, taskSection, "protocolType"));
 
     tempo_config::EnumTParser<lyric_object::CommunicationType> directionParser(
         {
@@ -98,26 +72,33 @@ zuri_build::GenerateProtocolTask::configureTask(const lyric_build::TaskSettings 
             {"Receive", lyric_object::CommunicationType::Receive},
             {"SendAndReceive", lyric_object::CommunicationType::SendAndReceive},
         });
-    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_direction, directionParser, protocolMap, "direction"));
+    TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_communicationDirection, directionParser,
+        taskSection, "communicationDirection"));
 
-    switch (m_direction) {
+    switch (m_communicationDirection) {
         case lyric_object::CommunicationType::Send:
         case lyric_object::CommunicationType::SendAndReceive: {
             lyric_common::SymbolUrlParser sendSymbolParser;
             TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_sendSymbol, sendSymbolParser,
-                protocolMap, "sends"));
+                taskSection, "sends"));
+            if (m_sendSymbol.isRelative()) {
+                m_sendSymbol = lyric_common::SymbolUrl(m_preludeLocation, m_sendSymbol.getSymbolPath());
+            }
             break;
         }
         default:
             break;
     }
 
-    switch (m_direction) {
+    switch (m_communicationDirection) {
         case lyric_object::CommunicationType::Receive:
         case lyric_object::CommunicationType::SendAndReceive: {
             lyric_common::SymbolUrlParser receiveSymbolParser;
             TU_RETURN_IF_NOT_OK (tempo_config::parse_config(m_receiveSymbol, receiveSymbolParser,
-                protocolMap, "receives"));
+                taskSection, "receives"));
+            if (m_receiveSymbol.isRelative()) {
+                m_receiveSymbol = lyric_common::SymbolUrl(m_preludeLocation, m_receiveSymbol.getSymbolPath());
+            }
             break;
         }
         default:
@@ -133,9 +114,10 @@ zuri_build::GenerateProtocolTask::deduplicateTask(lyric_build::TaskHash &taskHas
     lyric_build::TaskHasher taskHasher(getKey());
 
     taskHasher.hashValue(m_moduleLocation.toString());
-    taskHasher.hashValue(m_name);
-    taskHasher.hashValue(static_cast<tu_int64>(m_type));
-    taskHasher.hashValue(static_cast<tu_int64>(m_direction));
+    taskHasher.hashValue(m_preludeLocation.toString());
+    taskHasher.hashValue(m_protocolName);
+    taskHasher.hashValue(static_cast<tu_int64>(m_protocolType));
+    taskHasher.hashValue(static_cast<tu_int64>(m_communicationDirection));
     taskHasher.hashValue(m_sendSymbol.toString());
     taskHasher.hashValue(m_receiveSymbol.toString());
     taskHash = taskHasher.finish();
@@ -162,7 +144,9 @@ zuri_build::GenerateProtocolTask::runTask(lyric_build::TempDirectory *tempDirect
 
     auto sharedModuleCache = buildState->getSharedModuleCache();
     auto shortcutResolver = buildState->getShortcutResolver();
+
     lyric_assembler::ObjectStateOptions options;
+    options.preludeLocation = m_preludeLocation;
 
     // configure object state
     lyric_assembler::ObjectState objectState(m_moduleLocation, origin, localModuleCache, sharedModuleCache,
@@ -201,8 +185,8 @@ zuri_build::GenerateProtocolTask::runTask(lyric_build::TempDirectory *tempDirect
 
     auto *block = objectRoot->rootBlock();
     lyric_assembler::ProtocolSymbol *protocolSymbol;
-    TU_ASSIGN_OR_RETURN (protocolSymbol, block->declareProtocol(
-        m_name, /* isHidden= */ false, sendType, receiveType, m_type, m_direction));
+    TU_ASSIGN_OR_RETURN (protocolSymbol, block->declareProtocol(m_protocolName, /* isHidden= */ false,
+        sendType, receiveType, m_protocolType, m_communicationDirection));
 
     // add protocol to namespace
     auto *globalNs = objectRoot->globalNamespace();

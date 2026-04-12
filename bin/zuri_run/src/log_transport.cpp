@@ -1,7 +1,7 @@
 
 #include <tempo_utils/log_console.h>
 #include <tempo_utils/log_stream.h>
-#include <zuri_run/log_proto_writer.h>
+#include <zuri_run/log_transport.h>
 
 zuri_run::LogTransport::LogTransport(bool logToStderr)
     : m_logToStderr(logToStderr)

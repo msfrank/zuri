@@ -5,11 +5,12 @@
 
 #include <tempo_utils/tempdir_maker.h>
 
+#include <zuri_test_runtime/zuri_test_runtime.h>
+
 #include "lib_dir_paths.h"
-#include "test_utils.h"
 
 std::shared_ptr<zuri_distributor::Runtime>
-create_test_runtime(const std::filesystem::path &runtimeRoot)
+zuri_test_runtime::create_test_runtime(const std::filesystem::path &runtimeRoot)
 {
     zuri_distributor::RuntimeOpenOrCreateOptions options;
     options.exclusive = true;
@@ -31,7 +32,7 @@ static std::shared_ptr<zuri_distributor::Runtime> globalRuntime = {};
 static std::mutex globalLock;
 
 std::shared_ptr<zuri_distributor::Runtime>
-get_global_test_runtime()
+zuri_test_runtime::get_global_test_runtime()
 {
     std::lock_guard lock(globalLock);
     if (globalRuntime != nullptr)

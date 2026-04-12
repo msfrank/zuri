@@ -14,6 +14,7 @@
 #include <tempo_config/container_conversions.h>
 #include <tempo_config/time_conversions.h>
 #include <zuri_build/collect_modules_task.h>
+#include <zuri_build/generate_protocol_task.h>
 #include <zuri_build/import_solver.h>
 #include <zuri_build/provide_module_task.h>
 #include <zuri_build/provide_object_task.h>
@@ -266,6 +267,7 @@ zuri_build::zuri_build(int argc, const char *argv[])
     taskRegistry->registerTaskDomain("provide_module", new_provide_module_task);
     taskRegistry->registerTaskDomain("provide_object", new_provide_object_task);
     taskRegistry->registerTaskDomain("provide_plugin", new_provide_plugin_task);
+    taskRegistry->registerTaskDomain("generate_protocol", new_generate_protocol_task);
     builderOptions.taskRegistry = std::move(taskRegistry);
 
     // set the fallback loader to load from the package cache hierarchy

@@ -7,7 +7,7 @@
 #include <zuri_distributor/dependency_selector.h>
 #include <zuri_distributor/runtime.h>
 #include <zuri_packager/package_reader_loader.h>
-#include <zuri_run/log_proto_writer.h>
+#include <zuri_run/log_transport.h>
 #include <zuri_run/run_package_command.h>
 #include <zuri_tooling/package_manager.h>
 

@@ -39,6 +39,23 @@ namespace zuri_test {
 
         const lyric_test::TestRunner *getRunner() const;
 
+        tempo_utils::Result<std::filesystem::path> writeNamedFile(
+            const std::string &code,
+            const std::filesystem::path &filePath,
+            const std::filesystem::path &baseDir = {});
+        tempo_utils::Result<std::filesystem::path> writeTempFile(
+            const std::string &code,
+            const std::filesystem::path &templatePath,
+            const std::filesystem::path &baseDir = {});
+        tempo_utils::Result<lyric_common::ModuleLocation> writeModule(
+            const std::string &code,
+            const std::filesystem::path &modulePath = {},
+            const std::filesystem::path &baseDir = {});
+
+        tempo_utils::Result<lyric_test::TestComputation> computeTarget(
+            const lyric_build::TaskId &target,
+            const lyric_build::ComputeTargetOverrides &overrides);
+
         tempo_utils::Result<lyric_test::RunModule> runModule(
             const std::string &code,
             const std::filesystem::path &modulePath = {},

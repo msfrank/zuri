@@ -6,7 +6,7 @@
 #include <zuri_distributor/runtime.h>
 #include <zuri_run/ephemeral_session.h>
 #include <zuri_run/fragment_store.h>
-#include <zuri_run/log_proto_writer.h>
+#include <zuri_run/log_transport.h>
 #include <zuri_run/read_eval_print_loop.h>
 #include <zuri_run/run_interactive_command.h>
 

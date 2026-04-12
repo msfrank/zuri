@@ -4,50 +4,13 @@
 #include <lyric_test/lyric_tester.h>
 #include <tempo_config/config_utils.h>
 #include <tempo_test/result_matchers.h>
-#include <tempo_test/status_matchers.h>
 #include <tempo_utils/tempdir_maker.h>
-
-#include <zuri_build/collect_modules_task.h>
 #include <zuri_build/target_builder.h>
 #include <zuri_tooling/build_graph.h>
 
-#include "zuri_build/provide_object_task.h"
-#include "zuri_build/provide_plugin_task.h"
+#include "base_build_fixture.h"
 
-class TargetBuilderTests : public ::testing::Test {
-protected:
-    std::unique_ptr<tempo_utils::TempdirMaker> installRoot;
-    std::shared_ptr<zuri_distributor::Runtime> runtime;
-    std::shared_ptr<lyric_build::TaskRegistry> taskRegistry;
-
-    void SetUp() override {
-        tempo_utils::LoggingConfiguration loggingConf;
-        loggingConf.severityFilter = tempo_utils::SeverityFilter::kVeryVerbose;
-        tempo_utils::init_logging(loggingConf);
-
-        installRoot = std::make_unique<tempo_utils::TempdirMaker>(
-            std::filesystem::current_path(), "install.XXXXXXXX");
-        TU_RAISE_IF_NOT_OK (installRoot->getStatus());
-
-        auto runtimeDirectory = installRoot->getTempdir() / "runtime";
-        std::filesystem::create_directory(runtimeDirectory);
-        TU_ASSIGN_OR_RAISE (runtime, zuri_distributor::Runtime::openOrCreate(runtimeDirectory));
-
-        taskRegistry = std::make_shared<lyric_build::TaskRegistry>();
-        TU_RAISE_IF_NOT_OK (taskRegistry->registerTaskDomain(
-            "collect_modules", zuri_build::new_collect_modules_task));
-        TU_RAISE_IF_NOT_OK (taskRegistry->registerTaskDomain(
-            "provide_object", zuri_build::new_provide_object_task));
-        TU_RAISE_IF_NOT_OK (taskRegistry->registerTaskDomain(
-            "provide_plugin", zuri_build::new_provide_plugin_task));
-    }
-    void TearDown() override {
-        if (installRoot) {
-            std::filesystem::remove_all(installRoot->getTempdir());
-            installRoot.reset();
-        }
-    }
-};
+class TargetBuilderTests : public BaseBuildFixture {};
 
 TEST_F(TargetBuilderTests, BuildLibrary)
 {

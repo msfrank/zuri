@@ -51,6 +51,27 @@ target_link_libraries(zuri_test
     gtest::gtest
     )
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/lib_dir_paths.h.in ${CMAKE_CURRENT_BINARY_DIR}/lib_dir_paths.h @ONLY)
+
+add_library(zuri_test_runtime STATIC)
+add_library(zuri::zuri_test_runtime ALIAS zuri_test_runtime)
+
+target_sources(zuri_test_runtime PRIVATE
+    include/zuri_test_runtime/zuri_test_runtime.h
+    src/zuri_test_runtime.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/lib_dir_paths.h
+    )
+
+target_include_directories(zuri_test_runtime PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    )
+target_link_libraries(zuri_test_runtime PRIVATE
+    tempo::tempo_utils
+    zuri::zuri_distributor
+    gtest::gtest
+    )
+
 # install targets
 install(TARGETS zuri_test EXPORT zuri-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

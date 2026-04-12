@@ -36,11 +36,11 @@ target_compile_definitions(zuri_std_package_testsuite PRIVATE
     "ZURI_STD_PACKAGE_PATH=\"${ZURI_STD_PACKAGE_PATH}\""
     )
 target_link_libraries(zuri_std_package_testsuite
-    test_utils
     lyric::lyric_test
     tempo::tempo_test
     tempo::tempo_test_main
     zuri::zuri_test
+    zuri::zuri_test_runtime
     )
 gtest_discover_tests(zuri_std_package_testsuite)
 
@@ -57,8 +57,8 @@ target_compile_definitions(ZuriStdPackageTestSuite PRIVATE
     )
 target_link_libraries(ZuriStdPackageTestSuite
     PUBLIC
-    test_utils
     lyric::lyric_test
     tempo::tempo_test
     zuri::zuri_test
+    zuri::zuri_test_runtime
     )

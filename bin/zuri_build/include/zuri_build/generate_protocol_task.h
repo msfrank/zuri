@@ -19,10 +19,10 @@ namespace zuri_build {
 
     private:
         lyric_common::ModuleLocation m_moduleLocation;
-        lyric_build::Resource m_resource;
-        std::string m_name;
-        lyric_object::PortType m_type;
-        lyric_object::CommunicationType m_direction;
+        lyric_common::ModuleLocation m_preludeLocation;
+        std::string m_protocolName;
+        lyric_object::PortType m_protocolType;
+        lyric_object::CommunicationType m_communicationDirection;
         lyric_common::SymbolUrl m_sendSymbol;
         lyric_common::SymbolUrl m_receiveSymbol;
 

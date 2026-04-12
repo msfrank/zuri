@@ -1,20 +1,19 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <lyric_runtime/url_ref.h>
 
+#include <lyric_runtime/url_ref.h>
 #include <lyric_test/matchers.h>
 #include <tempo_test/tempo_test.h>
 #include <tempo_utils/log_console.h>
 #include <zuri_test/zuri_tester.h>
-
-#include "test_utils.h"
+#include <zuri_test_runtime/zuri_test_runtime.h>
 
 class StdProcess : public ::testing::Test {
 protected:
     std::unique_ptr<zuri_test::ZuriTester> tester;
 
     void SetUp() override {
-        auto runtime = get_global_test_runtime();
+        auto runtime = zuri_test_runtime::get_global_test_runtime();
         zuri_test::TesterOptions options;
         options.mainArguments = { "arg0", "arg1", "arg2" };
         options.localPackages.emplace_back(ZURI_STD_PACKAGE_PATH);
