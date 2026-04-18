@@ -6,10 +6,12 @@ set(PLUGIN_FILEPATH   "${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_FILENAME}")
 
 # build the std-resource plugin
 add_library(std-resource-plugin SHARED
-    resource_traps.cpp
-    resource_traps.h
     native_resource.cpp
     native_resource.h
+    resource_traps.cpp
+    resource_traps.h
+    url_ref.cpp
+    url_ref.h
     )
 
 set_target_properties(std-resource-plugin PROPERTIES
@@ -28,6 +30,7 @@ endif()
 
 target_link_libraries(std-resource-plugin PUBLIC
     lyric::lyric_runtime
+    tempo::tempo_utils
     Boost::headers
     )
 

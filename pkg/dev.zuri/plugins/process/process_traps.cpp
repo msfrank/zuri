@@ -28,11 +28,9 @@ std_process_get_program_main(
     const lyric_runtime::VirtualTable *vtable)
 {
     auto *heapManager = state->heapManager();
-    auto *currentCoro = state->currentCoro();
 
-    auto mainLocation = state->getMainLocation().toUrl();
-    auto programMain = heapManager->allocateUrl(mainLocation);
-    currentCoro->pushData(programMain);
+    auto mainLocation = state->getMainLocation().toString();
+    TU_RETURN_IF_NOT_OK (heapManager->loadStringOntoStack(mainLocation));
 
     return {};
 }

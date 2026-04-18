@@ -1,10 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
-#include <iostream>
-
 #include <lyric_runtime/data_cell.h>
 #include <lyric_runtime/interpreter_state.h>
-#include <lyric_runtime/url_ref.h>
 
 #include "future_ref.h"
 #include "port_ref.h"
@@ -113,37 +110,6 @@ std_system_get_result(
     return {};
 }
 
-// struct SleepData {
-//     lyric_runtime::DataCell result;
-// };
-//
-// static void
-// on_sleep_accept(
-//     lyric_runtime::Promise *promise,
-//     const lyric_runtime::Waiter *waiter,
-//     lyric_runtime::InterpreterState *state)
-// {
-//     TU_NOTNULL (promise);
-//     auto *data = static_cast<SleepData *>(promise->getData());
-//     const auto &result = data->result;
-//     TU_ASSERT (result.isValid());
-//     promise->complete(result);
-// }
-//
-// static void
-// sleep_reachable(void *data)
-// {
-//     auto *sleep = static_cast<SleepData *>(data);
-//     auto &result = sleep->result;
-//     switch (result.type) {
-//         case lyric_runtime::DataCellType::REF:
-//             result.data.ref->setReachable();
-//             break;
-//         default:
-//             break;
-//     }
-// }
-
 class SleepOperations : public lyric_runtime::PromiseOperations {
 public:
     SleepOperations(lyric_runtime::DataCell result)
@@ -210,14 +176,6 @@ std_system_sleep(
 
     auto ops = std::make_unique<SleepOperations>(frame.getArgument(1));
 
-    //auto *data = static_cast<SleepData *>(std::malloc(sizeof(SleepData)));
-    //data->result = frame.getArgument(1);
-    //
-    //lyric_runtime::PromiseOptions options;
-    //options.reachable = sleep_reachable;
-    //options.data = data;
-    //options.release = std::free;
-
     // register a timer
     auto promise = lyric_runtime::Promise::create(std::move(ops));
     scheduler->registerTimer(timeout, promise);
@@ -228,27 +186,6 @@ std_system_sleep(
 
     return {};
 }
-
-// static void
-// on_worker_accept(
-//     lyric_runtime::Promise *promise,
-//     const lyric_runtime::Waiter *waiter,
-//     lyric_runtime::InterpreterState *state)
-// {
-//     auto *workerTask = static_cast<lyric_runtime::Task *>(promise->getData());
-//
-//     // complete the promise
-//     auto *workerCoro = workerTask->stackfulCoroutine();
-//     lyric_runtime::DataCell *result;
-//     TU_RAISE_IF_NOT_OK (workerCoro->peekData(&result));
-//     TU_LOG_INFO << "worker task " << workerTask << " terminated with result " << *result;
-//     promise->complete(*result);
-//
-//     // destroy the worker task
-//     auto *scheduler = workerTask->getSystemScheduler();
-//     TU_LOG_INFO << "destroying worker task " << workerTask;
-//     scheduler->destroyTask(workerTask);
-// }
 
 class WorkerOperations : public lyric_runtime::PromiseOperations {
 public:

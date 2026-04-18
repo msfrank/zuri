@@ -21,6 +21,7 @@ set(TEST_CASES
     timezone_tests.cpp
     treemap_tests.cpp
     treeset_tests.cpp
+    url_tests.cpp
     vector_tests.cpp
     )
 
@@ -34,6 +35,7 @@ target_include_directories(zuri_std_package_testsuite PRIVATE
     )
 target_compile_definitions(zuri_std_package_testsuite PRIVATE
     "ZURI_STD_PACKAGE_PATH=\"${ZURI_STD_PACKAGE_PATH}\""
+    "ZURI_STD_PACKAGE_URL=\"${ZURI_STD_PACKAGE_URL}\""
     )
 target_link_libraries(zuri_std_package_testsuite
     lyric::lyric_test
@@ -54,6 +56,7 @@ target_include_directories(ZuriStdPackageTestSuite PRIVATE
     )
 target_compile_definitions(ZuriStdPackageTestSuite PRIVATE
     "ZURI_STD_PACKAGE_PATH=\"${ZURI_STD_PACKAGE_PATH}\""
+    "ZURI_STD_PACKAGE_URL=\"${ZURI_STD_PACKAGE_URL}\""
     )
 target_link_libraries(ZuriStdPackageTestSuite
     PUBLIC

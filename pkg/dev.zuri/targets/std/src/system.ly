@@ -60,37 +60,6 @@ defclass WorkQueue[T] {
     }
 }
 
-defstruct Message {
-    val SeqNr: Int
-    val Payload: Bytes
-}
-
-@AllocatorTrap("STD_SYSTEM_PORT_ALLOC")
-defclass Port sealed {
-
-    def Send(payload: Bytes): Message | Status {
-        @{
-            Trap("STD_SYSTEM_PORT_SEND")
-            PushResult(typeof Message | Status)
-        }
-    }
-
-    def Receive(): Future[Message] {
-        @{
-            Trap("STD_SYSTEM_PORT_RECEIVE")
-            PushResult(typeof Future[Message])
-        }
-    }
-}
-
-/*
-def Acquire(url: Url): Port {
-    @{
-        Trap("STD_SYSTEM_ACQUIRE")
-        PushResult(typeof Port)
-    }
-}
-*/
 
 def Await[T](fut: Future[T]): T | Status {
     @{

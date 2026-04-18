@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include <lyric_runtime/url_ref.h>
+#include <lyric_runtime/string_ref.h>
 #include <lyric_test/matchers.h>
 #include <tempo_test/tempo_test.h>
 #include <tempo_utils/log_console.h>
@@ -38,16 +38,17 @@ TEST_F(StdProcess, EvaluateProgramMain)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/process" ...
-        Process.ProgramMain
+        Process.ProgramMain.ToString()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        lyric_test::matchers::MatchesDataCellType(lyric_runtime::DataCellType::URL))));
+        lyric_test::matchers::MatchesDataCellType(lyric_runtime::DataCellType::STRING))));
     auto mainReturn = result.getResult().getInterpreterExit().mainReturn;
     TU_CONSOLE_OUT << mainReturn;
 
-    auto programMain = mainReturn.data.url->getUrl();
-    ASSERT_EQ ("dev.zuri.tester", programMain.getScheme());
+    std::string programMain;
+    ASSERT_TRUE (mainReturn.data.str->utf8Value(programMain));
+    ASSERT_TRUE (programMain.starts_with("dev.zuri.tester://"));
 }
 
 TEST_F(StdProcess, EvaluateArguments)

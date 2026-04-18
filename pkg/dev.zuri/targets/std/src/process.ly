@@ -1,7 +1,10 @@
 
 @@Plugin("/process")
 
+
 import from "/collections" { Vector }
+import from "/url" { ParseUrl, Url }
+
 
 def _GetProgramId(): String {
     @{
@@ -11,9 +14,15 @@ def _GetProgramId(): String {
 }
 
 def _GetProgramMain(): Url {
+    var programMain: String = ""
     @{
         Trap("STD_PROCESS_GET_PROGRAM_MAIN")
-        PushResult(typeof Url)
+        PushResult(typeof String)
+        StoreData(programMain)
+    }
+    match ParseUrl(programMain) {
+        when url: Url   url
+        else            Url{}
     }
 }
 

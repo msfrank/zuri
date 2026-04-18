@@ -78,54 +78,6 @@ FileRef::open(int flags, int mode, lyric_runtime::SystemScheduler *systemSchedul
     return m_status;
 }
 
-// struct ReadContext {
-//     lyric_runtime::DataCell file;
-//     std::string data;
-//     uv_buf_t buf;
-//     ReadContext(const lyric_runtime::DataCell &file, size_t size)
-//     {
-//         this->file = file;
-//         data.resize(size);
-//         buf = uv_buf_init(data.data(), data.size());
-//     }
-// };
-//
-// void
-// read_context_free(void *data)
-// {
-//     delete static_cast<ReadContext *>(data);
-// }
-//
-// void
-// on_read_reachable(void *data)
-// {
-//     auto *ctx = static_cast<ReadContext *>(data);
-//     ctx->file.data.ref->setReachable();
-// }
-//
-// static void
-// on_read_accept(
-//     lyric_runtime::Promise *promise,
-//     const lyric_runtime::Waiter *waiter,
-//     lyric_runtime::InterpreterState *state)
-// {
-//     auto *heapManager = state->heapManager();
-//
-//     auto *req = waiter->peekReq();
-//     TU_NOTNULL (req);
-//     auto ret = req->result;
-//     if (ret >= 0) {
-//         auto *ctx = (ReadContext *) promise->getData();
-//         std::span bytes((const tu_uint8 *) ctx->buf.base, ret);
-//         auto data = heapManager->allocateBytes(bytes);
-//         promise->complete(data);
-//     } else {
-//         auto status = heapManager->allocateStatus(
-//             tempo_utils::StatusCode::kInternal, uv_strerror(ret));
-//         promise->reject(status);
-//     }
-// }
-
 class ReadOperations : public lyric_runtime::PromiseOperations {
 public:
     ReadOperations(FileRef *file, size_t size)
@@ -180,54 +132,6 @@ FileRef::readAsync(int size, AbstractRef *fut, lyric_runtime::SystemScheduler *s
 
     return {};
 }
-
-// struct WriteContext {
-//     FileRef *file;
-//     lyric_runtime::BytesRef *bytes;
-//     uv_buf_t buf;
-//     WriteContext(FileRef *file, lyric_runtime::BytesRef *bytes)
-//     {
-//         this->file = file;
-//         this->bytes = bytes;
-//         auto *data = (char *) bytes->getBytesData();
-//         auto size = bytes->getBytesSize();
-//         buf = uv_buf_init(data, size);
-//     }
-// };
-//
-// void
-// write_context_free(void *data)
-// {
-//     delete static_cast<WriteContext *>(data);
-// }
-//
-// void
-// on_write_reachable(void *data)
-// {
-//     auto *ctx = static_cast<WriteContext *>(data);
-//     ctx->file->setReachable();
-//     ctx->bytes->setReachable();
-// }
-//
-// static void
-// on_write_accept(
-//     lyric_runtime::Promise *promise,
-//     const lyric_runtime::Waiter *waiter,
-//     lyric_runtime::InterpreterState *state)
-// {
-//     auto *heapManager = state->heapManager();
-//
-//     auto *req = waiter->peekReq();
-//     TU_NOTNULL (req);
-//     auto ret = req->result;
-//     if (ret >= 0) {
-//         promise->complete(lyric_runtime::DataCell(static_cast<tu_int64>(ret)));
-//     } else {
-//         auto status = heapManager->allocateStatus(
-//             tempo_utils::StatusCode::kInternal, uv_strerror(ret));
-//         promise->reject(status);
-//     }
-// }
 
 class WriteOperations : public lyric_runtime::PromiseOperations {
 public:
@@ -640,6 +544,7 @@ fs_file_close(
 {
     auto *currentCoro = state->currentCoro();
     auto *systemScheduler = state->systemScheduler();
+    auto *heapManager = state->heapManager();
 
     auto &frame = currentCoro->currentCallOrThrow();
 
@@ -649,11 +554,11 @@ fs_file_close(
 
     auto status = instance->close(systemScheduler);
     if (status.notOk()) {
-        auto *heapManager = state->heapManager();
         auto statusRef = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
         TU_RETURN_IF_NOT_OK (currentCoro->pushData(statusRef));
     } else {
-        TU_RETURN_IF_NOT_OK (currentCoro->pushData(lyric_runtime::DataCell::undef()));
+        auto statusRef = heapManager->allocateStatus(tempo_utils::StatusCode::kOk, "");
+        TU_RETURN_IF_NOT_OK (currentCoro->pushData(statusRef));
     }
 
     return {};

@@ -37,7 +37,7 @@ defclass File final {
         permissions: Permissions = Permissions.Default{},
         named truncate: Bool = false,
         named append: Bool = false
-    ): File | Status {
+    ): File | Error {
         @{
             LoadData(mode.CanRead)
             PopResult()
@@ -46,7 +46,7 @@ defclass File final {
             LoadData(permissions.Mode.ToInt())
             PopResult()
             Trap("FS_FILE_CREATE")
-            PushResult(typeof File | Status)
+            PushResult(typeof File | Error)
         }
     }
 
@@ -55,14 +55,14 @@ defclass File final {
         named truncate: Bool = false,
         named append: Bool = false,
         named noFollow: Bool = false
-    ): File | Status {
+    ): File | Error {
         @{
             LoadData(mode.CanRead)
             PopResult()
             LoadData(mode.CanWrite)
             PopResult()
             Trap("FS_FILE_OPEN")
-            PushResult(typeof File | Status)
+            PushResult(typeof File | Error)
         }
     }
 
@@ -72,7 +72,7 @@ defclass File final {
         named truncate: Bool = false,
         named append: Bool = false,
         named noFollow: Bool = false
-    ): File | Status {
+    ): File | Error {
         @{
             LoadData(mode.CanRead)
             PopResult()
@@ -81,7 +81,7 @@ defclass File final {
             LoadData(permissions.Mode.ToInt())
             PopResult()
             Trap("FS_FILE_OPEN_OR_CREATE")
-            PushResult(typeof File | Status)
+            PushResult(typeof File | Error)
         }
     }
 
@@ -103,10 +103,10 @@ defclass File final {
         fut
     }
 
-    def Close(): Undef | Status {
+    def Close(): Status {
         @{
             Trap("FS_FILE_CLOSE")
-            PushResult(typeof Undef | Status)
+            PushResult(typeof Status)
         }
     }
 }

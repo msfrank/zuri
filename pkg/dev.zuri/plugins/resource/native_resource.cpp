@@ -2,12 +2,17 @@
 
 #include <tempo_utils/log_stream.h>
 
-#include "resource_traps.h"
 #include "native_resource.h"
+#include "resource_traps.h"
+#include "url_ref.h"
 
-std::array<lyric_runtime::NativeTrap,2> kStdResourceTraps = {{
+std::array<lyric_runtime::NativeTrap,6> kStdResourceTraps = {{
     {std_resource_exists, "STD_RESOURCE_EXISTS", 0},
     {std_resource_load, "STD_RESOURCE_LOAD", 0},
+    {std_url_alloc, "STD_URL_URL_ALLOC", 0},
+    {std_url_equality_equals, "STD_URL_EQUALITY_EQUALS", 0},
+    {std_url_to_string, "STD_URL_URL_TO_STRING", 0},
+    {std_parse_url, "STD_PARSE_URL", 0},
 }};
 
 class NativeStdResource : public lyric_runtime::NativeInterface {
