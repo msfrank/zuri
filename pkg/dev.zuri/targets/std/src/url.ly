@@ -1,6 +1,6 @@
 
 
-@@Plugin("/resource")
+@@Plugin("/system")
 
 
 @AllocatorTrap("STD_URL_URL_ALLOC")

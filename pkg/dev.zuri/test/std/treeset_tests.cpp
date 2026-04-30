@@ -127,7 +127,7 @@ TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetIterate)
         ints.Add(3)
         var sum: Int = 0
         for n: Int in ints {
-            set sum += n
+            sum += n
         }
         sum
     )");

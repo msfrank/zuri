@@ -117,16 +117,18 @@ fs_path_ctor(
                 auto part = frame.getRest(i);
                 TU_ASSERT (part.type == lyric_runtime::DataCellType::STRING);
                 auto *str = part.data.str;
-                std::string_view sv(str->getStringData(), str->getStringSize());
-                path /= std::filesystem::path(sv);
+                std::string p = str->getString();
+                if (!p.empty()) {
+                    path /= std::filesystem::path(p);
+                }
             }
         }
     } else {
         auto arg0 = frame.getArgument(0);
         TU_ASSERT (arg0.type == lyric_runtime::DataCellType::STRING);
         auto *str = arg0.data.str;
-        std::string_view sv(str->getStringData(), str->getStringSize());
-        path = std::filesystem::path(sv);
+        std::string p = str->getString();
+        path = std::filesystem::path(p);
     }
 
     instance->setPath(path);

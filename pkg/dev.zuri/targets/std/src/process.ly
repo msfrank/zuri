@@ -1,5 +1,5 @@
 
-@@Plugin("/process")
+@@Plugin("/system")
 
 
 import from "/collections" { Vector }
@@ -21,8 +21,8 @@ def _GetProgramMain(): Url {
         StoreData(programMain)
     }
     match ParseUrl(programMain) {
-        when url: Url   url
-        else            Url{}
+        when url: Url -> url
+        else          -> Url{}
     }
 }
 
@@ -47,16 +47,16 @@ definstance Process final {
     val Arguments: Vector[String]
 
     init() {
-        set this.ProgramId = _GetProgramId()
-        set this.ProgramMain = _GetProgramMain()
+        this.ProgramId = _GetProgramId()
+        this.ProgramMain = _GetProgramMain()
+        this.Arguments = Vector[String]{}
 
-        set this.Arguments = Vector[String]{}
         val numArguments: Int = _NumArguments()
         var curr: Int = 0
         while curr < numArguments {
             val argument: String = _GetArgument(curr)
             this.Arguments.Append(argument)
-            set curr += 1
+            curr += 1
         }
     }
 }

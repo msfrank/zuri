@@ -138,7 +138,7 @@ TEST_F(StdCollectionsTreeMap, TestEvaluateTreeMapIterate)
         }
         var sum: Int = 0
         for entry: Tuple2[Int,Int] in ints {
-            set sum += entry.Element1
+            sum += entry.Element1
         }
         sum
     )");

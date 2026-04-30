@@ -7,8 +7,6 @@ get_directory_property(ZURI_FS_FILE_PLUGIN_FILEPATH DIRECTORY plugins/file PLUGI
 get_directory_property(ZURI_FS_PATH_PLUGIN_FILEPATH DIRECTORY plugins/path PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_COLLECTIONS_PLUGIN_FILEPATH DIRECTORY plugins/collections PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_LOG_PLUGIN_FILEPATH DIRECTORY plugins/log PLUGIN_FILEPATH)
-get_directory_property(ZURI_STD_PROCESS_PLUGIN_FILEPATH DIRECTORY plugins/process PLUGIN_FILEPATH)
-get_directory_property(ZURI_STD_RESOURCE_PLUGIN_FILEPATH DIRECTORY plugins/resource PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_SYSTEM_PLUGIN_FILEPATH DIRECTORY plugins/system PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_TEXT_PLUGIN_FILEPATH DIRECTORY plugins/text PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_TIME_PLUGIN_FILEPATH DIRECTORY plugins/time PLUGIN_FILEPATH)
@@ -60,8 +58,6 @@ add_custom_target(zuri-std-package
       generate-project-directory
       std-collections-plugin
       std-log-plugin
-      std-process-plugin
-      std-resource-plugin
       std-system-plugin
       std-text-plugin
       std-time-plugin

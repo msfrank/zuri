@@ -93,7 +93,7 @@ std_url_to_string(
 }
 
 tempo_utils::Status
-std_parse_url(
+std_url_parse_url(
     lyric_runtime::BytecodeInterpreter *,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *)

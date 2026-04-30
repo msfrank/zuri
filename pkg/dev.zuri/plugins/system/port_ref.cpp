@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
+#include <span>
+
 #include <absl/strings/substitute.h>
 
 #include <lyric_runtime/bytes_ref.h>
 #include <lyric_runtime/interpreter_state.h>
-#include <tempo_utils/big_endian.h>
 #include <tempo_utils/log_stream.h>
 #include <tempo_utils/memory_bytes.h>
 #include <tempo_utils/unicode.h>
@@ -108,7 +109,7 @@ PortRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-port_alloc(
+std_port_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
@@ -121,7 +122,7 @@ port_alloc(
 }
 
 tempo_utils::Status
-port_send(
+std_port_send(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
@@ -136,8 +137,12 @@ port_send(
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid bytes");
     auto *bytes = arg0.data.bytes;
-    auto payload = tempo_utils::MemoryBytes::copy(
-        std::span(bytes->getBytesData(), bytes->getBytesSize()));
+
+    tu_int32 size = 0;
+    TU_ASSERT (bytes->rawSize(size));
+    std::vector<tu_uint8> payloadBytes(size);
+    bytes->rawCopy(0, (char *) payloadBytes.data(), payloadBytes.size());
+    auto payload = tempo_utils::MemoryBytes::create(std::move(payloadBytes));
 
     auto receiver = frame.getReceiver();
     TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
@@ -194,7 +199,7 @@ private:
 // }
 
 tempo_utils::Status
-port_receive(
+std_port_receive(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *)

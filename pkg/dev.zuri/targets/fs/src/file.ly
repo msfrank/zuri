@@ -11,8 +11,8 @@ defenum FileMode {
     val CanWrite: Bool
 
     init(read: Bool, write: Bool) {
-        set this.CanRead = read
-        set this.CanWrite = write
+        this.CanRead = read
+        this.CanWrite = write
     }
 
     case ReadOnly(true, false)

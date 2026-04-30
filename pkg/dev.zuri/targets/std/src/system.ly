@@ -78,8 +78,8 @@ def AwaitOrDefault[T](fut: Future[T], default: T): T {
         StoreData(result)
     }
     match result {
-        when status: Status     default
-        else                    result
+        when status: Status -> default
+        else                -> result
     }
 }
 

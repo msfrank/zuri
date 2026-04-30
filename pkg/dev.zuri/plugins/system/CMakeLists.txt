@@ -12,10 +12,16 @@ add_library(std-system-plugin SHARED
     native_system.h
     port_ref.cpp
     port_ref.h
+    process_traps.cpp
+    process_traps.h
+    resource_traps.cpp
+    resource_traps.h
     work_queue_ref.cpp
     work_queue_ref.h
     system_traps.cpp
     system_traps.h
+    url_ref.cpp
+    url_ref.h
     )
 
 set_target_properties(std-system-plugin PROPERTIES

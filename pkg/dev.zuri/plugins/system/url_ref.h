@@ -35,7 +35,7 @@ tempo_utils::Status std_url_to_string(
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status std_parse_url(
+tempo_utils::Status std_url_parse_url(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);

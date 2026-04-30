@@ -55,27 +55,27 @@ private:
     void checkState();
 };
 
-tempo_utils::Status future_alloc(
+tempo_utils::Status std_system_future_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status future_ctor(
+tempo_utils::Status std_system_future_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status future_complete(
+tempo_utils::Status std_system_future_complete(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status future_reject(
+tempo_utils::Status std_system_future_reject(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status future_then(
+tempo_utils::Status std_system_future_then(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);

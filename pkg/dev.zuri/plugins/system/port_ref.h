@@ -40,17 +40,17 @@ private:
     std::vector<lyric_runtime::DataCell> m_values;
 };
 
-tempo_utils::Status port_alloc(
+tempo_utils::Status std_port_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status port_send(
+tempo_utils::Status std_port_send(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status port_receive(
+tempo_utils::Status std_port_receive(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);

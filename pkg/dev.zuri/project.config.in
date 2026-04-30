@@ -34,18 +34,6 @@
                             "externalFilePath": "@ZURI_STD_LOG_PLUGIN_FILEPATH@",
                         }
                     },
-                    "provide_plugin:/process": {
-                        "existingPlugin": {
-                            "type": "ExternalFile",
-                            "externalFilePath": "@ZURI_STD_PROCESS_PLUGIN_FILEPATH@",
-                        }
-                    },
-                    "provide_plugin:/resource": {
-                        "existingPlugin": {
-                            "type": "ExternalFile",
-                            "externalFilePath": "@ZURI_STD_RESOURCE_PLUGIN_FILEPATH@",
-                        }
-                    },
                     "provide_plugin:/system": {
                         "existingPlugin": {
                             "type": "ExternalFile",

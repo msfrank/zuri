@@ -16,7 +16,17 @@ namespace zuri_packager {
 
     class PackageReader {
 
+        struct Private {};
+
     public:
+        PackageReader(
+            tu_uint8 version,
+            tu_uint8 flags,
+            ZuriManifest manifest,
+            tempo_utils::Slice contents,
+            Private);
+        virtual ~PackageReader() = default;
+
         static tempo_utils::Result<std::shared_ptr<PackageReader>> create(
             std::shared_ptr<const tempo_utils::ImmutableBytes> packageBytes);
         static tempo_utils::Result<std::shared_ptr<PackageReader>> open(
@@ -42,11 +52,6 @@ namespace zuri_packager {
         ZuriManifest m_manifest;
         tempo_utils::Slice m_contents;
 
-        PackageReader(
-            tu_uint8 version,
-            tu_uint8 flags,
-            ZuriManifest manifest,
-            tempo_utils::Slice contents);
     };
 }
 

@@ -10,16 +10,16 @@ defclass Flags[T] {
     var _bits: Int
 
     init(using intoFlags: IntoFlags[T], initialSet: ...T) {
-        set this._intoFlags = intoFlags
-        set this._bits = 0
+        this._intoFlags = intoFlags
+        this._bits = 0
         for element: T in initialSet {
             this.Set(element)
         }
     }
 
     init _Copy(intoFlags: IntoFlags[T], bits: Int) {
-        set this._intoFlags = intoFlags
-        set this._bits = bits
+        this._intoFlags = intoFlags
+        this._bits = bits
     }
 
     def Set(element: T) {

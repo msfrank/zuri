@@ -33,7 +33,7 @@ TEST_F(FsFile, EvaluateCreateFile)
         import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/file" ...
 
         val file: File = File{"%s"}
-        file.Create(ReadWrite)
+        file.Create(FileMode.ReadWrite)
     )", path.c_str()));
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
@@ -57,7 +57,7 @@ TEST_F(FsFile, EvaluateOpenFile)
         import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/file" ...
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
 
-        val file: File = expect File{"%s"}.Open(ReadOnly)
+        val file: File = expect File{"%s"}.Open(FileMode.ReadOnly)
         Await(file.Read(512))
     )", path.c_str()));
 
@@ -75,7 +75,7 @@ TEST_F(FsFile, EvaluateCreateFileAndWrite)
         import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/file" ...
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
 
-        val file: File = expect File{"%s"}.Create(ReadWrite)
+        val file: File = expect File{"%s"}.Create(FileMode.ReadWrite)
         Await(file.Write("%s".ToBytes()))
     )", path.c_str(), content));
 

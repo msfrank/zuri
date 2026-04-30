@@ -141,13 +141,20 @@ public:
     {
         TU_NOTNULL (m_file);
         TU_NOTNULL (m_bytes);
-        auto *data = (char *) bytes->getBytesData();
-        auto size = bytes->getBytesSize();
-        m_buf = uv_buf_init(data, size);
+        auto rope = bytes->getBytesData();
+        auto it = rope.iterateChunks();
+        tempo_utils::RopeChunk<tu_uint8> chunk;
+        while (it.getNext(chunk)) {
+            m_bufs.push_back(uv_buf_init((char *) chunk.data(), chunk.size()));
+        }
     }
-    uv_buf_t getBuf() const
+    const uv_buf_t* getBufs() const
     {
-        return m_buf;
+        return m_bufs.data();
+    }
+    unsigned int numBufs() const
+    {
+        return m_bufs.size();
     }
     void onAccept(
         lyric_runtime::Promise *promise,
@@ -174,7 +181,7 @@ public:
 private:
     FileRef *m_file;
     lyric_runtime::BytesRef *m_bytes;
-    uv_buf_t m_buf;
+    std::vector<uv_buf_t> m_bufs;
 };
 
 tempo_utils::Status
@@ -185,10 +192,11 @@ FileRef::writeAsync(
     lyric_runtime::SystemScheduler *systemScheduler)
 {
     auto ops = std::make_unique<WriteOperations>(this, bytes);
-    auto buf = ops->getBuf();
+    auto *bufs = ops->getBufs();
+    auto nbufs = ops->numBufs();
     auto promise = lyric_runtime::Promise::create(std::move(ops));
 
-    TU_RETURN_IF_NOT_OK (systemScheduler->registerWrite(m_file, buf, promise, offset));
+    TU_RETURN_IF_NOT_OK (systemScheduler->registerWrite(m_file, bufs, nbufs, promise, offset));
     fut->prepareFuture(promise);
 
     return {};
@@ -260,9 +268,8 @@ fs_file_ctor(
     auto arg0 = frame.getArgument(0);
     TU_ASSERT (arg0.type == lyric_runtime::DataCellType::STRING);
     auto *str = arg0.data.str;
-    std::string_view s(str->getStringData(), str->getStringSize());
 
-    std::filesystem::path path(s);
+    std::filesystem::path path(str->getString());
     path = std::filesystem::absolute(path);
     instance->setPath(path);
 

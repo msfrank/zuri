@@ -39,17 +39,17 @@ private:
     > m_waiting;
 };
 
-tempo_utils::Status work_queue_alloc(
+tempo_utils::Status std_system_work_queue_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status work_queue_push(
+tempo_utils::Status std_system_work_queue_push(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);
 
-tempo_utils::Status work_queue_pop(
+tempo_utils::Status std_system_work_queue_pop(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable);

@@ -2,9 +2,7 @@
 
 #include <absl/strings/substitute.h>
 
-#include <lyric_object/bytecode_iterator.h>
 #include <lyric_runtime/interpreter_state.h>
-#include <tempo_utils/big_endian.h>
 #include <tempo_utils/log_stream.h>
 
 #include "future_ref.h"
@@ -97,7 +95,7 @@ WorkQueueRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-work_queue_alloc(
+std_system_work_queue_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
@@ -110,7 +108,7 @@ work_queue_alloc(
 }
 
 tempo_utils::Status
-work_queue_push(
+std_system_work_queue_push(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
@@ -141,7 +139,7 @@ on_async_accept(
 }
 
 tempo_utils::Status
-work_queue_pop(
+std_system_work_queue_pop(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *unused)

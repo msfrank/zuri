@@ -28,7 +28,7 @@ TEST_F(StdFlagsFlags, EvaluateSetAndCheckFlags)
         defenum Colors {
             val Value: Int
             init(value: Int) {
-                set this.Value = value
+                this.Value = value
             }
             case Red(1)
             case Yellow(2)
@@ -45,8 +45,8 @@ TEST_F(StdFlagsFlags, EvaluateSetAndCheckFlags)
         using ColorsInstance
 
         val flags: Flags[Colors] = Flags[Colors]{}
-        flags.Set(Red)
-        flags.Contains(Red)
+        flags.Set(Colors.Red)
+        flags.Contains(Colors.Red)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(

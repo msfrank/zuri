@@ -154,7 +154,7 @@ TEST_F(StdCollectionsVector, TestEvaluateVectorIterate)
         ints.Append(3)
         var sum: Int = 0
         for n: Int in ints {
-            set sum += n
+            sum += n
         }
         sum
     )");

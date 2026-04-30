@@ -26,8 +26,8 @@ TEST_F(FsPermission, EvaluateSetAndCheck)
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://fs-0.0.1@zuri.dev/permission" ...
 
-        val perms: Permissions = Permissions{UserRead, UserWrite}
-        perms.Mode.Contains(UserRead)
+        val perms: Permissions = Permissions{Permission.UserRead, Permission.UserWrite}
+        perms.Mode.Contains(Permission.UserRead)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(

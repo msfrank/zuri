@@ -14,13 +14,13 @@ defclass Option[+T] {
     val Value: T | Undef
 
     init(value: T | Undef = undef) {
-        set this.Value = value
+        this.Value = value
     }
 
     def IsEmpty(): Bool {
         match this.Value {
-            when v: T       false
-            else            true
+            when v: T -> false
+            else      -> true
         }
     }
 
@@ -30,8 +30,8 @@ defclass Option[+T] {
 
     def GetOrElse(other: T): T {
         match this.Value {
-            when v: T       v
-            else            other
+            when v: T -> v
+            else      -> other
         }
     }
 }

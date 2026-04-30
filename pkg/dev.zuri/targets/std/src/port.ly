@@ -3,22 +3,6 @@
 
 import from "/system" { Future }
 
-defconcept Dump[InType, OutType] {
-
-    decl Dump(i: InType): OutType | Error
-}
-
-defconcept Load[InType, OutType] {
-
-    decl Load(o: OutType): InType | Error
-}
-
-defconcept RoundTrip[InType, OutType] {
-
-    decl Dump(i: InType): OutType | Error
-
-    decl Load(o: OutType): InType | Error
-}
 
 /**
  *
@@ -29,11 +13,7 @@ defclass Connection[SendType, RecvType] final {
     val _send: Serde[SendType, Bytes]
     val _recv: Serde[RecvType, Bytes]
 
-    init() {
-        @{
-            Trap("STD_PORT_CONNECTION_CTOR")
-        }
-    }
+    init() {}
 
     def SendRaw(bytes: Bytes): Status {
         @{
@@ -65,6 +45,10 @@ defclass Connection[SendType, RecvType] final {
 /**
  *
  */
-def ConnectLocal[S,R](protocol: Protocol[S,R]): Future[Connection[S,R]] {
+def ConnectLocal[S,R](
+    protocol: Protocol[S,R],
+    endpoint: Url = {},
+    using
+    ): Future[Connection[S,R]] {
 
 }

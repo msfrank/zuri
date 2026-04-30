@@ -235,7 +235,7 @@ FutureRef::clearMembersReachable()
 }
 
 tempo_utils::Status
-future_alloc(
+std_system_future_alloc(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
@@ -248,7 +248,7 @@ future_alloc(
 }
 
 tempo_utils::Status
-future_ctor(
+std_system_future_ctor(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
@@ -265,7 +265,7 @@ future_ctor(
 }
 
 tempo_utils::Status
-future_complete(
+std_system_future_complete(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
@@ -287,7 +287,7 @@ future_complete(
 }
 
 tempo_utils::Status
-future_reject(
+std_system_future_reject(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
@@ -366,7 +366,7 @@ future_reject(
 // }
 
 tempo_utils::Status
-future_then(
+std_system_future_then(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *unused)

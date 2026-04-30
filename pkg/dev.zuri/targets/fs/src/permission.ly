@@ -6,7 +6,7 @@ defenum Permission {
     val Value: Int
 
     init(value: Int) {
-        set this.Value = value
+        this.Value = value
     }
 
     case UserRead(256)
@@ -37,9 +37,15 @@ defclass Permissions final {
         for perm: Permission in mode {
             perms.Set(perm)
         }
-        set this.Mode = perms
+        this.Mode = perms
     }
 
-    init Default() from this(UserRead, UserWrite, GroupRead, GroupWrite, OtherRead, OtherWrite) {
+    init Default() from this(
+        Permission.UserRead,
+        Permission.UserWrite,
+        Permission.GroupRead,
+        Permission.GroupWrite,
+        Permission.OtherRead,
+        Permission.OtherWrite) {
     }
 }
