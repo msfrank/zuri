@@ -1,11 +1,9 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
-#ifndef ZURI_FS_FILE_NATIVE_PATH_H
-#define ZURI_FS_FILE_NATIVE_PATH_H
+#ifndef ZURI_STD_NATIVE_STD_H
+#define ZURI_STD_NATIVE_STD_H
 
 #include <boost/predef.h>
-
-#include <lyric_runtime/native_interface.h>
 
 #if defined(BOOST_OS_LINUX) || defined(BOOST_OS_MACOS)
 
@@ -21,4 +19,4 @@ __declspec(dllexport) const lyric_runtime::NativeInterface *native_init();
 
 #endif
 
-#endif // ZURI_FS_FILE_NATIVE_PATH_H
+#endif // ZURI_STD_NATIVE_STD_H

@@ -1,18 +1,20 @@
 
-set(PLUGIN_NAME       "file")
+set(PLUGIN_NAME       "fs")
 set(PLUGIN_BASENAME   "${PLUGIN_NAME}.${ZURI_PLATFORM_ID}")
 set(PLUGIN_FILENAME   "${PLUGIN_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(PLUGIN_FILEPATH   "${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_FILENAME}")
 
-# build the fs-file plugin
-add_library(fs-file-plugin SHARED
+# build the fs plugin
+add_library(fs-plugin SHARED
     file_ref.cpp
     file_ref.h
-    native_file.cpp
-    native_file.h
+    native_fs.cpp
+    native_fs.h
+    path_ref.cpp
+    path_ref.h
     )
 
-set_target_properties(fs-file-plugin PROPERTIES
+set_target_properties(fs-plugin PROPERTIES
     BUILD_WITH_INSTALL_RPATH TRUE
     LIBRARY_OUTPUT_NAME ${PLUGIN_BASENAME}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -21,12 +23,12 @@ set_target_properties(fs-file-plugin PROPERTIES
 
 # set the plugin RPATH
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set_target_properties(fs-file-plugin PROPERTIES INSTALL_RPATH "@loader_path/../runtime-lib;@loader_path/../lib")
+    set_target_properties(fs-plugin PROPERTIES INSTALL_RPATH "@loader_path/../runtime-lib;@loader_path/../lib")
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    set_target_properties(fs-file-plugin PROPERTIES INSTALL_RPATH "$ORIGIN/../runtime-lib;$ORIGIN/../lib")
+    set_target_properties(fs-plugin PROPERTIES INSTALL_RPATH "$ORIGIN/../runtime-lib;$ORIGIN/../lib")
 endif()
 
-target_link_libraries(fs-file-plugin PUBLIC
+target_link_libraries(fs-plugin PUBLIC
     lyric::lyric_runtime
     Boost::headers
     )

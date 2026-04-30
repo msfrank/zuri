@@ -1,5 +1,5 @@
 
-@@Plugin("/file")
+@@Plugin("/fs")
 
 import from "//std/system" { Future }
 import from "//std/flags" { Flags, IntoFlags }

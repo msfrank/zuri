@@ -3,13 +3,10 @@
 add_subdirectory(plugins)
 
 # get file paths to each plugin
-get_directory_property(ZURI_FS_FILE_PLUGIN_FILEPATH DIRECTORY plugins/file PLUGIN_FILEPATH)
-get_directory_property(ZURI_FS_PATH_PLUGIN_FILEPATH DIRECTORY plugins/path PLUGIN_FILEPATH)
+get_directory_property(ZURI_FS_PLUGIN_FILEPATH DIRECTORY plugins/fs PLUGIN_FILEPATH)
+get_directory_property(ZURI_STD_PLUGIN_FILEPATH DIRECTORY plugins/std PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_COLLECTIONS_PLUGIN_FILEPATH DIRECTORY plugins/collections PLUGIN_FILEPATH)
-get_directory_property(ZURI_STD_LOG_PLUGIN_FILEPATH DIRECTORY plugins/log PLUGIN_FILEPATH)
-get_directory_property(ZURI_STD_SYSTEM_PLUGIN_FILEPATH DIRECTORY plugins/system PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_TEXT_PLUGIN_FILEPATH DIRECTORY plugins/text PLUGIN_FILEPATH)
-get_directory_property(ZURI_STD_TIME_PLUGIN_FILEPATH DIRECTORY plugins/time PLUGIN_FILEPATH)
 
 # the linked project directory
 set(ZURI_PROJECT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/project")
@@ -56,11 +53,9 @@ add_custom_target(zuri-std-package
     DEPENDS
       zuri-build
       generate-project-directory
+      std-plugin
       std-collections-plugin
-      std-log-plugin
-      std-system-plugin
       std-text-plugin
-      std-time-plugin
     )
 
 # set custom target properties for consuming std
@@ -82,8 +77,7 @@ add_custom_target(zuri-fs-package
       zuri-build
       generate-project-directory
       zuri-std-package
-      fs-file-plugin
-      fs-path-plugin
+      fs-plugin
     )
 
 # set custom target properties for consuming fs

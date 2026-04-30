@@ -1,5 +1,5 @@
 
-@@Plugin("/system")
+@@Plugin("/std")
 
 
 import from "/collections" { Vector }

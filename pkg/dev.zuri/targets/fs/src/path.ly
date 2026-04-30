@@ -1,5 +1,5 @@
 
-@@Plugin("/path")
+@@Plugin("/fs")
 
 @AllocatorTrap("FS_PATH_ALLOC")
 defstruct Path {

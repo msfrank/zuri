@@ -2,10 +2,19 @@
 
 #include <tempo_utils/log_stream.h>
 
-#include "native_path.h"
+#include "file_ref.h"
+#include "native_fs.h"
 #include "path_ref.h"
 
-std::array<lyric_runtime::NativeTrap,10> kFsPathTraps = {{
+std::array<lyric_runtime::NativeTrap,18> kFsTraps = {{
+    {fs_file_alloc, "FS_FILE_ALLOC", 0},
+    {fs_file_ctor, "FS_FILE_CTOR", 0},
+    {fs_file_create, "FS_FILE_CREATE", 0},
+    {fs_file_open, "FS_FILE_OPEN", 0},
+    {fs_file_open_or_create, "FS_FILE_OPEN_OR_CREATE", 0},
+    {fs_file_read, "FS_FILE_READ", 0},
+    {fs_file_write, "FS_FILE_WRITE", 0},
+    {fs_file_close, "FS_FILE_CLOSE", 0},
     {fs_path_alloc, "FS_PATH_ALLOC", 0},
     {fs_path_ctor, "FS_PATH_CTOR", 0},
     {fs_path_parent, "FS_PATH_PARENT", 0},
@@ -18,10 +27,10 @@ std::array<lyric_runtime::NativeTrap,10> kFsPathTraps = {{
     {fs_path_to_string, "FS_PATH_TO_STRING", 0},
 }};
 
-class NativeFsPath : public lyric_runtime::NativeInterface {
+class NativeFs : public lyric_runtime::NativeInterface {
 
 public:
-    NativeFsPath() = default;
+    NativeFs() = default;
     bool load(lyric_runtime::BytecodeSegment *segment) const override;
     void unload(lyric_runtime::BytecodeSegment *segment) const override;
     const lyric_runtime::NativeTrap *getTrap(uint32_t index) const override;
@@ -29,31 +38,31 @@ public:
 };
 
 const lyric_runtime::NativeTrap *
-NativeFsPath::getTrap(uint32_t index) const
+NativeFs::getTrap(uint32_t index) const
 {
-    if (kFsPathTraps.size() <= index)
+    if (kFsTraps.size() <= index)
         return nullptr;
-    return &kFsPathTraps.at(index);
+    return &kFsTraps.at(index);
 }
 
 bool
-NativeFsPath::load(lyric_runtime::BytecodeSegment *segment) const
+NativeFs::load(lyric_runtime::BytecodeSegment *segment) const
 {
     return true;
 }
 
 void
-NativeFsPath::unload(lyric_runtime::BytecodeSegment *segment) const
+NativeFs::unload(lyric_runtime::BytecodeSegment *segment) const
 {
 }
 
 uint32_t
-NativeFsPath::numTraps() const
+NativeFs::numTraps() const
 {
-    return kFsPathTraps.size();
+    return kFsTraps.size();
 }
 
-static const NativeFsPath iface;
+static const NativeFs iface;
 
 const lyric_runtime::NativeInterface *native_init()
 {

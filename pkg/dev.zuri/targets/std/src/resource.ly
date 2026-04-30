@@ -1,5 +1,5 @@
 
-@@Plugin("/system")
+@@Plugin("/std")
 
 def ResourceExists(path: String): Bool {
     @{
