@@ -1,5 +1,5 @@
 
-@@Plugin("/collections")
+@@Plugin("/std")
 
 def _ElementEquals[T](lhs: T, rhs: T, eq: Equality[T,T]): Bool {
     eq.Equals(lhs, rhs)

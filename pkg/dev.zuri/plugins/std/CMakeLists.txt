@@ -10,6 +10,11 @@ add_library(std-plugin SHARED
     datetime_ref.h
     future_ref.cpp
     future_ref.h
+    hashmap_key.h
+    hashmap_ref.cpp
+    hashmap_ref.h
+    hashmap_traps.cpp
+    hashmap_traps.h
     instant_ref.cpp
     instant_ref.h
     native_std.cpp
@@ -26,8 +31,20 @@ add_library(std-plugin SHARED
     time_traps.h
     timezone_ref.cpp
     timezone_ref.h
+    treemap_ref.cpp
+    treemap_ref.h
+    treemap_traps.cpp
+    treemap_traps.h
+    treeset_ref.cpp
+    treeset_ref.h
+    treeset_traps.cpp
+    treeset_traps.h
     url_ref.cpp
     url_ref.h
+    vector_ref.cpp
+    vector_ref.h
+    vector_traps.cpp
+    vector_traps.h
     work_queue_ref.cpp
     work_queue_ref.h
     )

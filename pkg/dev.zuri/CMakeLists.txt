@@ -5,7 +5,6 @@ add_subdirectory(plugins)
 # get file paths to each plugin
 get_directory_property(ZURI_FS_PLUGIN_FILEPATH DIRECTORY plugins/fs PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_PLUGIN_FILEPATH DIRECTORY plugins/std PLUGIN_FILEPATH)
-get_directory_property(ZURI_STD_COLLECTIONS_PLUGIN_FILEPATH DIRECTORY plugins/collections PLUGIN_FILEPATH)
 get_directory_property(ZURI_STD_TEXT_PLUGIN_FILEPATH DIRECTORY plugins/text PLUGIN_FILEPATH)
 
 # the linked project directory
@@ -54,7 +53,6 @@ add_custom_target(zuri-std-package
       zuri-build
       generate-project-directory
       std-plugin
-      std-collections-plugin
       std-text-plugin
     )
 

@@ -21,12 +21,6 @@
                     "sourceBasePath": "targets/std/src"
                 },
                 "tasks": {
-                    "provide_plugin:/collections": {
-                        "existingPlugin": {
-                            "type": "ExternalFile",
-                            "externalFilePath": "@ZURI_STD_COLLECTIONS_PLUGIN_FILEPATH@",
-                        }
-                    },
                     "provide_plugin:/std": {
                         "existingPlugin": {
                             "type": "ExternalFile",
