@@ -44,7 +44,7 @@
 //     lyric_runtime::InterpreterStatus status;
 //     auto descriptor = segmentManager->resolveDescriptor(segment,
 //         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-//     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::DESCRIPTOR);
+//     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
 //     TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
 //     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
 //     TU_ASSERT(vtable != nullptr);
@@ -80,7 +80,7 @@ std_system_await(
 
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::Ref);
 
     auto *fut = cell.data.ref;
     fut->awaitFuture(scheduler);
@@ -100,7 +100,7 @@ std_system_get_result(
 
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::Ref);
     auto *ref = cell.data.ref;
 
     lyric_runtime::DataCell result;
@@ -127,7 +127,7 @@ public:
     void setReachable() override
     {
         switch (m_result.type) {
-            case lyric_runtime::DataCellType::REF:
+            case lyric_runtime::DataCellType::Ref:
                 m_result.data.ref->setReachable();
                 break;
             default:
@@ -151,7 +151,7 @@ std_system_sleep(
 
     TU_ASSERT(frame.numArguments() == 2);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::I64);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::Int64);
     uint64_t timeout = cell.data.i64 > 0? cell.data.i64 : 0;
 
     auto *segmentManager = state->segmentManager();
@@ -165,7 +165,7 @@ std_system_sleep(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
     TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);
@@ -228,7 +228,7 @@ std_system_spawn(
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::Ref);
     auto *closure = cell.data.ref;
 
     auto *segmentManager = state->segmentManager();
@@ -242,7 +242,7 @@ std_system_spawn(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
     TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);

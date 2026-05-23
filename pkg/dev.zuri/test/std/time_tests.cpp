@@ -32,7 +32,7 @@ TEST_F(StdTime, EvaluateNow)
     auto after = absl::Now();
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        MatchesDataCellType(lyric_runtime::DataCellType::I64))));
+        MatchesDataCellType(lyric_runtime::DataCellType::Int64))));
 
     auto epochMillis = result.getResult().getInterpreterExit().mainReturn.data.i64;
     ASSERT_LE (ToUnixMillis(before), epochMillis);

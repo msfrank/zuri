@@ -134,12 +134,12 @@ TreeMapRef::setMembersReachable()
 {
     for (auto iterator = m_map.begin(); iterator != m_map.end(); iterator++) {
         auto &key = iterator->first;
-        if (key.type == lyric_runtime::DataCellType::REF) {
+        if (key.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (key.data.ref != nullptr);
             key.data.ref->setReachable();
         }
         auto &value = iterator->second;
-        if (value.type == lyric_runtime::DataCellType::REF) {
+        if (value.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (value.data.ref != nullptr);
             value.data.ref->setReachable();
         }
@@ -151,12 +151,12 @@ TreeMapRef::clearMembersReachable()
 {
     for (auto iterator = m_map.begin(); iterator != m_map.end(); iterator++) {
         auto &key = iterator->first;
-        if (key.type == lyric_runtime::DataCellType::REF) {
+        if (key.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (key.data.ref != nullptr);
             key.data.ref->clearReachable();
         }
         auto &value = iterator->second;
-        if (value.type == lyric_runtime::DataCellType::REF) {
+        if (value.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (value.data.ref != nullptr);
             value.data.ref->clearReachable();
         }
@@ -198,7 +198,7 @@ TreeMapComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
     if (compareResult.isStatus())
         return false;
     auto ret = compareResult.getResult();
-    if (ret.type == lyric_runtime::DataCellType::I64)
+    if (ret.type == lyric_runtime::DataCellType::Int64)
         return ret.data.i64 < 0;
     return false;
 }

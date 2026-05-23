@@ -59,10 +59,10 @@ std_time_timezone_ctor(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 1);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::I64);
+    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Int64);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<TimezoneRef *>(receiver.data.ref);
 
     int offsetSeconds = 0;

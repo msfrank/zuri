@@ -110,12 +110,12 @@ HashMapRef::setMembersReachable()
 {
     for (auto iterator = m_map.begin(); iterator != m_map.end(); iterator++) {
         auto &key = iterator->first;
-        if (key.cell.type == lyric_runtime::DataCellType::REF) {
+        if (key.cell.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (key.cell.data.ref != nullptr);
             key.cell.data.ref->setReachable();
         }
         auto &value = iterator->second;
-        if (value.type == lyric_runtime::DataCellType::REF) {
+        if (value.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (value.data.ref != nullptr);
             value.data.ref->setReachable();
         }
@@ -127,12 +127,12 @@ HashMapRef::clearMembersReachable()
 {
     for (auto iterator = m_map.begin(); iterator != m_map.end(); iterator++) {
         auto &key = iterator->first;
-        if (key.cell.type == lyric_runtime::DataCellType::REF) {
+        if (key.cell.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (key.cell.data.ref != nullptr);
             key.cell.data.ref->clearReachable();
         }
         auto &value = iterator->second;
-        if (value.type == lyric_runtime::DataCellType::REF) {
+        if (value.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (value.data.ref != nullptr);
             value.data.ref->clearReachable();
         }
@@ -175,7 +175,7 @@ HashMapEq::operator()(const HashMapKey& lhs, const HashMapKey& rhs) const
     if (equalsResult.isStatus())
         return false;
     auto ret = equalsResult.getResult();
-    return ret.type == lyric_runtime::DataCellType::BOOL && ret.data.b;
+    return ret.type == lyric_runtime::DataCellType::Bool && ret.data.b;
 }
 
 HashMapIterator::HashMapIterator(const lyric_runtime::VirtualTable *vtable)

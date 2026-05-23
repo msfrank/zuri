@@ -21,47 +21,47 @@ template <typename H>
 H AbslHashValue(H state, const HashMapKey &key) {
     const auto &cell = key.cell;
     switch (cell.type) {
-        case lyric_runtime::DataCellType::INVALID:
-        case lyric_runtime::DataCellType::UNDEF:
+        case lyric_runtime::DataCellType::Invalid:
+        case lyric_runtime::DataCellType::Undef:
             return H::combine(std::move(state), 0);
-        case lyric_runtime::DataCellType::NIL:
+        case lyric_runtime::DataCellType::Nil:
             return H::combine(std::move(state), 1);
-        case lyric_runtime::DataCellType::BOOL:
+        case lyric_runtime::DataCellType::Bool:
             return H::combine(std::move(state), cell.data.b);
-        case lyric_runtime::DataCellType::CHAR32:
+        case lyric_runtime::DataCellType::Char32:
             return H::combine(std::move(state), cell.data.chr);
-        case lyric_runtime::DataCellType::I64:
+        case lyric_runtime::DataCellType::Int64:
             return H::combine(std::move(state), cell.data.i64);
-        case lyric_runtime::DataCellType::DBL:
+        case lyric_runtime::DataCellType::Float64:
             return H::combine(std::move(state), cell.data.dbl);
-        case lyric_runtime::DataCellType::REF:
+        case lyric_runtime::DataCellType::Ref:
             cell.data.ref->hashValue(absl::HashState::Create(&state));
             return std::move(state);
-        case lyric_runtime::DataCellType::STRING:
+        case lyric_runtime::DataCellType::String:
             cell.data.str->hashValue(absl::HashState::Create(&state));
             return std::move(state);
-        case lyric_runtime::DataCellType::BYTES:
+        case lyric_runtime::DataCellType::Bytes:
             cell.data.bytes->hashValue(absl::HashState::Create(&state));
             return std::move(state);
-        case lyric_runtime::DataCellType::STATUS:
+        case lyric_runtime::DataCellType::Status:
             cell.data.status->hashValue(absl::HashState::Create(&state));
             return std::move(state);
-        case lyric_runtime::DataCellType::NAMESPACE:
+        case lyric_runtime::DataCellType::Namespace:
             cell.data.ns->hashValue(absl::HashState::Create(&state));
             return std::move(state);
-        case lyric_runtime::DataCellType::PROTOCOL:
+        case lyric_runtime::DataCellType::Protocol:
             cell.data.protocol->hashValue(absl::HashState::Create(&state));
             return std::move(state);
-        case lyric_runtime::DataCellType::REST:
+        case lyric_runtime::DataCellType::Rest:
             cell.data.rest->hashValue(absl::HashState::Create(&state));
             return std::move(state);
 
-        case lyric_runtime::DataCellType::TYPE:
+        case lyric_runtime::DataCellType::Type:
             return H::combine(std::move(state),
                 cell.data.type->getSegmentIndex(),
                 cell.data.type->getDescriptorIndex());
 
-        case lyric_runtime::DataCellType::DESCRIPTOR:
+        case lyric_runtime::DataCellType::Descriptor:
             return H::combine(std::move(state),
                 cell.data.descriptor->getSegmentIndex(),
                 cell.data.descriptor->getLinkageSection(),

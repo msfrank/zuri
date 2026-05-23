@@ -122,7 +122,7 @@ void
 TreeSetRef::setMembersReachable()
 {
     for (auto &value : m_set) {
-        if (value.type == lyric_runtime::DataCellType::REF) {
+        if (value.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (value.data.ref != nullptr);
             value.data.ref->setReachable();
         }
@@ -133,7 +133,7 @@ void
 TreeSetRef::clearMembersReachable()
 {
     for (auto &value : m_set) {
-        if (value.type == lyric_runtime::DataCellType::REF) {
+        if (value.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (value.data.ref != nullptr);
             value.data.ref->clearReachable();
         }
@@ -175,7 +175,7 @@ TreeSetComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
     if (compareResult.isStatus())
         return false;
     auto ret = compareResult.getResult();
-    if (ret.type == lyric_runtime::DataCellType::I64)
+    if (ret.type == lyric_runtime::DataCellType::Int64)
         return ret.data.i64 < 0;
     return false;
 }

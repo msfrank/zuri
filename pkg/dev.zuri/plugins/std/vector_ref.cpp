@@ -119,7 +119,7 @@ void
 VectorRef::setMembersReachable()
 {
     for (auto &cell : m_seq) {
-        if (cell.type == lyric_runtime::DataCellType::REF) {
+        if (cell.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (cell.data.ref != nullptr);
             cell.data.ref->setReachable();
         }
@@ -130,7 +130,7 @@ void
 VectorRef::clearMembersReachable()
 {
     for (auto &cell : m_seq) {
-        if (cell.type == lyric_runtime::DataCellType::REF) {
+        if (cell.type == lyric_runtime::DataCellType::Ref) {
             TU_ASSERT (cell.data.ref != nullptr);
             cell.data.ref->clearReachable();
         }

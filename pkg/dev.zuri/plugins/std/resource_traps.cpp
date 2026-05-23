@@ -23,7 +23,7 @@ std_resource_exists(
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::STRING);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::String);
     auto *instance = cell.data.str;
 
     lyric_runtime::DataCell result;
@@ -69,7 +69,7 @@ std_resource_load(
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::STRING);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::String);
     auto *instance = cell.data.str;
 
     lyric_runtime::DataCell result;

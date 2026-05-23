@@ -90,7 +90,7 @@ void
 PortRef::setMembersReachable()
 {
     for (auto &value : m_values) {
-        if (value.type == lyric_runtime::DataCellType::REF)
+        if (value.type == lyric_runtime::DataCellType::Ref)
             value.data.ref->setReachable();
     }
     //if (m_fut)
@@ -101,7 +101,7 @@ void
 PortRef::clearMembersReachable()
 {
     for (auto &value : m_values) {
-        if (value.type == lyric_runtime::DataCellType::REF)
+        if (value.type == lyric_runtime::DataCellType::Ref)
             value.data.ref->clearReachable();
     }
     //if (m_fut)
@@ -133,7 +133,7 @@ std_port_send(
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
-    if (arg0.type != lyric_runtime::DataCellType::BYTES)
+    if (arg0.type != lyric_runtime::DataCellType::Bytes)
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid bytes");
     auto *bytes = arg0.data.bytes;
@@ -145,7 +145,7 @@ std_port_send(
     auto payload = tempo_utils::MemoryBytes::create(std::move(payloadBytes));
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<PortRef *>(receiver.data.ref);
     auto ret = instance->send(payload);
     currentCoro->pushData(lyric_runtime::DataCell(ret));
@@ -214,7 +214,7 @@ std_port_receive(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<PortRef *>(receiver.data.ref);
 
     //
@@ -225,7 +225,7 @@ std_port_receive(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
     TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);

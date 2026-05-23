@@ -28,16 +28,16 @@ hashmap_ctor(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
 
     TU_ASSERT (frame.numArguments() == 1);
     const auto &ctxArgument = frame.getArgument(0);
-    TU_ASSERT(ctxArgument.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(ctxArgument.type == lyric_runtime::DataCellType::Ref);
 
     lyric_runtime::DataCell equalsCall;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(equalsCall));
-    TU_ASSERT (equalsCall.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (equalsCall.type == lyric_runtime::DataCellType::Descriptor);
     TU_ASSERT (equalsCall.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Call);
 
     instance->initialize(HashMapEq(interp, state, ctxArgument, equalsCall));
@@ -58,7 +58,7 @@ hashmap_size(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->size())));
     return {};
@@ -78,7 +78,7 @@ hashmap_contains(
     const auto &key = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(instance->contains(key)));
     return {};
@@ -98,7 +98,7 @@ hashmap_get(
     const auto &key = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     currentCoro->pushData(instance->get(key));
     return {};
@@ -119,7 +119,7 @@ hashmap_put(
     const auto &val = frame.getArgument(1);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     auto prev = instance->put(key, val);
     currentCoro->pushData(prev);
@@ -140,7 +140,7 @@ hashmap_remove(
     const auto &key = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     auto prev = instance->remove(key);
     currentCoro->pushData(prev);
@@ -160,7 +160,7 @@ hashmap_clear(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
     instance->clear();
     return {};
@@ -178,11 +178,11 @@ hashmap_iterate(
 
     lyric_runtime::DataCell cell;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(cell));
-    TU_ASSERT (cell.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (cell.type == lyric_runtime::DataCellType::Descriptor);
     TU_ASSERT (cell.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapRef *>(receiver.data.ref);
 
     lyric_runtime::InterpreterStatus status;
@@ -221,7 +221,7 @@ hashmap_iterator_valid(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapIterator *>(receiver.data.ref);
     currentCoro->pushData(lyric_runtime::DataCell(instance->valid()));
 
@@ -241,7 +241,7 @@ hashmap_iterator_get_key(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapIterator *>(receiver.data.ref);
     currentCoro->pushData(instance->key());
 
@@ -261,7 +261,7 @@ hashmap_iterator_get_value(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapIterator *>(receiver.data.ref);
     currentCoro->pushData(instance->value());
 
@@ -281,7 +281,7 @@ hashmap_iterator_next(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<HashMapIterator *>(receiver.data.ref);
     instance->next();
 

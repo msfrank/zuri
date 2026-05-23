@@ -261,12 +261,12 @@ fs_file_ctor(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
     TU_ASSERT (frame.numArguments() > 0);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::STRING);
+    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::String);
     auto *str = arg0.data.str;
 
     std::filesystem::path path(str->getString());
@@ -288,12 +288,12 @@ fs_file_create(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 4);
     auto arg2 = frame.getArgument(2);
-    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::Bool);
     auto arg3 = frame.getArgument(3);
-    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::Bool);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
     int flags = UV_FS_O_CREAT | UV_FS_O_EXCL;
@@ -301,14 +301,14 @@ fs_file_create(
 
     lyric_runtime::DataCell permissions;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(permissions));
-    TU_ASSERT (permissions.type == lyric_runtime::DataCellType::I64);
+    TU_ASSERT (permissions.type == lyric_runtime::DataCellType::Int64);
     mode = static_cast<int>(permissions.data.i64);
 
     lyric_runtime::DataCell canRead, canWrite;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(canWrite));
-    TU_ASSERT (canWrite.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (canWrite.type == lyric_runtime::DataCellType::Bool);
     TU_RETURN_IF_NOT_OK (currentCoro->popData(canRead));
-    TU_ASSERT (canRead.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (canRead.type == lyric_runtime::DataCellType::Bool);
 
     if (canRead.data.b == true) {
         flags |= canWrite.data.b == true? UV_FS_O_RDWR : UV_FS_O_RDONLY;
@@ -347,14 +347,14 @@ fs_file_open(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 4);
     auto arg1 = frame.getArgument(1);
-    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::Bool);
     auto arg2 = frame.getArgument(2);
-    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::Bool);
     auto arg3 = frame.getArgument(3);
-    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::Bool);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
     int flags = 0;
@@ -403,14 +403,14 @@ fs_file_open_or_create(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 5);
     auto arg2 = frame.getArgument(2);
-    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::Bool);
     auto arg3 = frame.getArgument(3);
-    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::Bool);
     auto arg4 = frame.getArgument(4);
-    TU_ASSERT (arg4.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (arg4.type == lyric_runtime::DataCellType::Bool);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
     int flags = UV_FS_O_CREAT;
@@ -418,14 +418,14 @@ fs_file_open_or_create(
 
     lyric_runtime::DataCell permissions;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(permissions));
-    TU_ASSERT (permissions.type == lyric_runtime::DataCellType::I64);
+    TU_ASSERT (permissions.type == lyric_runtime::DataCellType::Int64);
     mode = static_cast<int>(permissions.data.i64);
 
     lyric_runtime::DataCell canRead, canWrite;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(canWrite));
-    TU_ASSERT (canWrite.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (canWrite.type == lyric_runtime::DataCellType::Bool);
     TU_RETURN_IF_NOT_OK (currentCoro->popData(canRead));
-    TU_ASSERT (canRead.type == lyric_runtime::DataCellType::BOOL);
+    TU_ASSERT (canRead.type == lyric_runtime::DataCellType::Bool);
 
     if (canRead.data.b == true) {
         flags |= canWrite.data.b == true? UV_FS_O_RDWR : UV_FS_O_RDONLY;
@@ -468,16 +468,16 @@ fs_file_read(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
     TU_ASSERT (frame.numArguments() == 1);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::I64);
+    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Int64);
 
     lyric_runtime::DataCell *data;
     TU_RETURN_IF_NOT_OK (currentCoro->peekData(&data));
-    TU_ASSERT (data->type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT (data->type == lyric_runtime::DataCellType::Ref);
     auto *fut = data->data.ref;
 
     if (arg0.data.i64 < 0) {
@@ -507,20 +507,20 @@ fs_file_write(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
     TU_ASSERT (frame.numArguments() == 2);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::BYTES);
+    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Bytes);
     auto *bytes = arg0.data.bytes;
     auto arg1 = frame.getArgument(1);
-    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::I64);
+    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::Int64);
     auto offset = arg1.data.i64;
 
     lyric_runtime::DataCell *data;
     TU_RETURN_IF_NOT_OK (currentCoro->peekData(&data));
-    TU_ASSERT (data->type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT (data->type == lyric_runtime::DataCellType::Ref);
     auto *fut = data->data.ref;
 
     // ensure any negative offset is set to -1 specifically
@@ -556,7 +556,7 @@ fs_file_close(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FileRef *>(receiver.data.ref);
 
     auto status = instance->close(systemScheduler);

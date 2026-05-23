@@ -58,10 +58,10 @@ std_url_equality_equals(
 
     TU_ASSERT (frame.numArguments() == 2);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT(arg0.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(arg0.type == lyric_runtime::DataCellType::Ref);
     auto *lhs = static_cast<UrlRef *>(arg0.data.ref);
     auto arg1 = frame.getArgument(0);
-    TU_ASSERT(arg1.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(arg1.type == lyric_runtime::DataCellType::Ref);
     auto *rhs = static_cast<UrlRef *>(arg1.data.ref);
 
     lyric_runtime::DataCell result(lhs->getUrl() == rhs->getUrl());
@@ -83,7 +83,7 @@ std_url_to_string(
 
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<UrlRef *>(receiver.data.ref);
     auto url = instance->getUrl();
 
@@ -105,7 +105,7 @@ std_url_parse_url(
 
     TU_ASSERT(frame.numArguments() >= 1);
     const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::STRING);
+    TU_ASSERT(cell.type == lyric_runtime::DataCellType::String);
 
     // get the timezone name argument
     std::string urlString;
@@ -125,7 +125,7 @@ std_url_parse_url(
         lyric_runtime::InterpreterStatus status;
         auto descriptor = segmentManager->resolveDescriptor(segment,
             symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-        TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::DESCRIPTOR);
+        TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
         TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Struct);
         const auto *vtable = segmentManager->resolveStructVirtualTable(descriptor, status);
         TU_ASSERT(vtable != nullptr);

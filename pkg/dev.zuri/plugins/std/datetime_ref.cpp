@@ -74,11 +74,11 @@ std_time_datetime_ctor(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 2);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Ref);
     auto arg1 = frame.getArgument(1);
-    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::Ref);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
 
     auto instant = static_cast<InstantRef *>(arg0.data.ref)->getInstant();
     auto tz = static_cast<TimezoneRef *>(arg1.data.ref)->getTimeZone();

@@ -30,7 +30,7 @@ TEST_F(StdProcess, EvaluateProgramId)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        lyric_test::matchers::MatchesDataCellType(lyric_runtime::DataCellType::STRING))));
+        lyric_test::matchers::MatchesDataCellType(lyric_runtime::DataCellType::String))));
     TU_CONSOLE_OUT << result.getResult().getInterpreterExit().mainReturn;
 }
 
@@ -42,7 +42,7 @@ TEST_F(StdProcess, EvaluateProgramMain)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        lyric_test::matchers::MatchesDataCellType(lyric_runtime::DataCellType::STRING))));
+        lyric_test::matchers::MatchesDataCellType(lyric_runtime::DataCellType::String))));
     auto mainReturn = result.getResult().getInterpreterExit().mainReturn;
     TU_CONSOLE_OUT << mainReturn;
 

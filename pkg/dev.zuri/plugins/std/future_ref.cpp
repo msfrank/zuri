@@ -217,7 +217,7 @@ FutureRef::setMembersReachable()
         source->setReachable();
     }
     auto result = m_promise->getResult();
-    if (result.type == lyric_runtime::DataCellType::REF) {
+    if (result.type == lyric_runtime::DataCellType::Ref) {
         result.data.ref->setReachable();
     }
 }
@@ -229,7 +229,7 @@ FutureRef::clearMembersReachable()
         source->clearReachable();
     }
     auto result = m_promise->getResult();
-    if (result.type == lyric_runtime::DataCellType::REF) {
+    if (result.type == lyric_runtime::DataCellType::Ref) {
         result.data.ref->clearReachable();
     }
 }
@@ -258,7 +258,7 @@ std_system_future_ctor(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     //auto *instance = static_cast<FutureRef *>(receiver.data.ref);
 
     return {};
@@ -278,7 +278,7 @@ std_system_future_complete(
     const auto arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FutureRef *>(receiver.data.ref);
     TU_RETURN_IF_NOT_OK (instance->complete(arg0));
 
@@ -300,7 +300,7 @@ std_system_future_reject(
     const auto arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<FutureRef *>(receiver.data.ref);
     TU_RETURN_IF_NOT_OK (instance->reject(arg0));
 
@@ -341,7 +341,7 @@ std_system_future_reject(
 //     auto result = runClosureResult.getResult();
 //
 //     // complete or reject the promise based on the fn result
-//     if (result.type == lyric_runtime::DataCellType::REF
+//     if (result.type == lyric_runtime::DataCellType::Ref
 //         && result.data.ref->errorStatusCode() != tempo_utils::StatusCode::kOk) {
 //         promise->reject(result);
 //     } else {
@@ -380,7 +380,7 @@ std_system_future_then(
     // const auto arg0 = frame.getArgument(0);
     //
     // auto receiver = frame.getReceiver();
-    // TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    // TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     // auto *instance = static_cast<FutureRef *>(receiver.data.ref);
     //
     // // construct the dependent future

@@ -72,7 +72,7 @@ void
 WorkQueueRef::setMembersReachable()
 {
     for (auto &element : m_elements) {
-        if (element.type == lyric_runtime::DataCellType::REF) {
+        if (element.type == lyric_runtime::DataCellType::Ref) {
             element.data.ref->setReachable();
         }
     }
@@ -85,7 +85,7 @@ void
 WorkQueueRef::clearMembersReachable()
 {
     for (auto &element : m_elements) {
-        if (element.type == lyric_runtime::DataCellType::REF) {
+        if (element.type == lyric_runtime::DataCellType::Ref) {
             element.data.ref->clearReachable();
         }
     }
@@ -121,7 +121,7 @@ std_system_work_queue_push(
     const auto &arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<WorkQueueRef *>(receiver.data.ref);
     auto ret = instance->push(arg0);
     currentCoro->pushData(lyric_runtime::DataCell(ret));
@@ -152,7 +152,7 @@ std_system_work_queue_pop(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<WorkQueueRef *>(receiver.data.ref);
 
     // resolve the virtual table for Future
@@ -163,7 +163,7 @@ std_system_work_queue_pop(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::DESCRIPTOR);
+    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
     TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);

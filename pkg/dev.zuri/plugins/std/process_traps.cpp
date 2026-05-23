@@ -47,7 +47,7 @@ std_process_get_argument(
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &idx = frame.getArgument(0);
-    TU_ASSERT(idx.type == lyric_runtime::DataCellType::I64);
+    TU_ASSERT(idx.type == lyric_runtime::DataCellType::Int64);
 
     auto argument = state->getMainArgument(idx.data.i64);
     currentCoro->pushData(argument);

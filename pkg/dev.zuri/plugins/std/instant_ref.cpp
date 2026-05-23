@@ -64,7 +64,7 @@ std_time_instant_ctor(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<InstantRef *>(receiver.data.ref);
     instance->setInstant(absl::UnixEpoch());
 
@@ -83,7 +83,7 @@ std_time_instant_to_epoch_millis(
 
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::REF);
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
     auto *instance = static_cast<InstantRef *>(receiver.data.ref);
     currentCoro->pushData(instance->toEpochMillis());
     return {};
