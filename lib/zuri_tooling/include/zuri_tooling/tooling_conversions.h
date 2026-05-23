@@ -44,7 +44,7 @@ namespace zuri_tooling {
             : EnumTParser({
             {"Memory", CacheType::Memory},
             {"Filesystem", CacheType::Filesystem},
-            {"RocksDb", CacheType::RocksDb}}, defaultMode)
+            }, defaultMode)
         {}
         CacheTypeParser() : CacheTypeParser(CacheType::Memory) {}
     };

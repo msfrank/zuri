@@ -11,7 +11,6 @@ namespace zuri_tooling {
     enum class CacheType {
         Memory,
         Filesystem,
-        RocksDb,
         Custom,
     };
 

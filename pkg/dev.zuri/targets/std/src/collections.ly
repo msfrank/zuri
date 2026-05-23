@@ -122,13 +122,14 @@ defclass HashMap[K,+V] {
         }
     }
 
-    impl Iterable[Tuple2[K,V]] {
+    impl Iterable[HashMap[K,V]] {
+        alias IteratorT using Iterable[1] = Tuple2[K,V]
 
-        def Iterate(): Iterator[Tuple2[K,V]] {
+        def Iterate(source: HashMap[K,V]): Iterator[IteratorT] {
             @{
                 LoadData(#HashMapIterator)
                 Trap("STD_COLLECTIONS_HASHMAP_ITERABLE_ITERATE")
-                PushResult(typeof Iterator[Tuple2[K,V]])
+                PushResult(typeof Iterator[IteratorT])
             }
         }
     }
@@ -220,13 +221,14 @@ defclass TreeMap[K,+V] {
         }
     }
 
-    impl Iterable[Tuple2[K,V]] {
+    impl Iterable[TreeMap[K,V]] {
+        alias IteratorT using Iterable[1] = Tuple2[K,V]
 
-        def Iterate(): Iterator[Tuple2[K,V]] {
+        def Iterate(source: TreeMap[K,V]): Iterator[IteratorT] {
             @{
                 LoadData(#TreeMapIterator)
                 Trap("STD_COLLECTIONS_TREEMAP_ITERABLE_ITERATE")
-                PushResult(typeof Iterator[Tuple2[K,V]])
+                PushResult(typeof Iterator[IteratorT])
             }
         }
     }
@@ -304,13 +306,14 @@ defclass TreeSet[+T] {
         }
     }
 
-    impl Iterable[T] {
+    impl Iterable[TreeSet[T]] {
+        alias IteratorT using Iterable[1] = T
 
-        def Iterate(): Iterator[T] {
+        def Iterate(source: TreeSet[T]): Iterator[T] {
             @{
                 LoadData(#TreeSetIterator)
                 Trap("STD_COLLECTIONS_TREESET_ITERABLE_ITERATE")
-                PushResult(typeof Iterator[T])
+                PushResult(typeof Iterator[IteratorT])
             }
         }
     }
@@ -392,13 +395,14 @@ defclass Vector[+T] {
         }
     }
 
-    impl Iterable[T] {
+    impl Iterable[Vector[T]] {
+        alias IteratorT using Iterable[1] = T
 
-        def Iterate(): Iterator[T] {
+        def Iterate(source: Vector[T]): Iterator[T] {
             @{
                 LoadData(#VectorIterator)
                 Trap("STD_COLLECTIONS_VECTOR_ITERABLE_ITERATE")
-                PushResult(typeof Iterator[T])
+                PushResult(typeof Iterator[IteratorT])
             }
         }
     }

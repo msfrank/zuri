@@ -6,7 +6,6 @@
 #include <lyric_build/local_filesystem.h>
 #include <lyric_build/lyric_builder.h>
 #include <lyric_build/memory_cache.h>
-#include <lyric_build/rocksdb_cache.h>
 #include <lyric_runtime/chain_loader.h>
 #include <tempo_command/command.h>
 #include <tempo_config/base_conversions.h>
@@ -213,9 +212,6 @@ zuri_build::zuri_build(int argc, const char *argv[])
             break;
         case zuri_tooling::CacheType::Filesystem:
             artifactCache = std::make_shared<lyric_build::FilesystemCache>();
-            break;
-        case zuri_tooling::CacheType::RocksDb:
-            artifactCache = std::make_shared<lyric_build::RocksdbCache>(/* copyReadBuffers= */ false);
             break;
         default:
             return tempo_command::CommandStatus::forCondition(

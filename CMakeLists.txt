@@ -218,9 +218,6 @@ find_package(mustache REQUIRED)
 # find required ICU dependency
 find_package(icu REQUIRED)
 
-# find required Rocksdb dependency
-find_package(rocksdb REQUIRED)
-
 # find required Sqlite dependency
 find_package(sqlite REQUIRED)
 
