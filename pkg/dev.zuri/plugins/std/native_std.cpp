@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
+#include "conn_traps.h"
+#include "connection_ref.h"
 #include "datetime_ref.h"
 #include "future_ref.h"
 #include "hashmap_traps.h"
@@ -29,13 +31,9 @@ std::array<lyric_runtime::NativeTrap,88> kStdTraps = {{
     {std_system_future_complete, "STD_SYSTEM_FUTURE_COMPLETE", 0},
     {std_system_future_reject, "STD_SYSTEM_FUTURE_REJECT", 0},
     {std_system_future_then, "STD_SYSTEM_FUTURE_THEN", 0},
-    {std_port_alloc, "STD_SYSTEM_PORT_ALLOC", 0},
-    {std_port_receive, "STD_SYSTEM_PORT_RECEIVE", 0},
-    {std_port_send, "STD_SYSTEM_PORT_SEND", 0},
     {std_system_work_queue_alloc, "STD_SYSTEM_WORK_QUEUE_ALLOC", 0},
     {std_system_work_queue_pop, "STD_SYSTEM_WORK_QUEUE_POP", 0},
     {std_system_work_queue_push, "STD_SYSTEM_WORK_QUEUE_PUSH", 0},
-    {nullptr, "STD_SYSTEM_ACQUIRE", 0},
     {std_system_await, "STD_SYSTEM_AWAIT", 0},
     {std_system_get_result, "STD_SYSTEM_GET_RESULT", 0},
     {std_system_sleep, "STD_SYSTEM_SLEEP", 0},
@@ -105,7 +103,11 @@ std::array<lyric_runtime::NativeTrap,88> kStdTraps = {{
     {vector_iterate, "STD_COLLECTIONS_VECTOR_ITERABLE_ITERATE", 0},
     {vector_iterator_alloc, "STD_COLLECTIONS_VECTOR_ITERATOR_ALLOC", 0},
     {vector_iterator_next, "STD_COLLECTIONS_VECTOR_ITERATOR_NEXT", 0},
-    {vector_iterator_valid, "STD_COLLECTIONS_VECTOR_ITERATOR_VALID", 0}
+    {vector_iterator_valid, "STD_COLLECTIONS_VECTOR_ITERATOR_VALID", 0},
+    {std_conn_make_connection, "STD_CONN_MAKE_CONNECTION", 0},
+    {std_connection_alloc, "STD_CONN_CONNECTION_ALLOC", 0},
+    {std_connection_send, "STD_CONN_CONNECTION_SEND", 0},
+    {std_connection_receive, "STD_CONN_CONNECTION_RECEIVE", 0},
 }};
 
 class NativeStd : public lyric_runtime::NativeInterface {

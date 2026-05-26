@@ -6,6 +6,10 @@ set(PLUGIN_FILEPATH   "${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_FILENAME}")
 
 # build the std plugin
 add_library(std-plugin SHARED
+    conn_traps.cpp
+    conn_traps.h
+    connection_ref.cpp
+    connection_ref.h
     datetime_ref.cpp
     datetime_ref.h
     future_ref.cpp

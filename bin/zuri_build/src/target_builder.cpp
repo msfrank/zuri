@@ -128,7 +128,7 @@ zuri_build::TargetBuilder::buildProgramTarget(
     TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTarget(collectModules, overrides));
 
     auto targetComputation = targetComputationSet.getTarget(collectModules);
-    if (targetComputation.getState().getState() != lyric_build::TaskState::COMPLETED) {
+    if (targetComputation.getState().getState() != lyric_build::TaskState::Completed) {
         auto diagnostics = targetComputationSet.getDiagnostics();
         diagnostics->printDiagnostics();
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,
@@ -198,7 +198,7 @@ zuri_build::TargetBuilder::buildLibraryTarget(
     TU_ASSIGN_OR_RETURN (targetComputationSet, m_builder->computeTarget(collectModules, overrides));
 
     auto targetComputation = targetComputationSet.getTarget(collectModules);
-    if (targetComputation.getState().getState() != lyric_build::TaskState::COMPLETED) {
+    if (targetComputation.getState().getState() != lyric_build::TaskState::Completed) {
         auto diagnostics = targetComputationSet.getDiagnostics();
         diagnostics->printDiagnostics();
         return tempo_command::CommandStatus::forCondition(tempo_command::CommandCondition::kCommandError,

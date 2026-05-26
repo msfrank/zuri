@@ -46,6 +46,7 @@ add_custom_target(zuri-std-package
       zuri-build
         -P ${ZURI_PROJECT_DIRECTORY}
         -I ${CMAKE_BINARY_DIR}
+        -J 1
         "std"
     WORKING_DIRECTORY
       ${CMAKE_CURRENT_BINARY_DIR}

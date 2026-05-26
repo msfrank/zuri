@@ -61,24 +61,24 @@ defclass WorkQueue[T] {
 }
 
 
-def Await[T](fut: Future[T]): T | Status {
+def Await[T](fut: Future[T]): T | Error {
     @{
         Trap("STD_SYSTEM_AWAIT")
         Trap("STD_SYSTEM_GET_RESULT")
-        PushResult(typeof T | Status)
+        PushResult(typeof T | Error)
     }
 }
 
 def AwaitOrDefault[T](fut: Future[T], default: T): T {
-    var result: T | Status = default
+    var result: T | Error = default
     @{
         Trap("STD_SYSTEM_AWAIT")
         Trap("STD_SYSTEM_GET_RESULT")
-        PushResult(typeof T | Status)
+        PushResult(typeof T | Error)
         StoreData(result)
     }
     match result {
-        when status: Status -> default
+        when error: Error   -> default
         else                -> result
     }
 }

@@ -88,7 +88,7 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
     auto targetComputation = targetComputationSet.getTarget(target);
     auto targetState = targetComputation.getState();
 
-    if (targetState.getState() != lyric_build::TaskState::COMPLETED) {
+    if (targetState.getState() != lyric_build::TaskState::Completed) {
         auto diagnostics = targetComputationSet.getDiagnostics();
         diagnostics->printDiagnostics();
         return RunStatus::forCondition(RunCondition::kRunInvariant,

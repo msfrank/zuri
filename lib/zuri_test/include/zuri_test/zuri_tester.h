@@ -23,8 +23,8 @@ namespace zuri_test {
         lyric_build::TaskSettings taskSettings = {};
         std::vector<std::filesystem::path> localPackages = {};
         std::vector<std::string> mainArguments = {};
-        absl::flat_hash_set<tempo_utils::Url> localTransportProtocols;
-        absl::flat_hash_set<std::string> remoteTransportSchemes;
+        absl::flat_hash_map<tempo_utils::Url,std::shared_ptr<lyric_runtime::AbstractTransport>> localTransports = {};
+        absl::flat_hash_map<std::string,std::shared_ptr<lyric_runtime::AbstractTransport>> remoteTransports = {};
         absl::flat_hash_map<tempo_utils::Url,lyric_runtime::ConnectorPolicy> protocolConnectors = {};
     };
 

@@ -186,24 +186,26 @@ zuri_test::ZuriTester::runModule(
     loaderChain.push_back(m_runtime->getLoader());
     auto applicationLoader = std::make_shared<lyric_runtime::ChainLoader>(loaderChain);
 
-    // construct the transport registry and add the test transport
+    // construct the transport registry and register transports
     auto transportRegistry = std::make_shared<lyric_runtime::TransportRegistry>();
-    auto transport = std::make_shared<TestTransport>();
-
-    // register transports
-    for (const auto &scheme : m_options.remoteTransportSchemes) {
-        TU_RETURN_IF_NOT_OK (transportRegistry->registerRemoteTransport(scheme, transport));
+    for (const auto &entry : m_options.remoteTransports) {
+        TU_RETURN_IF_NOT_OK (transportRegistry->registerRemoteTransport(entry.first, entry.second));
     }
-    for (const auto &protocolUrl : m_options.localTransportProtocols) {
-        TU_RETURN_IF_NOT_OK (transportRegistry->registerLocalTransport(protocolUrl, transport));
+    for (const auto &entry : m_options.localTransports) {
+        TU_RETURN_IF_NOT_OK (transportRegistry->registerLocalTransport(entry.first, entry.second));
     }
-
     options.transportRegistry = transportRegistry;
 
     // construct the interpreter state
     std::shared_ptr<lyric_runtime::InterpreterState> state;
     TU_ASSIGN_OR_RETURN (state, lyric_runtime::InterpreterState::create(
         builder->getBootstrapLoader(), applicationLoader, options));
+
+    // set protocol policies
+    auto *portMultiplexer = state->portMultiplexer();
+    for (const auto &entry : m_options.protocolConnectors) {
+        TU_RETURN_IF_NOT_OK (portMultiplexer->registerConnector(entry.first, entry.second));
+    }
 
     // run the module in the interpreter
     lyric_test::TestInspector inspector;
