@@ -12,6 +12,8 @@
                 "/flags",
                 "/process",
                 "/protocol/log",
+                "/protocol/stdin",
+                "/protocol/stdout",
                 "/system",
                 "/text",
                 "/time",

@@ -44,7 +44,79 @@ ConnectionRef::send(std::shared_ptr<const tempo_utils::ImmutableBytes> payload)
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "invalid connection state");
-    return m_conn->send(payload);
+    return m_conn->send(std::move(payload));
+}
+
+class ReceiveCompleter : public lyric_runtime::AbstractReceiveCompleter {
+public:
+    ReceiveCompleter(ConnectionRef *conn)
+        : m_conn(conn)
+    {
+        TU_NOTNULL (m_conn);
+    }
+    void receiveComplete(std::shared_ptr<const tempo_utils::ImmutableBytes> payload) override
+    {
+        m_payload = std::move(payload);
+    }
+    void error(const tempo_utils::Status &status) override
+    {
+        m_status = status;
+    }
+    void close() override {
+    }
+    std::shared_ptr<const tempo_utils::ImmutableBytes> getPayload() { return m_payload; }
+    tempo_utils::Status getStatus() { return m_status; }
+private:
+    ConnectionRef *m_conn = nullptr;
+    std::shared_ptr<const tempo_utils::ImmutableBytes> m_payload;
+    tempo_utils::Status m_status;
+};
+
+class ReceiveOps : public lyric_runtime::PromiseOperations {
+public:
+    ReceiveOps(ConnectionRef *conn, std::shared_ptr<ReceiveCompleter> completer)
+        : m_conn(conn),
+          m_completer(std::move(completer))
+    {
+        TU_NOTNULL (m_conn);
+        TU_NOTNULL (m_completer);
+    }
+    void onAccept(
+        lyric_runtime::Promise *promise,
+        const lyric_runtime::Waiter *waiter,
+        lyric_runtime::InterpreterState *state) override
+    {
+        auto *heapManager = state->heapManager();
+        auto status = m_completer->getStatus();
+        if (status.notOk()) {
+            auto rejected = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
+            promise->reject(rejected);
+        } else {
+            auto payload = m_completer->getPayload();
+            auto completed = heapManager->allocateBytes(payload->getSpan());
+            promise->complete(completed);
+        }
+    }
+    void setReachable() override
+    {
+        m_conn->setReachable();
+    }
+private:
+    ConnectionRef *m_conn;
+    std::shared_ptr<ReceiveCompleter> m_completer;
+};
+
+tempo_utils::Status
+ConnectionRef::receiveAsync(AbstractRef *fut, lyric_runtime::SystemScheduler *systemScheduler)
+{
+    auto completer = std::make_shared<ReceiveCompleter>(this);
+    auto ops = std::make_unique<ReceiveOps>(this, completer);
+    auto promise = lyric_runtime::Promise::create(std::move(ops));
+
+    TU_RETURN_IF_NOT_OK (m_conn->registerReceive(systemScheduler, promise, completer));
+    fut->prepareFuture(promise);
+
+    return {};
 }
 
 tempo_utils::Status
@@ -103,5 +175,25 @@ std_connection_receive(
     lyric_runtime::InterpreterState *state,
     const lyric_runtime::VirtualTable *vtable)
 {
+    auto *currentCoro = state->currentCoro();
+    auto *systemScheduler = state->systemScheduler();
+    auto *heapManager = state->heapManager();
+
+    auto &frame = currentCoro->currentCallOrThrow();
+
+    auto receiver = frame.getReceiver();
+    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
+    auto *instance = static_cast<ConnectionRef *>(receiver.data.ref);
+
+    TU_ASSERT (frame.numArguments() == 0);
+
+    lyric_runtime::DataCell *data;
+    TU_RETURN_IF_NOT_OK (currentCoro->peekData(&data));
+    TU_ASSERT (data->type == lyric_runtime::DataCellType::Ref);
+    auto *fut = data->data.ref;
+
+    auto status = instance->receiveAsync(fut, systemScheduler);
+    TU_RETURN_IF_NOT_OK (heapManager->loadStatusOntoStack(status.getStatusCode(), status.getMessage()));
+
     return {};
 }

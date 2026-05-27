@@ -18,7 +18,8 @@ public:
     void setConnection(std::shared_ptr<lyric_runtime::Connection> connection);
 
     tempo_utils::Status send(std::shared_ptr<const tempo_utils::ImmutableBytes> payload);
-    tempo_utils::Status shutdown();
+    tempo_utils::Status receiveAsync(AbstractRef *fut, lyric_runtime::SystemScheduler *systemScheduler);
+        tempo_utils::Status shutdown();
 
 private:
     std::shared_ptr<lyric_runtime::Connection> m_conn;
