@@ -24,9 +24,13 @@ public:
     explicit FutureRef(const lyric_runtime::VirtualTable *vtable);
     ~FutureRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0xb39bfcf1c95d797c; }
+
+    tu_uint64 getTypeTag() const override;
+
     bool prepareFuture(std::shared_ptr<lyric_runtime::Promise> promise) override;
     bool awaitFuture(lyric_runtime::SystemScheduler *systemScheduler) override;
-    bool resolveFuture(lyric_runtime::DataCell &result) override;
+    bool resolveFuture(lyric_runtime::Operand &result) override;
     std::string toString() const override;
 
     bool isFinished() const;
@@ -39,8 +43,8 @@ public:
     absl::flat_hash_set<FutureRef *>::const_iterator sourcesEnd() const;
 
     tempo_utils::Status forward(std::shared_ptr<lyric_runtime::AsyncHandle> target);
-    tempo_utils::Status complete(const lyric_runtime::DataCell &result);
-    tempo_utils::Status reject(const lyric_runtime::DataCell &result);
+    tempo_utils::Status complete(const lyric_runtime::Operand &result);
+    tempo_utils::Status reject(const lyric_runtime::Operand &result);
 
 protected:
     void setMembersReachable() override;

@@ -24,12 +24,12 @@ TEST_F(StdCollectionsHashMap, TestEvaluateNewHashMap)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: HashMap[I64,I64] = HashMap[I64,I64]{}
         ints
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/collections"),
                 lyric_common::SymbolPath({"HashMap"}))))));
@@ -39,23 +39,23 @@ TEST_F(StdCollectionsHashMap, TestEvaluateConstructHashMapWithEntries)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{
-            Tuple2[Int,Int]{1, 11},
-            Tuple2[Int,Int]{2, 12},
-            Tuple2[Int,Int]{3, 13}
+        val ints: HashMap[I64,I64] = HashMap[I64,I64]{
+            Tuple2[I64,I64]{1, 11},
+            Tuple2[I64,I64]{2, 12},
+            Tuple2[I64,I64]{3, 13}
         }
         ints.Size()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(3))));
+        RunModule(OperandI64(3))));
 }
 
 TEST_F(StdCollectionsHashMap, TestEvaluateHashMapSize)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: HashMap[I64,I64] = HashMap[I64,I64]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -63,14 +63,14 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapSize)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(3LL))));
+        RunModule(OperandI64(3LL))));
 }
 
 TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndContains)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: HashMap[I64,I64] = HashMap[I64,I64]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -78,14 +78,14 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndContains)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellBool(true))));
+        RunModule(OperandBool(true))));
 }
 
 TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndGet)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: HashMap[I64,I64] = HashMap[I64,I64]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -93,14 +93,14 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndGet)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(12LL))));
+        RunModule(OperandI64(12LL))));
 }
 
 TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndRemove)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: HashMap[I64,I64] = HashMap[I64,I64]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -108,14 +108,14 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndRemove)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(12LL))));
+        RunModule(OperandI64(12LL))));
 }
 
 TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndClear)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{}
+        val ints: HashMap[I64,I64] = HashMap[I64,I64]{}
         ints.Put(1, 11)
         ints.Put(2, 12)
         ints.Put(3, 13)
@@ -124,25 +124,25 @@ TEST_F(StdCollectionsHashMap, TestEvaluateHashMapPutAndClear)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(0LL))));
+        RunModule(OperandI64(0LL))));
 }
 
 TEST_F(StdCollectionsHashMap, TestEvaluateHashMapIterate)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: HashMap[Int,Int] = HashMap[Int,Int]{
-            Tuple2[Int,Int]{1, 11},
-            Tuple2[Int,Int]{2, 12},
-            Tuple2[Int,Int]{3, 13}
+        val ints: HashMap[I64,I64] = HashMap[I64,I64]{
+            Tuple2[I64,I64]{1, 11},
+            Tuple2[I64,I64]{2, 12},
+            Tuple2[I64,I64]{3, 13}
         }
-        var sum: Int = 0
-        for entry: Tuple2[Int,Int] in ints {
+        var sum: I64 = 0
+        for entry: Tuple2[I64,I64] in ints {
             sum += entry.Element1
         }
         sum
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(36))));
+        RunModule(OperandI64(36))));
 }

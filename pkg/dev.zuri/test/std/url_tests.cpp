@@ -27,7 +27,7 @@ TEST_F(StdUrl, TestEvaluateNewUrl)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString(ZURI_STD_PACKAGE_URL "/url"),
                 lyric_common::SymbolPath({"Url"}))))));
@@ -42,7 +42,7 @@ TEST_F(StdUrl, TestEvaluateNewEmptyUrl)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString(ZURI_STD_PACKAGE_URL "/url"),
                 lyric_common::SymbolPath({"Url"}))))));
@@ -58,7 +58,7 @@ TEST_F(StdUrl, TestEvaluateUrlToString)
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
         RunModule(
-            DataCellString("https://zuri.dev/example/index.html"))));
+            OperandString("https://zuri.dev/example/index.html"))));
 
 }
 
@@ -68,9 +68,8 @@ TEST_F(StdUrl, TestEvaluateUrlIsEqual)
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/url" ...
         val url1: Url = expect ParseUrl("/Hello")
         val url2: Url = expect ParseUrl("/Hello")
-        using url1
         url1 == url2
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellBool(true))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandBool(true))));
 }

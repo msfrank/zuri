@@ -23,6 +23,10 @@ public:
         std::shared_ptr<lyric_runtime::Connection> conn);
     ~PortRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x1b17fb1bbae10503; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
     std::shared_ptr<lyric_runtime::Connection> duplexPort();
@@ -37,7 +41,7 @@ private:
     lyric_runtime::BytecodeInterpreter *m_interp;
     lyric_runtime::InterpreterState *m_state;
     std::shared_ptr<lyric_runtime::Connection> m_conn;
-    std::vector<lyric_runtime::DataCell> m_values;
+    std::vector<lyric_runtime::Operand> m_values;
 };
 
 tempo_utils::Status std_port_alloc(

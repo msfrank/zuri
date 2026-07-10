@@ -24,26 +24,26 @@ TEST_F(StdSystemWorkQueue, EvaluatePushAndAwaitPop)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val queue: WorkQueue[Int] = WorkQueue[Int]{}
+        val queue: WorkQueue[I64] = WorkQueue[I64]{}
         queue.Push(42)
         Await(queue.Pop())
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(42))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandI64(42))));
 }
 
 TEST_F(StdSystemWorkQueue, EvaluatePushMultipleAndAwaitPop)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val queue: WorkQueue[Int] = WorkQueue[Int]{}
+        val queue: WorkQueue[I64] = WorkQueue[I64]{}
         queue.Push(1)
         queue.Push(1)
         queue.Push(1)
         AwaitOrDefault(queue.Pop(), 0) + AwaitOrDefault(queue.Pop(), 0) + AwaitOrDefault(queue.Pop(), 0)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(3))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandI64(3))));
 }
 
 TEST_F(StdSystemWorkQueue, EvaluatePushMultipleAndAwaitPopInSeparateTasks)
@@ -51,13 +51,13 @@ TEST_F(StdSystemWorkQueue, EvaluatePushMultipleAndAwaitPopInSeparateTasks)
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
 
-        val queue: WorkQueue[Int] = WorkQueue[Int]{}
+        val queue: WorkQueue[I64] = WorkQueue[I64]{}
 
         val p1: Function0[Bool] = lambda(): Bool {
             queue.Push(1) and queue.Push(1) and queue.Push(1)
         }
 
-        val p2: Function0[Int] = lambda(): Int {
+        val p2: Function0[I64] = lambda(): I64 {
             AwaitOrDefault(queue.Pop(), 0) + AwaitOrDefault(queue.Pop(), 0) + AwaitOrDefault(queue.Pop(), 0)
         }
 
@@ -65,5 +65,5 @@ TEST_F(StdSystemWorkQueue, EvaluatePushMultipleAndAwaitPopInSeparateTasks)
         AwaitOrDefault(Spawn(p2), 0)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(3))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandI64(3))));
 }

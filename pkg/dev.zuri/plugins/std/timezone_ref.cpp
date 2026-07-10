@@ -17,6 +17,12 @@ TimezoneRef::~TimezoneRef()
     TU_LOG_INFO << "free TimezoneRef" << TimezoneRef::toString();
 }
 
+tu_uint64
+TimezoneRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 TimezoneRef::toString() const
 {
@@ -59,15 +65,16 @@ std_time_timezone_ctor(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 1);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Int64);
+    tu_int64 offset;
+    TU_ASSERT (arg0.getI64(offset));
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TimezoneRef *>(receiver.data.ref);
+    TimezoneRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     int offsetSeconds = 0;
-    if (0 <= arg0.data.i64 && arg0.data.i64 < 60 * 60 * 24) {
-        offsetSeconds = static_cast<int>(arg0.data.i64);
+    if (0 <= offset && offset < 60 * 60 * 24) {
+        offsetSeconds = static_cast<int>(offset);
     }
     instance->setTimeZone(absl::FixedTimeZone(offsetSeconds));
 

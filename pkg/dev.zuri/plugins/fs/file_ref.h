@@ -14,6 +14,10 @@ public:
     explicit FileRef(const lyric_runtime::VirtualTable *vtable);
     ~FileRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x74e6280dcbda6a3b; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
     enum class State {

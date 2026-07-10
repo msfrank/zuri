@@ -14,6 +14,10 @@ public:
     explicit TimezoneRef(const lyric_runtime::VirtualTable *vtable);
     ~TimezoneRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0xcde2d0ca87e564fc; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
     absl::TimeZone getTimeZone() const;

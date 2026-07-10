@@ -2,6 +2,7 @@
 
 #include <absl/strings/substitute.h>
 
+#include <lyric_runtime/string_ref.h>
 #include <tempo_utils/log_stream.h>
 #include <tempo_utils/unicode.h>
 
@@ -30,6 +31,12 @@ TextRef::~TextRef()
     delete[] m_data;
 }
 
+tu_uint64
+TextRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 TextRef::toString() const
 {
@@ -42,11 +49,11 @@ TextRef::toString() const
     return absl::Substitute("<$0: Text \"$1\">", this, s);
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 TextRef::textAt(int index) const
 {
     if (m_data == nullptr || m_size == 0)
-        return lyric_runtime::DataCell::undef();
+        return lyric_runtime::Operand::undef();
 
     if (index >= 0) {
         int curr = 0, i = 0;
@@ -54,21 +61,19 @@ TextRef::textAt(int index) const
             UChar32 char32;
             U16_NEXT(m_data, i, m_size, char32);
             if (curr == index)
-                return lyric_runtime::DataCell((char32_t) char32);
+                return lyric_runtime::Operand::fromC32(static_cast<char32_t>(char32));
             curr++;
         } while (i < m_size);
-    } else {
     }
-
-    return lyric_runtime::DataCell::undef();
+    return lyric_runtime::Operand::undef();
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 TextRef::textSize() const
 {
     if (m_data == nullptr || m_size == 0)
-        return lyric_runtime::DataCell(static_cast<int64_t>(0));
-    return lyric_runtime::DataCell(static_cast<int64_t>(u_countChar32(m_data, m_size)));
+        return lyric_runtime::Operand::fromI64(static_cast<tu_int64>(0));
+    return lyric_runtime::Operand::fromI64(u_countChar32(m_data, m_size));
 }
 
 const UChar *
@@ -137,26 +142,27 @@ std_text_text_ctor(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TextRef *>(receiver.data.ref);
+    TextRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     TU_ASSERT (frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
-    if (arg0.type == lyric_runtime::DataCellType::String) {
-        std::string utf8;
-        if (!arg0.data.ref->utf8Value(utf8))
-            return lyric_runtime::InterpreterStatus::forCondition(
-                lyric_runtime::InterpreterCondition::kRuntimeInvariant,
-                "utf8 conversion failed");
-        if (!instance->setTextData(utf8.data(), utf8.size()))
-            return lyric_runtime::InterpreterStatus::forCondition(
-                lyric_runtime::InterpreterCondition::kRuntimeInvariant,
-                "utf16 conversion failed");
-    } else {
+
+    lyric_runtime::StringRef *str;
+    if (!arg0.getString(str))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant,
             "invalid utf8 argument {}", arg0.toString());
-    }
+
+    std::string utf8;
+    if (!str->utf8Value(utf8))
+        return lyric_runtime::InterpreterStatus::forCondition(
+            lyric_runtime::InterpreterCondition::kRuntimeInvariant,
+            "utf8 conversion failed");
+    if (!instance->setTextData(utf8.data(), utf8.size()))
+        return lyric_runtime::InterpreterStatus::forCondition(
+            lyric_runtime::InterpreterCondition::kRuntimeInvariant,
+            "utf16 conversion failed");
 
     return {};
 }
@@ -172,12 +178,13 @@ std_text_text_at(
     auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT (frame.numArguments() == 1);
-    const auto &index = frame.getArgument(0);
-    TU_ASSERT(index.type == lyric_runtime::DataCellType::Int64);
+    const auto &arg0 = frame.getArgument(0);
+    tu_int64 index;
+    TU_ASSERT(arg0.getI64(index));
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TextRef *>(receiver.data.ref);
-    currentCoro->pushData(instance->textAt(index.data.i64));
+    TextRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
+    currentCoro->pushData(instance->textAt(index));
     return {};
 }
 
@@ -192,8 +199,8 @@ std_text_text_length(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TextRef *>(receiver.data.ref);
+    TextRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     currentCoro->pushData(instance->textSize());
     return {};
 }

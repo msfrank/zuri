@@ -26,18 +26,18 @@ TEST_F(StdFlagsFlags, EvaluateSetAndCheckFlags)
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/flags" ...
 
         defenum Colors {
-            val Value: Int
-            init(value: Int) {
+            val Value: U32
+            init(value: U32) {
                 this.Value = value
             }
-            case Red(1)
-            case Yellow(2)
-            case Blue(4)
+            case Red(1 as U32)
+            case Yellow(2 as U32)
+            case Blue(4 as U32)
         }
 
         definstance ColorsInstance {
             impl IntoFlags[Colors] {
-                def ToValue(color: Colors): Int {
+                def ToValue(color: Colors): U32 {
                     color.Value
                 }
             }
@@ -50,5 +50,5 @@ TEST_F(StdFlagsFlags, EvaluateSetAndCheckFlags)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellBool(true))));
+        OperandBool(true))));
 }

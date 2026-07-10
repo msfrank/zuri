@@ -122,7 +122,7 @@ zuri_run::EphemeralSession::compileFragment(const tempo_utils::Url &fragmentUrl)
     return moduleLocation;
 }
 
-tempo_utils::Result<lyric_runtime::DataCell>
+tempo_utils::Result<lyric_runtime::Operand>
 zuri_run::EphemeralSession::executeFragment(const lyric_common::ModuleLocation &location)
 {
     // initialize the heap and interpreter state

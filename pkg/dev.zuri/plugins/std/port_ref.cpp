@@ -52,6 +52,12 @@ PortRef::~PortRef()
     TU_LOG_INFO << "free" << PortRef::toString();
 }
 
+tu_uint64
+PortRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 PortRef::toString() const
 {
@@ -90,8 +96,7 @@ void
 PortRef::setMembersReachable()
 {
     for (auto &value : m_values) {
-        if (value.type == lyric_runtime::DataCellType::Ref)
-            value.data.ref->setReachable();
+        value.setReachable();
     }
     //if (m_fut)
     //    m_fut->setReachable();
@@ -101,8 +106,7 @@ void
 PortRef::clearMembersReachable()
 {
     for (auto &value : m_values) {
-        if (value.type == lyric_runtime::DataCellType::Ref)
-            value.data.ref->clearReachable();
+        value.clearReachable();
     }
     //if (m_fut)
     //    m_fut->clearReachable();
@@ -133,10 +137,8 @@ std_port_send(
 
     TU_ASSERT(frame.numArguments() == 1);
     const auto &arg0 = frame.getArgument(0);
-    if (arg0.type != lyric_runtime::DataCellType::Bytes)
-        return lyric_runtime::InterpreterStatus::forCondition(
-            lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid bytes");
-    auto *bytes = arg0.data.bytes;
+    lyric_runtime::BytesRef *bytes;
+    TU_ASSERT (arg0.getBytes(bytes));
 
     tu_int32 size = 0;
     TU_ASSERT (bytes->rawSize(size));
@@ -145,10 +147,10 @@ std_port_send(
     auto payload = tempo_utils::MemoryBytes::create(std::move(payloadBytes));
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PortRef *>(receiver.data.ref);
+    PortRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     auto ret = instance->send(payload);
-    currentCoro->pushData(lyric_runtime::DataCell(ret));
+    currentCoro->pushData(lyric_runtime::Operand::fromBool(ret));
 
     return {};
 }
@@ -214,8 +216,8 @@ std_port_receive(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PortRef *>(receiver.data.ref);
+    PortRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     //
     auto *segment = currentCoro->peekSP();
@@ -225,15 +227,16 @@ std_port_receive(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
-    TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
+    lyric_runtime::DescriptorEntry *entry;
+    TU_ASSERT (descriptor.getDescriptor(entry, lyric_object::LinkageSection::Class));
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);
 
     // create a new future to wait for receive result
     auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
     currentCoro->pushData(ref);
-    auto *fut = ref.data.ref;
+    FutureRef *fut;
+    TU_ASSERT (ref.castRef(fut));
 
     auto conn = instance->duplexPort();
 

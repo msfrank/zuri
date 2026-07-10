@@ -45,7 +45,7 @@ TEST_F(StdStdinProtocol, EvaluateConnect)
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
         RunModule(
-            DataCellRef(lyric_common::SymbolPath::fromString("ReceiverConnection")))));
+            OperandRef(lyric_common::SymbolPath::fromString("ReceiverConnection")))));
 
     ASSERT_TRUE (stdinTransport->connectCompleted());
 }
@@ -64,7 +64,7 @@ TEST_F(StdStdinProtocol, EvaluateReceivePayload)
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
         RunModule(
-            DataCellBytes("hello, world!"))));
+            OperandBytes("hello, world!"))));
 
     ASSERT_TRUE (stdinTransport->connectCompleted());
 }

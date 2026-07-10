@@ -14,7 +14,7 @@ treeset_alloc(
     TU_ASSERT(vtable != nullptr);
     auto *currentCoro = state->currentCoro();
     auto ref = state->heapManager()->allocateRef<TreeSetRef>(vtable);
-    currentCoro->pushData(ref);
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(ref));
     return {};
 }
 
@@ -28,19 +28,15 @@ treeset_ctor(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
+    TreeSetRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     TU_ASSERT (frame.numArguments() == 1);
-    const auto &ctxArgument = frame.getArgument(0);
-    TU_ASSERT(ctxArgument.type == lyric_runtime::DataCellType::Ref);
+    const auto &ctx = frame.getArgument(0);
 
-    lyric_runtime::DataCell compareCall;
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(compareCall));
-    TU_ASSERT (compareCall.type == lyric_runtime::DataCellType::Descriptor);
-    TU_ASSERT (compareCall.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Call);
-    instance->initialize(TreeSetComparator(interp, state, ctxArgument, compareCall));
-
+    lyric_runtime::Operand cmp;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(cmp));
+    instance->initialize(TreeSetComparator(interp, state, ctx, cmp));
     return {};
 }
 
@@ -57,9 +53,10 @@ treeset_size(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
-    currentCoro->pushData(lyric_runtime::DataCell(static_cast<int64_t>(instance->size())));
+    TreeSetRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
+    auto size = lyric_runtime::Operand::fromI64(static_cast<int64_t>(instance->size()));
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(size));
     return {};
 }
 
@@ -77,9 +74,10 @@ treeset_contains(
     const auto &key = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
-    currentCoro->pushData(lyric_runtime::DataCell(instance->contains(key)));
+    TreeSetRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
+    auto contains = lyric_runtime::Operand::fromBool(instance->contains(key));
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(contains));
     return {};
 }
 
@@ -97,10 +95,10 @@ treeset_add(
     const auto &value = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
-    auto prev = instance->add(value);
-    currentCoro->pushData(prev);
+    TreeSetRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
+    auto added = instance->add(value);
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(added));
     return {};
 }
 
@@ -118,10 +116,10 @@ treeset_remove(
     const auto &value = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
-    auto prev = instance->remove(value);
-    currentCoro->pushData(prev);
+    TreeSetRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
+    auto removed = instance->remove(value);
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(removed));
     return {};
 }
 
@@ -139,10 +137,10 @@ treeset_replace(
     const auto &value = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
-    auto prev = instance->replace(value);
-    currentCoro->pushData(prev);
+    TreeSetRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
+    auto replaced = instance->replace(value);
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(replaced));
     return {};
 }
 
@@ -159,8 +157,8 @@ treeset_clear(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
+    TreeSetRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     instance->clear();
     return {};
 }
@@ -175,22 +173,19 @@ treeset_iterate(
 
     auto &frame = currentCoro->currentCallOrThrow();
 
-    lyric_runtime::DataCell cell;
+    lyric_runtime::Operand cell;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(cell));
-    TU_ASSERT (cell.type == lyric_runtime::DataCellType::Descriptor);
-    TU_ASSERT (cell.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<TreeSetRef *>(receiver.data.ref);
+    TreeSetRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     lyric_runtime::InterpreterStatus status;
     const auto *vtable = state->segmentManager()->resolveClassVirtualTable(cell, status);
     TU_ASSERT(vtable != nullptr);
 
     auto ref = state->heapManager()->allocateRef<TreeSetIterator>(vtable, instance);
-    currentCoro->pushData(ref);
-
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(ref));
     return {};
 }
 
@@ -203,7 +198,7 @@ treeset_iterator_alloc(
     TU_ASSERT(vtable != nullptr);
     auto *currentCoro = state->currentCoro();
     auto ref = state->heapManager()->allocateRef<TreeSetIterator>(vtable);
-    currentCoro->pushData(ref);
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(ref));
     return {};
 }
 
@@ -220,10 +215,10 @@ treeset_iterator_valid(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<lyric_runtime::AbstractRef *>(receiver.data.ref);
-    currentCoro->pushData(lyric_runtime::DataCell(instance->iteratorValid()));
-
+    TreeSetIterator *instance;
+    TU_ASSERT(receiver.castRef(instance));
+    auto valid = lyric_runtime::Operand::fromBool(instance->iteratorValid());
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(valid));
     return {};
 }
 
@@ -240,14 +235,14 @@ treeset_iterator_next(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<lyric_runtime::AbstractRef *>(receiver.data.ref);
+    TreeSetIterator *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
-    lyric_runtime::DataCell next;
+    lyric_runtime::Operand next;
     if (!instance->iteratorNext(next)) {
-        next = lyric_runtime::DataCell();
+        next = lyric_runtime::Operand();
     }
-    currentCoro->pushData(next);
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(next));
 
     return {};
 }

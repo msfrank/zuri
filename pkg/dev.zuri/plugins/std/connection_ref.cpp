@@ -6,6 +6,8 @@
 
 #include "connection_ref.h"
 
+#include "future_ref.h"
+
 ConnectionRef::ConnectionRef(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable)
 {
@@ -14,6 +16,12 @@ ConnectionRef::ConnectionRef(const lyric_runtime::VirtualTable *vtable)
 ConnectionRef::~ConnectionRef()
 {
     TU_LOG_V << "free ConnectionRef" << ConnectionRef::toString();
+}
+
+tu_uint64
+ConnectionRef::getTypeTag() const
+{
+    return type_tag();
 }
 
 std::string
@@ -154,13 +162,13 @@ std_connection_send(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<ConnectionRef *>(receiver.data.ref);
+    ConnectionRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     TU_ASSERT (frame.numArguments() == 1);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Bytes);
-    auto *bytes = arg0.data.bytes;
+    lyric_runtime::BytesRef *bytes;
+    TU_ASSERT (arg0.getBytes(bytes));
 
     auto payload = tempo_utils::MemoryBytes::create(bytes->getBytes());
     auto status = instance->send(payload);
@@ -182,15 +190,15 @@ std_connection_receive(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<ConnectionRef *>(receiver.data.ref);
+    ConnectionRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     TU_ASSERT (frame.numArguments() == 0);
 
-    lyric_runtime::DataCell *data;
-    TU_RETURN_IF_NOT_OK (currentCoro->peekData(&data));
-    TU_ASSERT (data->type == lyric_runtime::DataCellType::Ref);
-    auto *fut = data->data.ref;
+    lyric_runtime::Operand data;
+    TU_RETURN_IF_NOT_OK (currentCoro->peekData(data));
+    FutureRef *fut;
+    TU_ASSERT (data.castRef(fut));
 
     auto status = instance->receiveAsync(fut, systemScheduler);
     TU_RETURN_IF_NOT_OK (heapManager->loadStatusOntoStack(status.getStatusCode(), status.getMessage()));

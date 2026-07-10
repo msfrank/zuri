@@ -18,6 +18,12 @@ WorkQueueRef::~WorkQueueRef()
     TU_LOG_INFO << "free" << WorkQueueRef::toString();
 }
 
+tu_uint64
+WorkQueueRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 WorkQueueRef::toString() const
 {
@@ -25,7 +31,7 @@ WorkQueueRef::toString() const
 }
 
 bool
-WorkQueueRef::push(const lyric_runtime::DataCell &element)
+WorkQueueRef::push(const lyric_runtime::Operand &element)
 {
     // if there are no registered futures then push the element and return
     if (m_waiting.empty()) {
@@ -50,7 +56,7 @@ WorkQueueRef::containsAvailableElement() const
     return m_waiting.empty() && !m_elements.empty();
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 WorkQueueRef::takeAvailableElement()
 {
     TU_ASSERT (!m_elements.empty());
@@ -72,9 +78,7 @@ void
 WorkQueueRef::setMembersReachable()
 {
     for (auto &element : m_elements) {
-        if (element.type == lyric_runtime::DataCellType::Ref) {
-            element.data.ref->setReachable();
-        }
+        element.setReachable();
     }
 //    for (auto &waiting : m_waiting) {
 //        waiting.first->setReachable();
@@ -85,9 +89,7 @@ void
 WorkQueueRef::clearMembersReachable()
 {
     for (auto &element : m_elements) {
-        if (element.type == lyric_runtime::DataCellType::Ref) {
-            element.data.ref->clearReachable();
-        }
+        element.clearReachable();
     }
 //    for (auto &waiting : m_waiting) {
 //        waiting.first->clearReachable();
@@ -121,10 +123,10 @@ std_system_work_queue_push(
     const auto &arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<WorkQueueRef *>(receiver.data.ref);
+    WorkQueueRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     auto ret = instance->push(arg0);
-    currentCoro->pushData(lyric_runtime::DataCell(ret));
+    currentCoro->pushData(lyric_runtime::Operand::fromBool(ret));
 
     return {};
 }
@@ -152,8 +154,8 @@ std_system_work_queue_pop(
     TU_ASSERT(frame.numArguments() == 0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<WorkQueueRef *>(receiver.data.ref);
+    WorkQueueRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     // resolve the virtual table for Future
     auto *segment = currentCoro->peekSP();
@@ -163,15 +165,16 @@ std_system_work_queue_pop(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
-    TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
+    lyric_runtime::DescriptorEntry *entry;
+    TU_ASSERT (descriptor.getDescriptor(entry, lyric_object::LinkageSection::Class));
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);
 
     // create a new future to wait for receive result and push it onto the top of the stack
     auto ref = state->heapManager()->allocateRef<FutureRef>(vtable);
     currentCoro->pushData(ref);
-    auto *fut = static_cast<FutureRef *>(ref.data.ref);
+    FutureRef *fut;
+    TU_ASSERT (ref.castRef(fut));
 
     //
     auto promise = lyric_runtime::Promise::create(on_async_accept);

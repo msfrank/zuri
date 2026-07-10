@@ -31,7 +31,7 @@ TEST_F(StdTimeInstant, EvaluateNewInstant)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/time"),
                 lyric_common::SymbolPath({"Instant"}))))));
@@ -45,5 +45,5 @@ TEST_F(StdTimeInstant, EvaluateToEpochMillis)
         instant.ToEpochMillis()
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(0))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandInt(0))));
 }

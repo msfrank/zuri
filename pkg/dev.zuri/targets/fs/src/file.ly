@@ -85,7 +85,7 @@ defclass File final {
         }
     }
 
-    def Read(maxBytes: Int): Future[Bytes] {
+    def Read(maxBytes: I64): Future[Bytes] {
         val fut: Future[Bytes] = Future[Bytes]{}
         @{
             LoadData(fut)
@@ -94,8 +94,8 @@ defclass File final {
         fut
     }
 
-    def Write(bytes: Bytes, fileOffset: Int = -1): Future[Int] {
-        val fut: Future[Int] = Future[Int]{}
+    def Write(bytes: Bytes, fileOffset: I64 = -1): Future[I64] {
+        val fut: Future[I64] = Future[I64]{}
         @{
             LoadData(fut)
             Trap("FS_FILE_WRITE")

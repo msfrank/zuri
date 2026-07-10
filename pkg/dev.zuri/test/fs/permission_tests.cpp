@@ -31,5 +31,5 @@ TEST_F(FsPermission, EvaluateSetAndCheck)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellBool(true))));
+        OperandBool(true))));
 }

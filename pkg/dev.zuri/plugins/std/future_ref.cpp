@@ -19,6 +19,12 @@ FutureRef::~FutureRef()
     TU_LOG_INFO << "free" << FutureRef::toString();
 }
 
+tu_uint64
+FutureRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 bool
 FutureRef::prepareFuture(std::shared_ptr<lyric_runtime::Promise> promise)
 {
@@ -85,7 +91,7 @@ FutureRef::awaitFuture(lyric_runtime::SystemScheduler *systemScheduler)
 }
 
 bool
-FutureRef::resolveFuture(lyric_runtime::DataCell &result)
+FutureRef::resolveFuture(lyric_runtime::Operand &result)
 {
     checkState();
     if (m_state == FutureState::Resolved) {
@@ -163,7 +169,7 @@ FutureRef::forward(std::shared_ptr<lyric_runtime::AsyncHandle> target)
 }
 
 tempo_utils::Status
-FutureRef::complete(const lyric_runtime::DataCell &result)
+FutureRef::complete(const lyric_runtime::Operand &result)
 {
     switch (m_state) {
 
@@ -189,7 +195,7 @@ FutureRef::complete(const lyric_runtime::DataCell &result)
 }
 
 tempo_utils::Status
-FutureRef::reject(const lyric_runtime::DataCell &result)
+FutureRef::reject(const lyric_runtime::Operand &result)
 {
     switch (m_state) {
 
@@ -217,9 +223,7 @@ FutureRef::setMembersReachable()
         source->setReachable();
     }
     auto result = m_promise->getResult();
-    if (result.type == lyric_runtime::DataCellType::Ref) {
-        result.data.ref->setReachable();
-    }
+    result.setReachable();
 }
 
 void
@@ -229,9 +233,7 @@ FutureRef::clearMembersReachable()
         source->clearReachable();
     }
     auto result = m_promise->getResult();
-    if (result.type == lyric_runtime::DataCellType::Ref) {
-        result.data.ref->clearReachable();
-    }
+    result.clearReachable();
 }
 
 tempo_utils::Status
@@ -258,7 +260,7 @@ std_system_future_ctor(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
+    TU_ASSERT(receiver.getType() == lyric_runtime::OperandType::Ref);
     //auto *instance = static_cast<FutureRef *>(receiver.data.ref);
 
     return {};
@@ -278,11 +280,11 @@ std_system_future_complete(
     const auto arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FutureRef *>(receiver.data.ref);
+    FutureRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     TU_RETURN_IF_NOT_OK (instance->complete(arg0));
 
-    currentCoro->pushData(lyric_runtime::DataCell(true));
+    currentCoro->pushData(lyric_runtime::Operand::fromBool(true));
     return {};
 }
 
@@ -300,17 +302,17 @@ std_system_future_reject(
     const auto arg0 = frame.getArgument(0);
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FutureRef *>(receiver.data.ref);
+    FutureRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     TU_RETURN_IF_NOT_OK (instance->reject(arg0));
 
-    currentCoro->pushData(lyric_runtime::DataCell(true));
+    currentCoro->pushData(lyric_runtime::Operand::fromBool(true));
     return {};
 }
 
 // struct ThenData {
 //     FutureRef *fut;
-//     lyric_runtime::DataCell fn;
+//     lyric_runtime::Operand fn;
 // };
 //
 // static void
@@ -341,7 +343,7 @@ std_system_future_reject(
 //     auto result = runClosureResult.getResult();
 //
 //     // complete or reject the promise based on the fn result
-//     if (result.type == lyric_runtime::DataCellType::Ref
+//     if (result.type == lyric_runtime::OperandType::Ref
 //         && result.data.ref->errorStatusCode() != tempo_utils::StatusCode::kOk) {
 //         promise->reject(result);
 //     } else {
@@ -380,7 +382,7 @@ std_system_future_then(
     // const auto arg0 = frame.getArgument(0);
     //
     // auto receiver = frame.getReceiver();
-    // TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
+    // TU_ASSERT(receiver.type == lyric_runtime::OperandType::Ref);
     // auto *instance = static_cast<FutureRef *>(receiver.data.ref);
     //
     // // construct the dependent future

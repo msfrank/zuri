@@ -33,7 +33,7 @@ TEST_F(FsPath, EvaluateCurrentPath)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellString(path.string()))));
+    OperandString(path.string()))));
 }
 
 TEST_F(FsPath, EvaluateIsAbsolute)
@@ -46,7 +46,7 @@ TEST_F(FsPath, EvaluateIsAbsolute)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellBool(true))));
+    OperandBool(true))));
 }
 
 TEST_F(FsPath, EvaluateIsRelative)
@@ -59,7 +59,7 @@ TEST_F(FsPath, EvaluateIsRelative)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellBool(true))));
+    OperandBool(true))));
 }
 
 TEST_F(FsPath, EvaluateFileName)
@@ -72,7 +72,7 @@ TEST_F(FsPath, EvaluateFileName)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellString("filename.txt"))));
+    OperandString("filename.txt"))));
 }
 
 TEST_F(FsPath, EvaluateFileStem)
@@ -85,7 +85,7 @@ TEST_F(FsPath, EvaluateFileStem)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellString("filename"))));
+    OperandString("filename"))));
 }
 
 TEST_F(FsPath, EvaluateFileExtension)
@@ -98,7 +98,7 @@ TEST_F(FsPath, EvaluateFileExtension)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellString(".txt"))));
+    OperandString(".txt"))));
 }
 
 TEST_F(FsPath, EvaluateParent)
@@ -113,7 +113,7 @@ TEST_F(FsPath, EvaluateParent)
     )", path.string()));
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellString(path.parent_path().string()))));
+    OperandString(path.parent_path().string()))));
 }
 
 TEST_F(FsPath, EvaluateResolve)
@@ -127,5 +127,5 @@ TEST_F(FsPath, EvaluateResolve)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellString("/parent/foo/newname.txt"))));
+    OperandString("/parent/foo/newname.txt"))));
 }

@@ -18,14 +18,20 @@ HashMapRef::~HashMapRef()
     m_map.clear();
 }
 
+tu_uint64
+HashMapRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 void
 HashMapRef::initialize(const HashMapEq &eq)
 {
     m_map = absl::flat_hash_map<
         HashMapKey,
-        lyric_runtime::DataCell,
-        absl::flat_hash_map<HashMapKey,lyric_runtime::DataCell>::hasher,
-        HashMapEq>(16, absl::flat_hash_map<HashMapKey,lyric_runtime::DataCell>::hasher(), eq);
+        lyric_runtime::Operand,
+        absl::flat_hash_map<HashMapKey,lyric_runtime::Operand>::hasher,
+        HashMapEq>(16, absl::flat_hash_map<HashMapKey,lyric_runtime::Operand>::hasher(), eq);
     m_eq = eq;
 }
 
@@ -37,7 +43,7 @@ HashMapRef::toString() const
 }
 
 bool
-HashMapRef::contains(const lyric_runtime::DataCell &key) const
+HashMapRef::contains(const lyric_runtime::Operand &key) const
 {
     HashMapKey k{ key };
     return m_map.contains(k);
@@ -49,8 +55,8 @@ HashMapRef::size() const
     return m_map.size();
 }
 
-lyric_runtime::DataCell
-HashMapRef::get(const lyric_runtime::DataCell &key) const
+lyric_runtime::Operand
+HashMapRef::get(const lyric_runtime::Operand &key) const
 {
     HashMapKey k{ key };
     if (!m_map.contains(k))
@@ -64,8 +70,8 @@ HashMapRef::generation() const
     return m_gen;
 }
 
-lyric_runtime::DataCell
-HashMapRef::put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value)
+lyric_runtime::Operand
+HashMapRef::put(const lyric_runtime::Operand &key, const lyric_runtime::Operand &value)
 {
     HashMapKey k{ key };
     auto prev = remove(key);
@@ -74,13 +80,13 @@ HashMapRef::put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCel
     return prev;
 }
 
-lyric_runtime::DataCell
-HashMapRef::remove(const lyric_runtime::DataCell &key)
+lyric_runtime::Operand
+HashMapRef::remove(const lyric_runtime::Operand &key)
 {
     HashMapKey k{ key };
     if (!m_map.contains(k))
         return {};
-    lyric_runtime::DataCell value = m_map.at(k);
+    lyric_runtime::Operand value = m_map.at(k);
     m_map.erase(k);
     ++m_gen;
     return value;
@@ -110,15 +116,9 @@ HashMapRef::setMembersReachable()
 {
     for (auto iterator = m_map.begin(); iterator != m_map.end(); iterator++) {
         auto &key = iterator->first;
-        if (key.cell.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (key.cell.data.ref != nullptr);
-            key.cell.data.ref->setReachable();
-        }
+        key.cell.setReachable();
         auto &value = iterator->second;
-        if (value.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (value.data.ref != nullptr);
-            value.data.ref->setReachable();
-        }
+        value.setReachable();
     }
 }
 
@@ -127,23 +127,17 @@ HashMapRef::clearMembersReachable()
 {
     for (auto iterator = m_map.begin(); iterator != m_map.end(); iterator++) {
         auto &key = iterator->first;
-        if (key.cell.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (key.cell.data.ref != nullptr);
-            key.cell.data.ref->clearReachable();
-        }
+        key.cell.clearReachable();
         auto &value = iterator->second;
-        if (value.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (value.data.ref != nullptr);
-            value.data.ref->clearReachable();
-        }
+        value.clearReachable();
     }
 }
 
 HashMapEq::HashMapEq(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
-    const lyric_runtime::DataCell &ctxArgument,
-    const lyric_runtime::DataCell &equalsCall)
+    const lyric_runtime::Operand &ctxArgument,
+    const lyric_runtime::Operand &equalsCall)
     : m_interp(interp),
       m_state(state),
       m_ctxArgument(ctxArgument),
@@ -175,7 +169,9 @@ HashMapEq::operator()(const HashMapKey& lhs, const HashMapKey& rhs) const
     if (equalsResult.isStatus())
         return false;
     auto ret = equalsResult.getResult();
-    return ret.type == lyric_runtime::DataCellType::Bool && ret.data.b;
+    bool eq;
+    TU_ASSERT (ret.getBool(eq));
+    return eq;
 }
 
 HashMapIterator::HashMapIterator(const lyric_runtime::VirtualTable *vtable)
@@ -196,6 +192,12 @@ HashMapIterator::HashMapIterator(
     m_gen = map->generation();
 }
 
+tu_uint64
+HashMapIterator::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 HashMapIterator::toString() const
 {
@@ -208,7 +210,7 @@ HashMapIterator::valid()
     return m_map && m_iter != m_map->end() && m_gen == m_map->generation();
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 HashMapIterator::key()
 {
     if (!valid())
@@ -216,7 +218,7 @@ HashMapIterator::key()
     return m_iter->first.cell;
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 HashMapIterator::value()
 {
     if (!valid())

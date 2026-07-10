@@ -14,12 +14,16 @@ public:
     explicit InstantRef(const lyric_runtime::VirtualTable *vtable);
     ~InstantRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0xda2d6c1968b16159; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
     absl::Time getInstant() const;
     void setInstant(absl::Time instant);
 
-    lyric_runtime::DataCell toEpochMillis() const;
+    lyric_runtime::Operand toEpochMillis() const;
 
 private:
     absl::Time m_instant;

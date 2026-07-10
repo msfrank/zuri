@@ -12,6 +12,10 @@ public:
     explicit ConnectionRef(const lyric_runtime::VirtualTable *vtable);
     ~ConnectionRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x4ad44bfe871f232d; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
     std::shared_ptr<lyric_runtime::Connection> getConnection() const;

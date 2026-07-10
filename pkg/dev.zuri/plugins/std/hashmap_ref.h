@@ -17,22 +17,22 @@ public:
     HashMapEq(
         lyric_runtime::BytecodeInterpreter *interp,
         lyric_runtime::InterpreterState *state,
-        const lyric_runtime::DataCell &ctxArgument,
-        const lyric_runtime::DataCell &equalsCall);
+        const lyric_runtime::Operand &ctxArgument,
+        const lyric_runtime::Operand &equalsCall);
     HashMapEq(const HashMapEq &other) noexcept;
     bool operator()(const HashMapKey& lhs, const HashMapKey& rhs) const;
 
 private:
     lyric_runtime::BytecodeInterpreter *m_interp = nullptr;
     lyric_runtime::InterpreterState *m_state = nullptr;
-    lyric_runtime::DataCell m_ctxArgument;
-    lyric_runtime::DataCell m_equalsCall;
+    lyric_runtime::Operand m_ctxArgument;
+    lyric_runtime::Operand m_equalsCall;
 };
 
 using HashMapImpl = absl::flat_hash_map<
     HashMapKey,
-    lyric_runtime::DataCell,
-    absl::flat_hash_map<HashMapKey,lyric_runtime::DataCell>::hasher,
+    lyric_runtime::Operand,
+    absl::flat_hash_map<HashMapKey,lyric_runtime::Operand>::hasher,
     HashMapEq>;
 
 class HashMapRef : public lyric_runtime::BaseRef {
@@ -41,17 +41,21 @@ public:
     explicit HashMapRef(const lyric_runtime::VirtualTable *vtable);
     ~HashMapRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x75e13d0f6d3c438f; }
+
+    tu_uint64 getTypeTag() const override;
+
     void initialize(const HashMapEq &eq);
 
     std::string toString() const override;
 
-    bool contains(const lyric_runtime::DataCell &key) const;
+    bool contains(const lyric_runtime::Operand &key) const;
     int size() const;
-    lyric_runtime::DataCell get(const lyric_runtime::DataCell &key) const;
+    lyric_runtime::Operand get(const lyric_runtime::Operand &key) const;
     int generation() const;
 
-    lyric_runtime::DataCell put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value);
-    lyric_runtime::DataCell remove(const lyric_runtime::DataCell &key);
+    lyric_runtime::Operand put(const lyric_runtime::Operand &key, const lyric_runtime::Operand &value);
+    lyric_runtime::Operand remove(const lyric_runtime::Operand &key);
     HashMapImpl::iterator begin();
     HashMapImpl::iterator end();
     void clear();
@@ -74,11 +78,15 @@ public:
         const lyric_runtime::VirtualTable *vtable,
         HashMapRef *map);
 
+    static constexpr tu_uint64 type_tag() { return 0x4efe207cc6d2f170; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
     bool valid();
-    lyric_runtime::DataCell key();
-    lyric_runtime::DataCell value();
+    lyric_runtime::Operand key();
+    lyric_runtime::Operand value();
     bool next();
 
 protected:

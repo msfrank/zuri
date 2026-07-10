@@ -37,7 +37,7 @@ TEST_F(FsFile, EvaluateCreateFile)
     )", path.c_str()));
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-    DataCellRef(lyric_common::SymbolUrl(
+    OperandRef(lyric_common::SymbolUrl(
         lyric_common::ModuleLocation::fromString("dev.zuri.pkg://fs-0.0.1@zuri.dev/file"),
         lyric_common::SymbolPath({"File"}))))));
 
@@ -62,7 +62,7 @@ TEST_F(FsFile, EvaluateOpenFile)
     )", path.c_str()));
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellBytes(content))));
+        OperandBytes(content))));
 }
 
 TEST_F(FsFile, EvaluateCreateFileAndWrite)
@@ -80,7 +80,7 @@ TEST_F(FsFile, EvaluateCreateFileAndWrite)
     )", path.c_str(), content));
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellInt(13))));
+        OperandI64(13))));
 
     tempo_utils::FileReader reader(path);
     ASSERT_THAT (reader.getStatus(), tempo_test::IsOk());

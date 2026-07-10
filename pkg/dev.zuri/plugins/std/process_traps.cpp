@@ -15,8 +15,8 @@ std_process_get_program_id(
     auto *currentCoro = state->currentCoro();
 
     auto uuid = tempo_utils::UUID::randomUUID();
-    auto programId = heapManager->allocateString(uuid.toRfc4122String());
-    currentCoro->pushData(programId);
+    auto programId = heapManager->allocateString(uuid.toRfc4122String(), /* permanent= */ false);
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(programId));
 
     return {};
 }
@@ -46,11 +46,12 @@ std_process_get_argument(
     auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
-    const auto &idx = frame.getArgument(0);
-    TU_ASSERT(idx.type == lyric_runtime::DataCellType::Int64);
+    const auto &arg0 = frame.getArgument(0);
+    tu_int64 index;
+    TU_ASSERT(arg0.getI64(index));
 
-    auto argument = state->getMainArgument(idx.data.i64);
-    currentCoro->pushData(argument);
+    auto argument = state->getMainArgument(index);
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(argument));
 
     return {};
 }
@@ -63,8 +64,8 @@ std_process_num_arguments(
 {
     auto *currentCoro = state->currentCoro();
 
-    auto numArguments = lyric_runtime::DataCell(static_cast<tu_int64>(state->numMainArguments()));
-    currentCoro->pushData(numArguments);
+    auto numArguments = lyric_runtime::Operand::fromI64(state->numMainArguments());
+    TU_RETURN_IF_NOT_OK (currentCoro->pushData(numArguments));
 
     return {};
 }

@@ -4,8 +4,6 @@
 #define ZURI_STD_TIME_TIME_TRAPS_H
 
 #include <lyric_runtime/bytecode_interpreter.h>
-#include <lyric_runtime/call_cell.h>
-#include <lyric_runtime/data_cell.h>
 #include <lyric_runtime/interpreter_state.h>
 
 tempo_utils::Status std_time_now(

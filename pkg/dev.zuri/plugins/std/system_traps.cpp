@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
-#include <lyric_runtime/data_cell.h>
+#include <lyric_runtime/operand.h>
 #include <lyric_runtime/interpreter_state.h>
 
 #include "future_ref.h"
@@ -19,7 +19,7 @@
 //
 //     TU_ASSERT(frame.numArguments() == 1);
 //     const auto &cell = frame.getArgument(0);
-//     TU_ASSERT(cell.type == lyric_runtime::DataCellType::URL);
+//     TU_ASSERT(cell.type == lyric_runtime::OperandType::URL);
 //
 //     tempo_utils::Url protocolUrl;
 //     if (!cell.data.url->uriValue(protocolUrl))
@@ -44,13 +44,13 @@
 //     lyric_runtime::InterpreterStatus status;
 //     auto descriptor = segmentManager->resolveDescriptor(segment,
 //         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-//     TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
+//     TU_ASSERT (descriptor.type == lyric_runtime::OperandType::Descriptor);
 //     TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
 //     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
 //     TU_ASSERT(vtable != nullptr);
 //
 //     // create a new port and return it to caller
-//     lyric_runtime::DataCell ref;
+//     lyric_runtime::Operand ref;
 //     if (protocolUrl.toString() == "dev.zuri.proto:null") {
 //         ref = heapManager->allocateRef<PortRef>(vtable, interp, state);
 //     } else {
@@ -79,10 +79,10 @@ std_system_await(
     auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() >= 1);
-    const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::Ref);
+    const auto &arg0 = frame.getArgument(0);
+    FutureRef *fut;
+    TU_ASSERT(arg0.castRef(fut));
 
-    auto *fut = cell.data.ref;
     fut->awaitFuture(scheduler);
 
     return {};
@@ -99,12 +99,12 @@ std_system_get_result(
     auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() >= 1);
-    const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::Ref);
-    auto *ref = cell.data.ref;
+    const auto &arg0 = frame.getArgument(0);
+    FutureRef *fut;
+    TU_ASSERT(arg0.castRef(fut));
 
-    lyric_runtime::DataCell result;
-    ref->resolveFuture(result);
+    lyric_runtime::Operand result;
+    fut->resolveFuture(result);
     currentCoro->pushData(result);
 
     return {};
@@ -112,7 +112,7 @@ std_system_get_result(
 
 class SleepOperations : public lyric_runtime::PromiseOperations {
 public:
-    SleepOperations(lyric_runtime::DataCell result)
+    SleepOperations(lyric_runtime::Operand result)
         : m_result(std::move(result))
     {
         TU_ASSERT (m_result.isValid());
@@ -126,16 +126,10 @@ public:
     }
     void setReachable() override
     {
-        switch (m_result.type) {
-            case lyric_runtime::DataCellType::Ref:
-                m_result.data.ref->setReachable();
-                break;
-            default:
-                break;
-        }
+        m_result.setReachable();
     }
 private:
-    lyric_runtime::DataCell m_result;
+    lyric_runtime::Operand m_result;
 };
 
 tempo_utils::Status
@@ -150,9 +144,10 @@ std_system_sleep(
     auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 2);
-    const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::Int64);
-    uint64_t timeout = cell.data.i64 > 0? cell.data.i64 : 0;
+    const auto &arg0 = frame.getArgument(0);
+    tu_int64 timeout;
+    TU_ASSERT(arg0.getI64(timeout));
+    tu_uint64 deadline = timeout > 0? timeout : 0;
 
     auto *segmentManager = state->segmentManager();
     auto *heapManager = state->heapManager();
@@ -165,8 +160,8 @@ std_system_sleep(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
-    TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
+    lyric_runtime::DescriptorEntry *entry;
+    TU_ASSERT (descriptor.getDescriptor(entry, lyric_object::LinkageSection::Class));
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);
 
@@ -178,10 +173,11 @@ std_system_sleep(
 
     // register a timer
     auto promise = lyric_runtime::Promise::create(std::move(ops));
-    scheduler->registerTimer(timeout, promise);
+    scheduler->registerTimer(deadline, promise);
 
     // attach the timer promise to the future
-    auto *fut = ref.data.ref;
+    FutureRef *fut;
+    TU_ASSERT (ref.castRef(fut));
     fut->prepareFuture(promise);
 
     return {};
@@ -201,10 +197,10 @@ public:
     {
         // complete the promise
         auto *workerCoro = m_task->stackfulCoroutine();
-        lyric_runtime::DataCell *result;
-        TU_RAISE_IF_NOT_OK (workerCoro->peekData(&result));
-        TU_LOG_INFO << "worker task " << m_task << " terminated with result " << *result;
-        promise->complete(*result);
+        lyric_runtime::Operand result;
+        TU_RAISE_IF_NOT_OK (workerCoro->peekData(result));
+        TU_LOG_INFO << "worker task " << m_task << " terminated with result " << result;
+        promise->complete(result);
 
         // destroy the worker task
         auto *scheduler = m_task->getSystemScheduler();
@@ -227,9 +223,9 @@ std_system_spawn(
     auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() == 1);
-    const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::Ref);
-    auto *closure = cell.data.ref;
+    const auto &arg0 = frame.getArgument(0);
+    lyric_runtime::BaseRef *closure;
+    TU_ASSERT(arg0.getRef(closure));
 
     auto *segmentManager = state->segmentManager();
     auto *heapManager = state->heapManager();
@@ -242,22 +238,23 @@ std_system_spawn(
     lyric_runtime::InterpreterStatus status;
     auto descriptor = segmentManager->resolveDescriptor(segment,
         symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-    TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
-    TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Class);
+    lyric_runtime::DescriptorEntry *entry;
+    TU_ASSERT (descriptor.getDescriptor(entry, lyric_object::LinkageSection::Class));
     const auto *vtable = segmentManager->resolveClassVirtualTable(descriptor, status);
     TU_ASSERT(vtable != nullptr);
 
     // create a new future to wait for spawn result
     auto ref = heapManager->allocateRef<FutureRef>(vtable);
     currentCoro->pushData(ref);
-    auto *fut = ref.data.ref;
+    FutureRef *fut;
+    TU_ASSERT (ref.castRef(fut));
 
     // create a new worker task
     auto *workerTask = scheduler->createTask();
     TU_ASSERT (workerTask != nullptr);
 
     // push a new frame onto the worker task call stack
-    std::vector<lyric_runtime::DataCell> args;
+    std::vector<lyric_runtime::Operand> args;
     if (!closure->applyClosure(workerTask, args, state))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "failed to apply closure");

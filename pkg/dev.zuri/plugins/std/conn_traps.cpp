@@ -28,7 +28,7 @@ private:
 
 class ConnectOps : public lyric_runtime::PromiseOperations {
 public:
-    ConnectOps(const lyric_runtime::DataCell &ref, std::shared_ptr<ConnectCompleter> completer)
+    ConnectOps(const lyric_runtime::Operand &ref, std::shared_ptr<ConnectCompleter> completer)
         : m_ref(ref),
           m_completer(std::move(completer))
     {}
@@ -48,10 +48,10 @@ public:
     }
     void setReachable() override
     {
-        m_ref.data.ref->setReachable();
+        m_ref.setReachable();
     }
 private:
-    lyric_runtime::DataCell m_ref;
+    lyric_runtime::Operand m_ref;
     std::shared_ptr<ConnectCompleter> m_completer;
 };
 
@@ -69,20 +69,22 @@ std_conn_make_connection(
     TU_ASSERT(frame.numArguments() == 2);
 
     const auto &arg0 = frame.getArgument(0);
-    TU_ASSERT(arg0.type == lyric_runtime::DataCellType::Protocol);
-    auto *protocol = arg0.data.protocol;
+    lyric_runtime::ProtocolRef *protocol;
+    TU_ASSERT(arg0.getProtocol(protocol));
 
     const auto &arg1 = frame.getArgument(1);
-    TU_ASSERT(arg1.type == lyric_runtime::DataCellType::Ref);
-    auto *url = static_cast<UrlRef *>(arg1.data.ref);
+    UrlRef *url;
+    TU_ASSERT(arg1.castRef(url));
 
-    lyric_runtime::DataCell sender;
+    lyric_runtime::Operand sender;
     TU_RETURN_IF_NOT_OK (currentCoro->popData(sender));
-    auto *instance = static_cast<ConnectionRef *>(sender.data.ref);
+    ConnectionRef *instance;
+    TU_ASSERT (sender.castRef(instance));
 
-    lyric_runtime::DataCell *top;
-    TU_RETURN_IF_NOT_OK (currentCoro->peekData(&top));
-    auto *fut = static_cast<FutureRef *>(top->data.ref);
+    lyric_runtime::Operand top;
+    TU_RETURN_IF_NOT_OK (currentCoro->peekData(top));
+    FutureRef *fut;
+    TU_ASSERT (top.castRef(fut));
 
     // make the connection
     auto *portMultiplexer = state->portMultiplexer();

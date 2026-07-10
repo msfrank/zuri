@@ -2,7 +2,6 @@
 
 #include <absl/strings/substitute.h>
 
-#include <lyric_runtime/data_cell.h>
 #include <lyric_runtime/string_ref.h>
 #include <tempo_utils/log_stream.h>
 #include <tempo_utils/unicode.h>
@@ -10,6 +9,8 @@
 #include "file_ref.h"
 
 #include <lyric_runtime/bytes_ref.h>
+
+#include "../std/future_ref.h"
 
 FileRef::FileRef(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable),
@@ -20,6 +21,12 @@ FileRef::FileRef(const lyric_runtime::VirtualTable *vtable)
 FileRef::~FileRef()
 {
     TU_LOG_V << "free FileRef" << FileRef::toString();
+}
+
+tu_uint64
+FileRef::getTypeTag() const
+{
+    return type_tag();
 }
 
 std::string
@@ -166,7 +173,7 @@ public:
         TU_NOTNULL (req);
         auto ret = req->result;
         if (ret >= 0) {
-            promise->complete(lyric_runtime::DataCell(static_cast<tu_int64>(ret)));
+            promise->complete(lyric_runtime::Operand::fromI64(ret));
         } else {
             auto status = heapManager->allocateStatus(
                 tempo_utils::StatusCode::kInternal, uv_strerror(ret));
@@ -261,13 +268,13 @@ fs_file_ctor(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FileRef *>(receiver.data.ref);
+    FileRef *instance;
+    TU_ASSERT (receiver.castRef(instance));
 
     TU_ASSERT (frame.numArguments() > 0);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::String);
-    auto *str = arg0.data.str;
+    lyric_runtime::StringRef *str;
+    TU_ASSERT (arg0.getString(str));
 
     std::filesystem::path path(str->getString());
     path = std::filesystem::absolute(path);
@@ -287,43 +294,48 @@ fs_file_create(
 
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 4);
+
     auto arg2 = frame.getArgument(2);
-    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::Bool);
+    bool trunc;
+    TU_ASSERT (arg2.getBool(trunc));
+
     auto arg3 = frame.getArgument(3);
-    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::Bool);
+    bool append;
+    TU_ASSERT (arg3.getBool(append));
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FileRef *>(receiver.data.ref);
+    FileRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     int flags = UV_FS_O_CREAT | UV_FS_O_EXCL;
-    int mode = 0;
 
-    lyric_runtime::DataCell permissions;
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(permissions));
-    TU_ASSERT (permissions.type == lyric_runtime::DataCellType::Int64);
-    mode = static_cast<int>(permissions.data.i64);
+    lyric_runtime::Operand data2;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(data2));
+    tu_uint32 mode;
+    TU_ASSERT (data2.getU32(mode));
 
-    lyric_runtime::DataCell canRead, canWrite;
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(canWrite));
-    TU_ASSERT (canWrite.type == lyric_runtime::DataCellType::Bool);
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(canRead));
-    TU_ASSERT (canRead.type == lyric_runtime::DataCellType::Bool);
+    lyric_runtime::Operand data0, data1;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(data1));
+    bool write;
+    TU_ASSERT (data1.getBool(write));
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(data0));
+    bool read;
+    TU_ASSERT (data0.getBool(read));
 
-    if (canRead.data.b == true) {
-        flags |= canWrite.data.b == true? UV_FS_O_RDWR : UV_FS_O_RDONLY;
+    if (read) {
+        flags |= write? UV_FS_O_RDWR : UV_FS_O_RDONLY;
     } else {
-        flags |= canWrite.data.b == true? UV_FS_O_WRONLY : 0;
+        flags |= write? UV_FS_O_WRONLY : 0;
     }
 
-    if (arg2.data.b == true) {
+    if (trunc) {
         flags |= UV_FS_O_TRUNC;
     }
-    if (arg3.data.b == true) {
+    if (append) {
         flags |= UV_FS_O_APPEND;
     }
 
-    auto status = instance->open(flags, mode, systemScheduler);
+    auto status = instance->open(flags, static_cast<int>(mode), systemScheduler);
     if (status.notOk()) {
         auto *heapManager = state->heapManager();
         auto statusRef = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
@@ -347,39 +359,46 @@ fs_file_open(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 4);
     auto arg1 = frame.getArgument(1);
-    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::Bool);
+    bool trunc;
+    TU_ASSERT (arg1.getBool(trunc));
     auto arg2 = frame.getArgument(2);
-    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::Bool);
+    bool append;
+    TU_ASSERT (arg2.getBool(append));
     auto arg3 = frame.getArgument(3);
-    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::Bool);
+    bool nofollow;
+    TU_ASSERT (arg3.getBool(nofollow));
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FileRef *>(receiver.data.ref);
+    FileRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     int flags = 0;
-    int mode = 0;
 
-    lyric_runtime::DataCell canRead, canWrite;
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(canWrite));
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(canRead));
-    if (canRead.data.b == true) {
-        flags |= canWrite.data.b == true? UV_FS_O_RDWR : UV_FS_O_RDONLY;
+    lyric_runtime::Operand data0, data1;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(data1));
+    bool write;
+    TU_ASSERT (data1.getBool(write));
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(data0));
+    bool read;
+    TU_ASSERT (data0.getBool(read));
+
+    if (read) {
+        flags |= write? UV_FS_O_RDWR : UV_FS_O_RDONLY;
     } else {
-        flags |= canWrite.data.b == true? UV_FS_O_WRONLY : 0;
+        flags |= write? UV_FS_O_WRONLY : 0;
     }
 
-    if (arg1.data.b == true) {
+    if (trunc) {
         flags |= UV_FS_O_TRUNC;
     }
-    if (arg2.data.b == true) {
+    if (append) {
         flags |= UV_FS_O_APPEND;
     }
-    if (arg3.data.b == true) {
+    if (nofollow) {
         flags |= UV_FS_O_NOFOLLOW;
     }
 
-    auto status = instance->open(flags, mode, systemScheduler);
+    auto status = instance->open(flags, /* mode= */ 0, systemScheduler);
     if (status.notOk()) {
         auto *heapManager = state->heapManager();
         auto statusRef = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
@@ -403,47 +422,51 @@ fs_file_open_or_create(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 5);
     auto arg2 = frame.getArgument(2);
-    TU_ASSERT (arg2.type == lyric_runtime::DataCellType::Bool);
+    bool trunc;
+    TU_ASSERT (arg2.getBool(trunc));
     auto arg3 = frame.getArgument(3);
-    TU_ASSERT (arg3.type == lyric_runtime::DataCellType::Bool);
+    bool append;
+    TU_ASSERT (arg3.getBool(append));
     auto arg4 = frame.getArgument(4);
-    TU_ASSERT (arg4.type == lyric_runtime::DataCellType::Bool);
+    bool nofollow;
+    TU_ASSERT (arg4.getBool(nofollow));
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FileRef *>(receiver.data.ref);
+    FileRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     int flags = UV_FS_O_CREAT;
-    int mode = 0;
 
-    lyric_runtime::DataCell permissions;
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(permissions));
-    TU_ASSERT (permissions.type == lyric_runtime::DataCellType::Int64);
-    mode = static_cast<int>(permissions.data.i64);
+    lyric_runtime::Operand data2;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(data2));
+    tu_uint32 mode;
+    TU_ASSERT (data2.getU32(mode));
 
-    lyric_runtime::DataCell canRead, canWrite;
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(canWrite));
-    TU_ASSERT (canWrite.type == lyric_runtime::DataCellType::Bool);
-    TU_RETURN_IF_NOT_OK (currentCoro->popData(canRead));
-    TU_ASSERT (canRead.type == lyric_runtime::DataCellType::Bool);
+    lyric_runtime::Operand data0, data1;
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(data1));
+    bool write;
+    TU_ASSERT (data1.getBool(write));
+    TU_RETURN_IF_NOT_OK (currentCoro->popData(data0));
+    bool read;
+    TU_ASSERT (data0.getBool(read));
 
-    if (canRead.data.b == true) {
-        flags |= canWrite.data.b == true? UV_FS_O_RDWR : UV_FS_O_RDONLY;
+    if (read) {
+        flags |= write? UV_FS_O_RDWR : UV_FS_O_RDONLY;
     } else {
-        flags |= canWrite.data.b == true? UV_FS_O_WRONLY : 0;
+        flags |= write? UV_FS_O_WRONLY : 0;
     }
 
-    if (arg2.data.b == true) {
+    if (trunc) {
         flags |= UV_FS_O_TRUNC;
     }
-    if (arg3.data.b == true) {
+    if (append) {
         flags |= UV_FS_O_APPEND;
     }
-    if (arg4.data.b == true) {
+    if (nofollow) {
         flags |= UV_FS_O_NOFOLLOW;
     }
 
-    auto status = instance->open(flags, mode, systemScheduler);
+    auto status = instance->open(flags, static_cast<int>(mode), systemScheduler);
     if (status.notOk()) {
         auto *heapManager = state->heapManager();
         auto statusRef = heapManager->allocateStatus(status.getStatusCode(), status.getMessage());
@@ -459,8 +482,7 @@ tempo_utils::Status
 fs_file_read(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
-    const lyric_runtime::VirtualTable *vtable)
-{
+    const lyric_runtime::VirtualTable *vtable) {
     auto *currentCoro = state->currentCoro();
     auto *systemScheduler = state->systemScheduler();
     auto *heapManager = state->heapManager();
@@ -468,26 +490,27 @@ fs_file_read(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FileRef *>(receiver.data.ref);
+    FileRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     TU_ASSERT (frame.numArguments() == 1);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Int64);
+    tu_int64 size64;
+    TU_ASSERT (arg0.getI64(size64));
 
-    lyric_runtime::DataCell *data;
-    TU_RETURN_IF_NOT_OK (currentCoro->peekData(&data));
-    TU_ASSERT (data->type == lyric_runtime::DataCellType::Ref);
-    auto *fut = data->data.ref;
+    lyric_runtime::Operand data0;
+    TU_RETURN_IF_NOT_OK (currentCoro->peekData(data0));
+    FutureRef *fut;
+    TU_ASSERT (data0.castRef(fut));
 
-    if (arg0.data.i64 < 0) {
+    if (size64 < 0 || std::numeric_limits<size_t>::max() < size64) {
         auto status = heapManager->allocateStatus(tempo_utils::StatusCode::kInvalidArgument,
-            "invalid argument maxBytes; maxBytes cannot be negative");
+            "invalid argument maxBytes");
         auto promise = lyric_runtime::Promise::rejected(status);
         fut->prepareFuture(promise);
         return {};
     }
-    auto size = static_cast<size_t>(arg0.data.i64);
+    auto size = static_cast<size_t>(size64);
 
     TU_RETURN_IF_NOT_OK (instance->readAsync(size, fut, systemScheduler));
 
@@ -507,21 +530,21 @@ fs_file_write(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FileRef *>(receiver.data.ref);
+    FileRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     TU_ASSERT (frame.numArguments() == 2);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Bytes);
-    auto *bytes = arg0.data.bytes;
+    lyric_runtime::BytesRef *bytes;
+    TU_ASSERT (arg0.getBytes(bytes));
     auto arg1 = frame.getArgument(1);
-    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::Int64);
-    auto offset = arg1.data.i64;
+    tu_int64 offset;
+    TU_ASSERT (arg1.getI64(offset));
 
-    lyric_runtime::DataCell *data;
-    TU_RETURN_IF_NOT_OK (currentCoro->peekData(&data));
-    TU_ASSERT (data->type == lyric_runtime::DataCellType::Ref);
-    auto *fut = data->data.ref;
+    lyric_runtime::Operand data0;
+    TU_RETURN_IF_NOT_OK (currentCoro->peekData(data0));
+    FutureRef *fut;
+    TU_ASSERT (data0.castRef(fut));
 
     // ensure any negative offset is set to -1 specifically
     if (offset < -1) {
@@ -556,8 +579,8 @@ fs_file_close(
     auto &frame = currentCoro->currentCallOrThrow();
 
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<FileRef *>(receiver.data.ref);
+    FileRef *instance;
+    TU_ASSERT (receiver.castRef(instance));
 
     auto status = instance->close(systemScheduler);
     if (status.notOk()) {

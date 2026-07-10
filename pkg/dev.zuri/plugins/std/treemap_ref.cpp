@@ -18,12 +18,18 @@ TreeMapRef::~TreeMapRef()
     m_map.clear();
 }
 
+tu_uint64
+TreeMapRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 void
 TreeMapRef::initialize(const TreeMapComparator &cmp)
 {
     m_map = absl::btree_map<
-        lyric_runtime::DataCell,
-        lyric_runtime::DataCell,
+        lyric_runtime::Operand,
+        lyric_runtime::Operand,
         TreeMapComparator>(cmp);
     m_cmp = cmp;
 }
@@ -42,20 +48,20 @@ TreeMapRef::size() const
 }
 
 bool
-TreeMapRef::contains(const lyric_runtime::DataCell &key) const
+TreeMapRef::contains(const lyric_runtime::Operand &key) const
 {
     return m_map.contains(key);
 }
 
-lyric_runtime::DataCell
-TreeMapRef::get(const lyric_runtime::DataCell &key) const
+lyric_runtime::Operand
+TreeMapRef::get(const lyric_runtime::Operand &key) const
 {
     if (!m_map.contains(key))
         return {};
     return m_map.at(key);
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 TreeMapRef::at(int index) const
 {
     if (m_map.size() > index) {
@@ -66,7 +72,7 @@ TreeMapRef::at(int index) const
     return {};
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 TreeMapRef::first() const
 {
     auto iterator = m_map.cbegin();
@@ -75,7 +81,7 @@ TreeMapRef::first() const
     return iterator->second;
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 TreeMapRef::last() const
 {
     auto iterator = m_map.crbegin();
@@ -90,8 +96,8 @@ TreeMapRef::generation() const
     return m_gen;
 }
 
-lyric_runtime::DataCell
-TreeMapRef::put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCell &value)
+lyric_runtime::Operand
+TreeMapRef::put(const lyric_runtime::Operand &key, const lyric_runtime::Operand &value)
 {
     auto prev = remove(key);
     m_map[key] = value;
@@ -99,12 +105,12 @@ TreeMapRef::put(const lyric_runtime::DataCell &key, const lyric_runtime::DataCel
     return prev;
 }
 
-lyric_runtime::DataCell
-TreeMapRef::remove(const lyric_runtime::DataCell &key)
+lyric_runtime::Operand
+TreeMapRef::remove(const lyric_runtime::Operand &key)
 {
     if (!m_map.contains(key))
         return {};
-    lyric_runtime::DataCell value = m_map.at(key);
+    lyric_runtime::Operand value = m_map.at(key);
     m_map.erase(key);
     ++m_gen;
     return value;
@@ -134,15 +140,9 @@ TreeMapRef::setMembersReachable()
 {
     for (auto iterator = m_map.begin(); iterator != m_map.end(); iterator++) {
         auto &key = iterator->first;
-        if (key.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (key.data.ref != nullptr);
-            key.data.ref->setReachable();
-        }
+        key.setReachable();
         auto &value = iterator->second;
-        if (value.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (value.data.ref != nullptr);
-            value.data.ref->setReachable();
-        }
+        value.setReachable();
     }
 }
 
@@ -151,23 +151,17 @@ TreeMapRef::clearMembersReachable()
 {
     for (auto iterator = m_map.begin(); iterator != m_map.end(); iterator++) {
         auto &key = iterator->first;
-        if (key.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (key.data.ref != nullptr);
-            key.data.ref->clearReachable();
-        }
+        key.clearReachable();
         auto &value = iterator->second;
-        if (value.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (value.data.ref != nullptr);
-            value.data.ref->clearReachable();
-        }
+        value.clearReachable();
     }
 }
 
 TreeMapComparator::TreeMapComparator(
     lyric_runtime::BytecodeInterpreter *interp,
     lyric_runtime::InterpreterState *state,
-    const lyric_runtime::DataCell &ctxArgument,
-    const lyric_runtime::DataCell &compareCall)
+    const lyric_runtime::Operand &ctxArgument,
+    const lyric_runtime::Operand &compareCall)
     : m_interp(interp),
       m_state(state),
       m_ctxArgument(ctxArgument),
@@ -184,7 +178,7 @@ TreeMapComparator::TreeMapComparator(const TreeMapComparator &other) noexcept
 }
 
 bool
-TreeMapComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_runtime::DataCell& rhs) const
+TreeMapComparator::operator()(const lyric_runtime::Operand& lhs, const lyric_runtime::Operand& rhs) const
 {
     auto *currentCoro = m_state->currentCoro();
 
@@ -198,9 +192,9 @@ TreeMapComparator::operator()(const lyric_runtime::DataCell& lhs, const lyric_ru
     if (compareResult.isStatus())
         return false;
     auto ret = compareResult.getResult();
-    if (ret.type == lyric_runtime::DataCellType::Int64)
-        return ret.data.i64 < 0;
-    return false;
+    tu_int64 cmp;
+    TU_ASSERT (ret.getI64(cmp));
+    return cmp < 0;
 }
 
 TreeMapIterator::TreeMapIterator(const lyric_runtime::VirtualTable *vtable)
@@ -221,6 +215,12 @@ TreeMapIterator::TreeMapIterator(
     m_gen = map->generation();
 }
 
+tu_uint64
+TreeMapIterator::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 TreeMapIterator::toString() const
 {
@@ -233,7 +233,7 @@ TreeMapIterator::valid()
     return m_map && m_iter != m_map->end() && m_gen == m_map->generation();
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 TreeMapIterator::key()
 {
     if (!valid())
@@ -241,7 +241,7 @@ TreeMapIterator::key()
     return m_iter->first;
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 TreeMapIterator::value()
 {
     if (!valid())

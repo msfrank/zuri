@@ -1,4 +1,6 @@
 
+#include <flatbuffers/verifier.h>
+
 #include <lyric_common/common_conversions.h>
 #include <tempo_config/base_conversions.h>
 #include <tempo_config/parse_config.h>
@@ -12,7 +14,7 @@
 zuri_packager::PackageReader::PackageReader(
     tu_uint8 version,
     tu_uint8 flags,
-    ZuriManifest manifest,
+    const ZuriManifest &manifest,
     tempo_utils::Slice contents,
     Private)
     : m_version(version),
@@ -107,8 +109,7 @@ zuri_packager::PackageReader::readPackageConfig() const
     std::string_view packageConfigString((const char *) slice.getData(), slice.getSize());
     tempo_config::ConfigNode packageConfig;
     TU_ASSIGN_OR_RETURN (packageConfig, tempo_config::read_config_string(
-        packageConfigString, std::make_shared<tempo_config::ConfigSource>(
-            tempo_config::ConfigSourceType::File, "<zuri-package>/package.config")));
+        packageConfigString, tempo_config::ConfigSource::fromString("<zuri-package>/package.config")));
 
     return packageConfig.toMap();
 }

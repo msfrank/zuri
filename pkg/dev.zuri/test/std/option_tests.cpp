@@ -24,12 +24,12 @@ TEST_F(StdCollectionsOption, TestEvaluateNewEmptyOption)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val opt: Option[Int] = Option[Int]{}
+        val opt: Option[I64] = Option[I64]{}
         opt
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/collections"),
                 lyric_common::SymbolPath({"Option"}))))));
@@ -39,12 +39,12 @@ TEST_F(StdCollectionsOption, TestEvaluateNewOption)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val opt: Option[Int] = Option[Int]{42}
+        val opt: Option[I64] = Option[I64]{42}
         opt
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/collections"),
                 lyric_common::SymbolPath({"Option"}))))));
@@ -54,70 +54,70 @@ TEST_F(StdCollectionsOption, TestEvaluateOptionIsEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val opt: Option[Int] = Option[Int]{}
+        val opt: Option[I64] = Option[I64]{}
         opt.IsEmpty()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellBool(true))));
+        RunModule(OperandBool(true))));
 }
 
 TEST_F(StdCollectionsOption, TestEvaluateOptionIsNotEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val opt: Option[Int] = Option[Int]{42}
+        val opt: Option[I64] = Option[I64]{42}
         opt.IsEmpty()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellBool(false))));
+        RunModule(OperandBool(false))));
 }
 
 TEST_F(StdCollectionsOption, TestEvaluateOptionGetWhenEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val opt: Option[Int] = Option[Int]{}
+        val opt: Option[I64] = Option[I64]{}
         opt.Get()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellUndef())));
+        RunModule(OperandUndef())));
 }
 
 TEST_F(StdCollectionsOption, TestEvaluateOptionGetWhenNotEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val opt: Option[Int] = Option[Int]{42}
+        val opt: Option[I64] = Option[I64]{42}
         opt.Get()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(42))));
+        RunModule(OperandI64(42))));
 }
 
 TEST_F(StdCollectionsOption, TestEvaluateOptionGetOrElseWhenEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val opt: Option[Int] = Option[Int]{}
+        val opt: Option[I64] = Option[I64]{}
         opt.GetOrElse(0)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(0))));
+        RunModule(OperandI64(0))));
 }
 
 TEST_F(StdCollectionsOption, TestEvaluateOptionGetOrElseWhenNotEmpty)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val opt: Option[Int] = Option[Int]{42}
+        val opt: Option[I64] = Option[I64]{42}
         opt.GetOrElse(0)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(42))));
+        RunModule(OperandI64(42))));
 }

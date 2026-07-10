@@ -24,12 +24,12 @@ TEST_F(StdCollectionsVector, TestEvaluateNewVector)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/collections"),
                 lyric_common::SymbolPath({"Vector"}))))));
@@ -39,44 +39,44 @@ TEST_F(StdCollectionsVector, TestEvaluateConstructVectorWithElements)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{1, 2, 3}
+        val ints: Vector[I64] = Vector[I64]{1, 2, 3}
         ints.Size()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellInt(3))));
+        OperandI64(3))));
 }
 
 TEST_F(StdCollectionsVector, TestEvaluateVectorSize)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints.Size()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(0LL))));
+        RunModule(OperandI64(0LL))));
 }
 
 TEST_F(StdCollectionsVector, TestEvaluateVectorAt)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints.Append(1)
         ints.At(0)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(1LL))));
+        RunModule(OperandI64(1LL))));
 }
 
 TEST_F(StdCollectionsVector, TestEvaluateVectorInsert)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints.Append(1)
         ints.Append(2)
         ints.Append(3)
@@ -85,54 +85,54 @@ TEST_F(StdCollectionsVector, TestEvaluateVectorInsert)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(42LL))));
+        RunModule(OperandI64(42LL))));
 }
 
 TEST_F(StdCollectionsVector, TestEvaluateVectorAppend)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints.Append(1)
         ints.Append(2)
         ints.At(1)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(2LL))));
+        RunModule(OperandI64(2LL))));
 }
 
 TEST_F(StdCollectionsVector, TestEvaluateVectorReplace)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints.Append(1)
         ints.Replace(0, 42)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(1LL))));
+        RunModule(OperandI64(1LL))));
 }
 
 TEST_F(StdCollectionsVector, TestEvaluateVectorRemove)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints.Append(1)
         ints.Remove(0)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(1LL))));
+        RunModule(OperandI64(1LL))));
 }
 
 TEST_F(StdCollectionsVector, TestEvaluateVectorClear)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints.Append(1)
         ints.Append(2)
         ints.Append(3)
@@ -141,24 +141,24 @@ TEST_F(StdCollectionsVector, TestEvaluateVectorClear)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(0LL))));
+        RunModule(OperandI64(0LL))));
 }
 
 TEST_F(StdCollectionsVector, TestEvaluateVectorIterate)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: Vector[Int] = Vector[Int]{}
+        val ints: Vector[I64] = Vector[I64]{}
         ints.Append(1)
         ints.Append(2)
         ints.Append(3)
-        var sum: Int = 0
-        for n: Int in ints {
+        var sum: I64 = 0
+        for n: I64 in ints {
             sum += n
         }
         sum
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(6LL))));
+        RunModule(OperandI64(6LL))));
 }

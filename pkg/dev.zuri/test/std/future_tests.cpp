@@ -35,5 +35,5 @@ TEST_F(StdSystemFuture, EvaluateAwaitComposedFuture)
     )");
 
     ASSERT_THAT (result,
-        tempo_test::ContainsResult(RunModule(DataCellInt(43))));
+        tempo_test::ContainsResult(RunModule(OperandInt(43))));
 }

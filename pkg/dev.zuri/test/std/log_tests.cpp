@@ -38,7 +38,7 @@ TEST_F(StdLogLog, EvaluateConnect)
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
         RunModule(
-            DataCellRef(lyric_common::SymbolPath::fromString("SenderConnection")))));
+            OperandRef(lyric_common::SymbolPath::fromString("SenderConnection")))));
 
     ASSERT_TRUE (logTransport->connectCompleted());
 }

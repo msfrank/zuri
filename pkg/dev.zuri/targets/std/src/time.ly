@@ -7,7 +7,7 @@
 @AllocatorTrap("STD_TIME_TIMEZONE_ALLOC")
 defclass Timezone {
 
-    init(offset: Int) {
+    init(offset: I64) {
         @{
             Trap("STD_TIME_TIMEZONE_CTOR")
         }
@@ -26,10 +26,10 @@ defclass Instant {
         }
     }
 
-    def ToEpochMillis(): Int {
+    def ToEpochMillis(): I64 {
         @{
             Trap("STD_TIME_INSTANT_TO_EPOCH_MILLIS")
-            PushResult(typeof Int)
+            PushResult(typeof I64)
         }
     }
 }

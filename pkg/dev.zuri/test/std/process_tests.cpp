@@ -30,7 +30,7 @@ TEST_F(StdProcess, EvaluateProgramId)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        lyric_test::matchers::MatchesDataCellType(lyric_runtime::DataCellType::String))));
+        lyric_test::matchers::MatchesOperandType(lyric_runtime::OperandType::String))));
     TU_CONSOLE_OUT << result.getResult().getInterpreterExit().mainReturn;
 }
 
@@ -42,12 +42,13 @@ TEST_F(StdProcess, EvaluateProgramMain)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        lyric_test::matchers::MatchesDataCellType(lyric_runtime::DataCellType::String))));
+        lyric_test::matchers::MatchesOperandType(lyric_runtime::OperandType::String))));
     auto mainReturn = result.getResult().getInterpreterExit().mainReturn;
     TU_CONSOLE_OUT << mainReturn;
 
-    std::string programMain;
-    ASSERT_TRUE (mainReturn.data.str->utf8Value(programMain));
+    lyric_runtime::StringRef *str;
+    ASSERT_TRUE (mainReturn.getString(str));
+    auto programMain = str->getString();
     ASSERT_TRUE (programMain.starts_with("dev.zuri.tester://"));
 }
 
@@ -59,5 +60,5 @@ TEST_F(StdProcess, EvaluateArguments)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        lyric_test::matchers::DataCellString("arg2"))));
+        lyric_test::matchers::OperandString("arg2"))));
 }

@@ -18,6 +18,12 @@ VectorRef::~VectorRef()
     m_seq.clear();
 }
 
+tu_uint64
+VectorRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 VectorRef::toString() const
 {
@@ -25,13 +31,13 @@ VectorRef::toString() const
         this, m_seq.size(), m_gen);
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 VectorRef::at(int index) const
 {
     return m_seq[index];
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 VectorRef::first() const
 {
     if (!m_seq.empty())
@@ -39,7 +45,7 @@ VectorRef::first() const
     return {};
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 VectorRef::last() const
 {
     if (!m_seq.empty())
@@ -47,13 +53,13 @@ VectorRef::last() const
     return {};
 }
 
-absl::InlinedVector<lyric_runtime::DataCell,16>::iterator
+absl::InlinedVector<lyric_runtime::Operand,16>::iterator
 VectorRef::begin()
 {
     return m_seq.begin();
 }
 
-absl::InlinedVector<lyric_runtime::DataCell,16>::iterator
+absl::InlinedVector<lyric_runtime::Operand,16>::iterator
 VectorRef::end()
 {
     return m_seq.end();
@@ -72,7 +78,7 @@ VectorRef::generation() const
 }
 
 void
-VectorRef::insert(int index, lyric_runtime::DataCell value)
+VectorRef::insert(int index, lyric_runtime::Operand value)
 {
     if (0 <= index && index < m_seq.size()) {
         m_seq.insert(m_seq.begin() + index, value);
@@ -82,13 +88,13 @@ VectorRef::insert(int index, lyric_runtime::DataCell value)
 }
 
 void
-VectorRef::append(const lyric_runtime::DataCell &value)
+VectorRef::append(const lyric_runtime::Operand &value)
 {
     m_seq.push_back(value);
 }
 
-lyric_runtime::DataCell
-VectorRef::update(int index, lyric_runtime::DataCell value)
+lyric_runtime::Operand
+VectorRef::update(int index, lyric_runtime::Operand value)
 {
     if (0 <= index && index < m_seq.size()) {
         auto prev = m_seq[index];
@@ -98,7 +104,7 @@ VectorRef::update(int index, lyric_runtime::DataCell value)
     return {};
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 VectorRef::remove(int index)
 {
     if (0 <= index && index < m_seq.size()) {
@@ -118,22 +124,16 @@ VectorRef::clear()
 void
 VectorRef::setMembersReachable()
 {
-    for (auto &cell : m_seq) {
-        if (cell.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (cell.data.ref != nullptr);
-            cell.data.ref->setReachable();
-        }
+    for (auto &element : m_seq) {
+        element.setReachable();
     }
 }
 
 void
 VectorRef::clearMembersReachable()
 {
-    for (auto &cell : m_seq) {
-        if (cell.type == lyric_runtime::DataCellType::Ref) {
-            TU_ASSERT (cell.data.ref != nullptr);
-            cell.data.ref->clearReachable();
-        }
+    for (auto &element : m_seq) {
+        element.clearReachable();
     }
 }
 
@@ -155,6 +155,12 @@ VectorIterator::VectorIterator(
     m_gen = vector->generation();
 }
 
+tu_uint64
+VectorIterator::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 VectorIterator::toString() const
 {
@@ -168,7 +174,7 @@ VectorIterator::iteratorValid()
 }
 
 bool
-VectorIterator::iteratorNext(lyric_runtime::DataCell &next)
+VectorIterator::iteratorNext(lyric_runtime::Operand &next)
 {
     if (!iteratorValid())
         return false;

@@ -22,7 +22,7 @@ namespace zuri_packager {
         PackageReader(
             tu_uint8 version,
             tu_uint8 flags,
-            ZuriManifest manifest,
+            const ZuriManifest &manifest,
             tempo_utils::Slice contents,
             Private);
         virtual ~PackageReader() = default;

@@ -17,6 +17,12 @@ InstantRef::~InstantRef()
     TU_LOG_INFO << "free InstantRef" << InstantRef::toString();
 }
 
+tu_uint64
+InstantRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 InstantRef::toString() const
 {
@@ -35,10 +41,11 @@ InstantRef::setInstant(absl::Time instant)
     m_instant = instant;
 }
 
-lyric_runtime::DataCell
+lyric_runtime::Operand
 InstantRef::toEpochMillis() const
 {
-    return lyric_runtime::DataCell(static_cast<tu_int64>(absl::ToUnixMillis(m_instant)));
+    auto epochMillis = static_cast<tu_int64>(absl::ToUnixMillis(m_instant));
+    return lyric_runtime::Operand::fromI64(epochMillis);
 }
 
 tempo_utils::Status
@@ -64,8 +71,8 @@ std_time_instant_ctor(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<InstantRef *>(receiver.data.ref);
+    InstantRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     instance->setInstant(absl::UnixEpoch());
 
     return {};
@@ -83,8 +90,8 @@ std_time_instant_to_epoch_millis(
 
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<InstantRef *>(receiver.data.ref);
+    InstantRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     currentCoro->pushData(instance->toEpochMillis());
     return {};
 }

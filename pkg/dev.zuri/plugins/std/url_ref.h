@@ -11,6 +11,10 @@ public:
     explicit UrlRef(const lyric_runtime::VirtualTable *vtable);
     ~UrlRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x140f37dbd6d326e7; }
+
+    tu_uint64 getTypeTag() const override;
+
     tempo_utils::Url getUrl() const;
     void setUrl(const tempo_utils::Url &url);
 

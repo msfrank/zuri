@@ -15,10 +15,14 @@ public:
     TextRef(const lyric_runtime::VirtualTable *vtable, const UChar *data, int32_t size);
     ~TextRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0xb32aee0d4cdc4bef; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
-    lyric_runtime::DataCell textAt(int index) const;
-    lyric_runtime::DataCell textSize() const;
+    lyric_runtime::Operand textAt(int index) const;
+    lyric_runtime::Operand textSize() const;
 
     const UChar *getTextData() const;
     int32_t getTextSize() const;

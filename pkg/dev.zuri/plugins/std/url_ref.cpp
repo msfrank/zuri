@@ -1,9 +1,9 @@
 
 #include <absl/strings/substitute.h>
 
-#include "url_ref.h"
-
 #include <lyric_runtime/string_ref.h>
+
+#include "url_ref.h"
 
 UrlRef::UrlRef(const lyric_runtime::VirtualTable *vtable)
     : BaseRef(vtable)
@@ -13,6 +13,12 @@ UrlRef::UrlRef(const lyric_runtime::VirtualTable *vtable)
 UrlRef::~UrlRef()
 {
     TU_LOG_INFO << "free" << UrlRef::toString();
+}
+
+tu_uint64
+UrlRef::getTypeTag() const
+{
+    return type_tag();
 }
 
 tempo_utils::Url
@@ -58,13 +64,13 @@ std_url_equality_equals(
 
     TU_ASSERT (frame.numArguments() == 2);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT(arg0.type == lyric_runtime::DataCellType::Ref);
-    auto *lhs = static_cast<UrlRef *>(arg0.data.ref);
+    UrlRef *lhs;
+    TU_ASSERT(arg0.castRef(lhs));
     auto arg1 = frame.getArgument(0);
-    TU_ASSERT(arg1.type == lyric_runtime::DataCellType::Ref);
-    auto *rhs = static_cast<UrlRef *>(arg1.data.ref);
+    UrlRef *rhs;
+    TU_ASSERT(arg1.castRef(rhs));
 
-    lyric_runtime::DataCell result(lhs->getUrl() == rhs->getUrl());
+    auto result = lyric_runtime::Operand::fromBool(lhs->getUrl() == rhs->getUrl());
     TU_RETURN_IF_NOT_OK (currentCoro->pushData(result));
 
     return {};
@@ -83,8 +89,8 @@ std_url_to_string(
 
     TU_ASSERT (frame.numArguments() == 0);
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<UrlRef *>(receiver.data.ref);
+    UrlRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
     auto url = instance->getUrl();
 
     TU_RETURN_IF_NOT_OK (heapManager->loadStringOntoStack(url.toString()));
@@ -104,12 +110,12 @@ std_url_parse_url(
     auto &frame = currentCoro->currentCallOrThrow();
 
     TU_ASSERT(frame.numArguments() >= 1);
-    const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::String);
+    const auto &arg0 = frame.getArgument(0);
+    lyric_runtime::StringRef *str;
+    TU_ASSERT(arg0.getString(str));
 
-    // get the timezone name argument
     std::string urlString;
-    if (!cell.data.str->utf8Value(urlString))
+    if (!str->utf8Value(urlString))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "invalid url string");
 
@@ -125,8 +131,8 @@ std_url_parse_url(
         lyric_runtime::InterpreterStatus status;
         auto descriptor = segmentManager->resolveDescriptor(segment,
             symbol.getLinkageSection(), symbol.getLinkageIndex(), status);
-        TU_ASSERT (descriptor.type == lyric_runtime::DataCellType::Descriptor);
-        TU_ASSERT (descriptor.data.descriptor->getLinkageSection() == lyric_object::LinkageSection::Struct);
+        lyric_runtime::DescriptorEntry *entry;
+        TU_ASSERT (descriptor.getDescriptor(entry, lyric_object::LinkageSection::Struct));
         const auto *vtable = segmentManager->resolveStructVirtualTable(descriptor, status);
         TU_ASSERT(vtable != nullptr);
 
@@ -135,7 +141,8 @@ std_url_parse_url(
         currentCoro->pushData(ref);
 
         // set the url on the instance
-        auto *instance = static_cast<UrlRef *>(ref.data.ref);
+        UrlRef *instance;
+        TU_ASSERT (ref.castRef(instance));
         instance->setUrl(url);
 
     } else {

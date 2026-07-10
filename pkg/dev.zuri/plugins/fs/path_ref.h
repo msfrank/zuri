@@ -12,6 +12,10 @@ public:
     explicit PathRef(const lyric_runtime::VirtualTable *vtable);
     ~PathRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x3d37319ea1399bab; }
+
+    tu_uint64 getTypeTag() const override;
+
     bool utf8Value(std::string &utf8) const override;
     std::string toString() const override;
 

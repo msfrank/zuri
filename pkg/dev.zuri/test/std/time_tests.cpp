@@ -32,9 +32,10 @@ TEST_F(StdTime, EvaluateNow)
     auto after = absl::Now();
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        MatchesDataCellType(lyric_runtime::DataCellType::Int64))));
+        MatchesOperandType(lyric_runtime::OperandType::Int64))));
 
-    auto epochMillis = result.getResult().getInterpreterExit().mainReturn.data.i64;
+    tu_int64 epochMillis;
+    ASSERT_TRUE (result.getResult().getInterpreterExit().mainReturn.getI64(epochMillis));
     ASSERT_LE (ToUnixMillis(before), epochMillis);
     ASSERT_GE (ToUnixMillis(after), epochMillis);
 }
@@ -48,7 +49,7 @@ TEST_F(StdTime, EvaluateParseTimezone)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/time"),
                 lyric_common::SymbolPath({"Timezone"}))))));

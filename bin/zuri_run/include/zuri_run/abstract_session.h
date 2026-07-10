@@ -21,7 +21,7 @@ namespace zuri_run {
         virtual tempo_utils::Result<lyric_common::ModuleLocation> compileFragment(
             const tempo_utils::Url &fragmentUrl) = 0;
 
-        virtual tempo_utils::Result<lyric_runtime::DataCell> executeFragment(
+        virtual tempo_utils::Result<lyric_runtime::Operand> executeFragment(
             const lyric_common::ModuleLocation &location) = 0;
     };
 }

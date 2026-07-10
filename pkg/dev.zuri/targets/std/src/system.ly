@@ -83,7 +83,7 @@ def AwaitOrDefault[T](fut: Future[T], default: T): T {
     }
 }
 
-def Sleep[T](millis: Int, result: T): Future[T] {
+def Sleep[T](millis: I64, result: T): Future[T] {
     @{
         Trap("STD_SYSTEM_SLEEP")
         PushResult(typeof Future[T])

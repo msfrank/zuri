@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
 #include <lyric_runtime/base_ref.h>
-#include <lyric_runtime/data_cell.h>
+#include <lyric_runtime/operand.h>
 #include <lyric_runtime/interpreter_state.h>
 #include <lyric_runtime/string_ref.h>
 #include <tempo_utils/unicode.h>
@@ -22,14 +22,14 @@ std_resource_exists(
     auto resourceOrigin = returnSegment->getObjectLocation().getOrigin();
 
     TU_ASSERT(frame.numArguments() == 1);
-    const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::String);
-    auto *instance = cell.data.str;
+    const auto &arg0 = frame.getArgument(0);
+    lyric_runtime::StringRef *str;
+    TU_ASSERT(arg0.getString(str));
 
-    lyric_runtime::DataCell result;
+    lyric_runtime::Operand result;
 
     std::string path;
-    if (!instance->utf8Value(path))
+    if (!str->utf8Value(path))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "utf8 conversion failed");
     auto resourcePath = tempo_utils::UrlPath::fromString(path);
@@ -41,9 +41,9 @@ std_resource_exists(
         tempo_utils::Status status;
         auto exists = segmentManager->hasResource(resourceLocation, /* useSystemLoader= */ false, &status);
         if (status.isOk()) {
-            result = lyric_runtime::DataCell(exists);
+            result = lyric_runtime::Operand::fromBool(exists);
         } else {
-            result = lyric_runtime::DataCell(false);
+            result = lyric_runtime::Operand::fromBool(false);
 
         }
     }
@@ -68,15 +68,15 @@ std_resource_load(
     auto resourceOrigin = returnSegment->getObjectLocation().getOrigin();
 
     TU_ASSERT(frame.numArguments() == 1);
-    const auto &cell = frame.getArgument(0);
-    TU_ASSERT(cell.type == lyric_runtime::DataCellType::String);
-    auto *instance = cell.data.str;
+    const auto &arg0 = frame.getArgument(0);
+    lyric_runtime::StringRef *str;
+    TU_ASSERT(arg0.getString(str));
 
-    lyric_runtime::DataCell result;
+    lyric_runtime::Operand result;
     tempo_utils::Status status;
 
     std::string path;
-    if (!instance->utf8Value(path))
+    if (!str->utf8Value(path))
         return lyric_runtime::InterpreterStatus::forCondition(
             lyric_runtime::InterpreterCondition::kRuntimeInvariant, "utf8 conversion failed");
     auto resourcePath = tempo_utils::UrlPath::fromString(path);

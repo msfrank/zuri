@@ -14,6 +14,10 @@ public:
     explicit DatetimeRef(const lyric_runtime::VirtualTable *vtable);
     ~DatetimeRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x6ed89a8d62baaad5; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
     absl::CivilSecond getCivilSecond() const;

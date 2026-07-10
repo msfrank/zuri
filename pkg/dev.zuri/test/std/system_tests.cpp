@@ -24,19 +24,19 @@ TEST_F(StdSystemSystem, EvaluateAwaitCompletedFuture)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val fut: Future[Int] = Future[Int]{}
+        val fut: Future[I64] = Future[I64]{}
         fut.Complete(42)
         Await(fut)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(42))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandI64(42))));
 }
 
 TEST_F(StdSystemSystem, EvaluateAwaitRejectedFuture)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val fut: Future[Int] = Future[Int]{}
+        val fut: Future[I64] = Future[I64]{}
         val failure: Internal = Internal{message = "internal failure"}
         fut.Reject(failure)
         Await(fut)
@@ -50,7 +50,7 @@ TEST_F(StdSystemSystem, EvaluateAwaitCancelledFuture)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val fut: Future[Int] = Future[Int]{}
+        val fut: Future[I64] = Future[I64]{}
         fut.Cancel()
         Await(fut)
     )");
@@ -63,37 +63,37 @@ TEST_F(StdSystemSystem, EvaluateAwaitDefaultForCompletedFuture)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val fut: Future[Int] = Future[Int]{}
+        val fut: Future[I64] = Future[I64]{}
         fut.Complete(42)
         AwaitOrDefault(fut, 0)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(42))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandI64(42))));
 }
 
 TEST_F(StdSystemSystem, EvaluateAwaitDefaultForRejectedFuture)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val fut: Future[Int] = Future[Int]{}
+        val fut: Future[I64] = Future[I64]{}
         val failure: Internal = Internal{message = "internal failure"}
         fut.Reject(failure)
         AwaitOrDefault(fut, 42)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(42))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandI64(42))));
 }
 
 TEST_F(StdSystemSystem, EvaluateAwaitDefaultForCancelledFuture)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
-        val fut: Future[Int] = Future[Int]{}
+        val fut: Future[I64] = Future[I64]{}
         fut.Cancel()
         AwaitOrDefault(fut, 42)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(42))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandI64(42))));
 }
 
 TEST_F(StdSystemSystem, EvaluateAwaitSleep)
@@ -104,7 +104,7 @@ TEST_F(StdSystemSystem, EvaluateAwaitSleep)
         Await(fut)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellNil())));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandNil())));
 }
 
 TEST_F(StdSystemSystem, EvaluateAwaitSpawn)
@@ -112,7 +112,7 @@ TEST_F(StdSystemSystem, EvaluateAwaitSpawn)
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/system" ...
 
-        val x: Function0[Int] = lambda (): Int {
+        val x: Function0[I64] = lambda (): I64 {
             Await(Sleep(1000, nil))
             42
         }
@@ -121,5 +121,5 @@ TEST_F(StdSystemSystem, EvaluateAwaitSpawn)
         Await(fut)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(42))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandI64(42))));
 }

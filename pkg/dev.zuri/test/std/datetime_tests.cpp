@@ -30,7 +30,7 @@ TEST_F(StdTimeDatetime, EvaluateNewStdTimeDatetime)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/time"),
                 lyric_common::SymbolPath({"Datetime"}))))));

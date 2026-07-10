@@ -14,20 +14,24 @@ public:
     explicit VectorRef(const lyric_runtime::VirtualTable *vtable);
     ~VectorRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x5fb34c751db65bb2; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
-    lyric_runtime::DataCell at(int index) const;
-    lyric_runtime::DataCell first() const;
-    lyric_runtime::DataCell last() const;
+    lyric_runtime::Operand at(int index) const;
+    lyric_runtime::Operand first() const;
+    lyric_runtime::Operand last() const;
     int size() const;
     int generation() const;
 
-    void insert(int index, lyric_runtime::DataCell value);
-    void append(const lyric_runtime::DataCell &value);
-    lyric_runtime::DataCell update(int index, lyric_runtime::DataCell value);
-    lyric_runtime::DataCell remove(int index);
-    absl::InlinedVector<lyric_runtime::DataCell,16>::iterator begin();
-    absl::InlinedVector<lyric_runtime::DataCell,16>::iterator end();
+    void insert(int index, lyric_runtime::Operand value);
+    void append(const lyric_runtime::Operand &value);
+    lyric_runtime::Operand update(int index, lyric_runtime::Operand value);
+    lyric_runtime::Operand remove(int index);
+    absl::InlinedVector<lyric_runtime::Operand,16>::iterator begin();
+    absl::InlinedVector<lyric_runtime::Operand,16>::iterator end();
     void clear();
 
 protected:
@@ -35,7 +39,7 @@ protected:
     void clearMembersReachable() override;
 
 private:
-    absl::InlinedVector<lyric_runtime::DataCell,16> m_seq;
+    absl::InlinedVector<lyric_runtime::Operand,16> m_seq;
     int m_gen;
 };
 
@@ -47,17 +51,21 @@ public:
         const lyric_runtime::VirtualTable *vtable,
         VectorRef *vector);
 
+    static constexpr tu_uint64 type_tag() { return 0xa093009f388c2b44; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
     bool iteratorValid() override;
-    bool iteratorNext(lyric_runtime::DataCell &next) override;
+    bool iteratorNext(lyric_runtime::Operand &next) override;
 
 protected:
     void setMembersReachable() override;
     void clearMembersReachable() override;
 
 private:
-    absl::InlinedVector<lyric_runtime::DataCell,16>::iterator m_iter;
+    absl::InlinedVector<lyric_runtime::Operand,16>::iterator m_iter;
     VectorRef *m_vector;
     int m_gen;
 };

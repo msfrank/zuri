@@ -24,12 +24,12 @@ TEST_F(StdCollectionsTreeSet, TestEvaluateNewTreeSet)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: TreeSet[Int] = TreeSet[Int]{}
+        val ints: TreeSet[I64] = TreeSet[I64]{}
         ints
     )");
 
     ASSERT_THAT (result.getResult(), tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/collections"),
                 lyric_common::SymbolPath({"TreeSet"}))))));
@@ -39,31 +39,31 @@ TEST_F(StdCollectionsTreeSet, TestEvaluateConstructTreeSetWithElements)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: TreeSet[Int] = TreeSet[Int]{1, 2, 3}
+        val ints: TreeSet[I64] = TreeSet[I64]{1, 2, 3}
         ints.Size()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellInt(3))));
+        OperandI64(3))));
 }
 
 TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetSize)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: TreeSet[Int] = TreeSet[Int]{}
+        val ints: TreeSet[I64] = TreeSet[I64]{}
         ints.Size()
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(0LL))));
+        RunModule(OperandI64(0LL))));
 }
 
 TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetContains)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: TreeSet[Int] = TreeSet[Int]{}
+        val ints: TreeSet[I64] = TreeSet[I64]{}
         ints.Add(1)
         ints.Add(2)
         ints.Add(3)
@@ -71,26 +71,26 @@ TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetContains)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellBool(true))));
+        RunModule(OperandBool(true))));
 }
 
 TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetAdd)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: TreeSet[Int] = TreeSet[Int]{}
+        val ints: TreeSet[I64] = TreeSet[I64]{}
         ints.Add(42)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellBool(true))));
+        RunModule(OperandBool(true))));
 }
 
 TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetRemove)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: TreeSet[Int] = TreeSet[Int]{}
+        val ints: TreeSet[I64] = TreeSet[I64]{}
         ints.Add(1)
         ints.Add(2)
         ints.Add(3)
@@ -98,14 +98,14 @@ TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetRemove)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellBool(true))));
+        RunModule(OperandBool(true))));
 }
 
 TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetClear)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: TreeSet[Int] = TreeSet[Int]{}
+        val ints: TreeSet[I64] = TreeSet[I64]{}
         ints.Add(1)
         ints.Add(2)
         ints.Add(3)
@@ -114,24 +114,24 @@ TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetClear)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(0LL))));
+        RunModule(OperandI64(0LL))));
 }
 
 TEST_F(StdCollectionsTreeSet, TestEvaluateTreeSetIterate)
 {
     auto result = tester->runModule(R"(
         import from "dev.zuri.pkg://std-0.0.1@zuri.dev/collections" ...
-        val ints: TreeSet[Int] = TreeSet[Int]{}
+        val ints: TreeSet[I64] = TreeSet[I64]{}
         ints.Add(1)
         ints.Add(2)
         ints.Add(3)
-        var sum: Int = 0
-        for n: Int in ints {
+        var sum: I64 = 0
+        for n: I64 in ints {
             sum += n
         }
         sum
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellInt(6LL))));
+        RunModule(OperandI64(6LL))));
 }

@@ -79,7 +79,7 @@ std::array<lyric_runtime::NativeTrap,88> kStdTraps = {{
     {treemap_iterator_get_key, "STD_COLLECTIONS_TREEMAP_ITERATOR_GET_KEY", 0},
     {treemap_iterator_get_value, "STD_COLLECTIONS_TREEMAP_ITERATOR_GET_VALUE", 0},
     {treemap_iterator_next, "STD_COLLECTIONS_TREEMAP_ITERATOR_NEXT", 0},
-    {treemap_alloc, "STD_COLLECTIONS_TREESET_ALLOC", 0},
+    {treeset_alloc, "STD_COLLECTIONS_TREESET_ALLOC", 0},
     {treeset_ctor, "STD_COLLECTIONS_TREESET_CTOR", 0},
     {treeset_size, "STD_COLLECTIONS_TREESET_SIZE", 0},
     {treeset_contains, "STD_COLLECTIONS_TREESET_CONTAINS", 0},

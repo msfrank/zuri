@@ -81,10 +81,10 @@ defclass HashMap[K,+V] {
         }
     }
 
-    def Size(): Int {
+    def Size(): I64 {
         @{
             Trap("STD_COLLECTIONS_HASHMAP_SIZE")
-            PushResult(typeof Int)
+            PushResult(typeof I64)
         }
     }
 
@@ -180,10 +180,10 @@ defclass TreeMap[K,+V] {
         }
     }
 
-    def Size(): Int {
+    def Size(): I64 {
         @{
             Trap("STD_COLLECTIONS_TREEMAP_SIZE")
-            PushResult(typeof Int)
+            PushResult(typeof I64)
         }
     }
 
@@ -265,10 +265,10 @@ defclass TreeSet[+T] {
         }
     }
 
-    def Size(): Int {
+    def Size(): I64 {
         @{
             Trap("STD_COLLECTIONS_TREESET_SIZE")
-            PushResult(typeof Int)
+            PushResult(typeof I64)
         }
     }
 
@@ -349,21 +349,21 @@ defclass Vector[+T] {
         }
     }
 
-    def Size(): Int {
+    def Size(): I64 {
         @{
             Trap("STD_COLLECTIONS_VECTOR_SIZE")
-            PushResult(typeof Int)
+            PushResult(typeof I64)
         }
     }
 
-    def At(index: Int): T {
+    def At(index: I64): T {
         @{
             Trap("STD_COLLECTIONS_VECTOR_AT")
             PushResult(typeof T)
         }
     }
 
-    def Insert(index: Int, value: T) {
+    def Insert(index: I64, value: T) {
         @{
             Trap("STD_COLLECTIONS_VECTOR_INSERT")
         }
@@ -375,14 +375,14 @@ defclass Vector[+T] {
         }
     }
 
-    def Replace(index: Int, value: T): T | Undef {
+    def Replace(index: I64, value: T): T | Undef {
         @{
             Trap("STD_COLLECTIONS_VECTOR_REPLACE")
             PushResult(typeof T | Undef)
         }
     }
 
-    def Remove(index: Int): T | Undef {
+    def Remove(index: I64): T | Undef {
         @{
             Trap("STD_COLLECTIONS_VECTOR_REMOVE")
             PushResult(typeof T | Undef)

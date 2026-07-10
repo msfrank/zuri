@@ -16,12 +16,16 @@ public:
     explicit WorkQueueRef( const lyric_runtime::VirtualTable *vtable);
     ~WorkQueueRef() override;
 
+    static constexpr tu_uint64 type_tag() { return 0x9027d36c82735367; }
+
+    tu_uint64 getTypeTag() const override;
+
     std::string toString() const override;
 
-    bool push(const lyric_runtime::DataCell &element);
+    bool push(const lyric_runtime::Operand &element);
 
     bool containsAvailableElement() const;
-    lyric_runtime::DataCell takeAvailableElement();
+    lyric_runtime::Operand takeAvailableElement();
 
     bool waitForPush(
         std::shared_ptr<lyric_runtime::Promise> promise,
@@ -33,7 +37,7 @@ protected:
     void clearMembersReachable() override;
 
 private:
-    std::vector<lyric_runtime::DataCell> m_elements;
+    std::vector<lyric_runtime::Operand> m_elements;
     std::vector<
         std::pair<std::shared_ptr<lyric_runtime::Promise>, std::shared_ptr<lyric_runtime::AsyncHandle>>
     > m_waiting;

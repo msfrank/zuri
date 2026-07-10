@@ -28,7 +28,7 @@ TEST_F(StdText, EvaluateNewText)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(
-        DataCellRef(
+        OperandRef(
             lyric_common::SymbolUrl(
                 lyric_common::ModuleLocation::fromString("dev.zuri.pkg://std-0.0.1@zuri.dev/text"),
                 lyric_common::SymbolPath({"Text"}))))));
@@ -42,7 +42,7 @@ TEST_F(StdText, EvaluateTextSize)
         text.Length()
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellInt(13))));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandInt(13))));
 }
 
 TEST_F(StdText, EvaluateTextAt)
@@ -54,7 +54,7 @@ TEST_F(StdText, EvaluateTextAt)
     )");
 
     ASSERT_THAT (result, tempo_test::ContainsResult(
-        RunModule(DataCellChar(static_cast<char32_t>('o')))));
+        RunModule(OperandChar(static_cast<char32_t>('o')))));
 }
 
 TEST_F(StdText, EvaluateTextAtOutOfRange)
@@ -65,5 +65,5 @@ TEST_F(StdText, EvaluateTextAtOutOfRange)
         text.At(42)
     )");
 
-    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(DataCellUndef())));
+    ASSERT_THAT (result, tempo_test::ContainsResult(RunModule(OperandUndef())));
 }

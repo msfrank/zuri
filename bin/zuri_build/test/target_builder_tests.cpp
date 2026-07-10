@@ -21,7 +21,7 @@ TEST_F(TargetBuilderTests, BuildLibrary)
     TU_RAISE_IF_NOT_OK (tester.configure());
 
     lyric_common::ModuleLocation mod1;
-    TU_ASSIGN_OR_RAISE (mod1, tester.writeModule("def FortyTwo(): Int { 42 }", "mod1"));
+    TU_ASSIGN_OR_RAISE (mod1, tester.writeModule("def FortyTwo(): I64 { 42 }", "mod1"));
 
     tempo_config::ConfigNode targetsConfig;
     TU_ASSIGN_OR_RAISE (targetsConfig, tempo_config::read_config_string(R"(

@@ -154,11 +154,11 @@ zuri_build::GenerateProtocolTask::runTask(lyric_build::TempDirectory *tempDirect
     lyric_assembler::ObjectRoot *objectRoot;
     TU_ASSIGN_OR_RETURN (objectRoot, objectState.defineRoot());
 
-    // define empty entry call
-    auto *entryCall = objectRoot->entryCall();
-    auto *proc = entryCall->callProc();
-    auto *code = proc->procFragment();
-    TU_RETURN_IF_NOT_OK (code->returnToCaller());
+    // // define empty entry call
+    // auto *entryCall = objectRoot->entryCall();
+    // auto *proc = entryCall->callProc();
+    // auto *code = proc->procFragment();
+    // TU_RETURN_IF_NOT_OK (code->returnToCaller());
 
     // define the protocol
     auto *symbolCache = objectState.symbolCache();

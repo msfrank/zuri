@@ -10,14 +10,14 @@ defclass Text {
         }
     }
 
-    def Length(): Int {
+    def Length(): I64 {
         @{
             Trap("STD_TEXT_TEXT_LENGTH")
-            PushResult(typeof Int)
+            PushResult(typeof I64)
         }
     }
 
-    def At(index: Int): Char | Undef {
+    def At(index: I64): Char | Undef {
         @{
             Trap("STD_TEXT_TEXT_AT")
             PushResult(typeof Char | Undef)

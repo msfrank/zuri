@@ -19,6 +19,12 @@ DatetimeRef::~DatetimeRef()
     TU_LOG_INFO << "free DatetimeRef" << DatetimeRef::toString();
 }
 
+tu_uint64
+DatetimeRef::getTypeTag() const
+{
+    return type_tag();
+}
+
 std::string
 DatetimeRef::toString() const
 {
@@ -74,21 +80,23 @@ std_time_datetime_ctor(
     auto &frame = currentCoro->currentCallOrThrow();
     TU_ASSERT (frame.numArguments() == 2);
     auto arg0 = frame.getArgument(0);
-    TU_ASSERT (arg0.type == lyric_runtime::DataCellType::Ref);
+    InstantRef *instant;
+    TU_ASSERT (arg0.castRef(instant));
     auto arg1 = frame.getArgument(1);
-    TU_ASSERT (arg1.type == lyric_runtime::DataCellType::Ref);
+    TimezoneRef *tz;
+    TU_ASSERT (arg1.castRef(tz));
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
+    DatetimeRef *datetime;
+    TU_ASSERT(receiver.castRef(datetime));
 
-    auto instant = static_cast<InstantRef *>(arg0.data.ref)->getInstant();
-    auto tz = static_cast<TimezoneRef *>(arg1.data.ref)->getTimeZone();
-    auto cs = absl::ToCivilSecond(instant, tz);
-    auto ci = tz.At(instant);
+    auto i = instant->getInstant();
+    auto z = tz->getTimeZone();
+    auto cs = absl::ToCivilSecond(i, z);
+    auto ci = z.At(i);
     auto ss = ci.subsecond;
 
-    auto *instance = static_cast<DatetimeRef *>(receiver.data.ref);
-    instance->setCivilSecond(cs);
-    instance->setSubseconds(ss);
+    datetime->setCivilSecond(cs);
+    datetime->setSubseconds(ss);
 
     return {};
 }

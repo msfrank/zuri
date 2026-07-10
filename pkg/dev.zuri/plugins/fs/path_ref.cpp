@@ -2,7 +2,7 @@
 
 #include <absl/strings/substitute.h>
 
-#include <lyric_runtime/data_cell.h>
+#include <lyric_runtime/operand.h>
 #include <lyric_runtime/heap_manager.h>
 #include <lyric_runtime/string_ref.h>
 #include <tempo_utils/log_stream.h>
@@ -18,6 +18,12 @@ PathRef::PathRef(const lyric_runtime::VirtualTable *vtable)
 PathRef::~PathRef()
 {
     TU_LOG_V << "free PathRef" << PathRef::toString();
+}
+
+tu_uint64
+PathRef::getTypeTag() const
+{
+    return type_tag();
 }
 
 bool
@@ -104,8 +110,8 @@ fs_path_ctor(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     std::filesystem::path path;
 
@@ -115,8 +121,8 @@ fs_path_ctor(
         } else {
             for (int i = 0; i < frame.numRest(); i++) {
                 auto part = frame.getRest(i);
-                TU_ASSERT (part.type == lyric_runtime::DataCellType::String);
-                auto *str = part.data.str;
+                lyric_runtime::StringRef *str;
+                TU_ASSERT (part.getString(str));
                 std::string p = str->getString();
                 if (!p.empty()) {
                     path /= std::filesystem::path(p);
@@ -125,8 +131,8 @@ fs_path_ctor(
         }
     } else {
         auto arg0 = frame.getArgument(0);
-        TU_ASSERT (arg0.type == lyric_runtime::DataCellType::String);
-        auto *str = arg0.data.str;
+        lyric_runtime::StringRef *str;
+        TU_ASSERT (arg0.getString(str));
         std::string p = str->getString();
         path = std::filesystem::path(p);
     }
@@ -146,12 +152,13 @@ fs_path_parent(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     auto path = instance->getParentPath();
     auto parent = state->heapManager()->allocateRef<PathRef>(instance->getVirtualTable());
-    auto *ref = static_cast<PathRef *>(parent.data.ref);
+    PathRef *ref;
+    parent.castRef(ref);
     ref->setPath(path);
 
     TU_RETURN_IF_NOT_OK (currentCoro->pushData(parent));
@@ -169,21 +176,25 @@ fs_path_resolve(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT(receiver.castRef(instance));
 
     auto path = instance->getPath();
 
     for (int i = 0; i < frame.numRest(); i++) {
         auto part = frame.getRest(i);
         std::string utf8;
-        switch (part.type) {
-            case lyric_runtime::DataCellType::String: {
-                part.data.str->utf8Value(utf8);
+        switch (part.getType()) {
+            case lyric_runtime::OperandType::String: {
+                lyric_runtime::StringRef *str;
+                TU_ASSERT (part.getString(str));
+                str->utf8Value(utf8);
                 break;
             }
-            case lyric_runtime::DataCellType::Ref: {
-                part.data.ref->utf8Value(utf8);
+            case lyric_runtime::OperandType::Ref: {
+                lyric_runtime::BaseRef *ref;
+                TU_ASSERT (part.getRef(ref));
+                ref->utf8Value(utf8);
                 break;
             }
             default:
@@ -198,7 +209,8 @@ fs_path_resolve(
     path = path.lexically_normal();
 
     auto resolve = state->heapManager()->allocateRef<PathRef>(instance->getVirtualTable());
-    auto *ref = static_cast<PathRef *>(resolve.data.ref);
+    PathRef *ref;
+    TU_ASSERT (resolve.castRef(ref));
     ref->setPath(path);
 
     TU_RETURN_IF_NOT_OK (currentCoro->pushData(resolve));
@@ -216,12 +228,13 @@ fs_path_file_name(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT (receiver.castRef(instance));
 
     auto path = instance->getFileName();
     auto filename = state->heapManager()->allocateRef<PathRef>(instance->getVirtualTable());
-    auto *ref = static_cast<PathRef *>(filename.data.ref);
+    PathRef *ref;
+    TU_ASSERT (filename.castRef(ref));
     ref->setPath(path);
 
     TU_RETURN_IF_NOT_OK (currentCoro->pushData(filename));
@@ -239,12 +252,13 @@ fs_path_file_stem(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT (receiver.castRef(instance));
 
     auto path = instance->getFileStem();
     auto stem = state->heapManager()->allocateRef<PathRef>(instance->getVirtualTable());
-    auto *ref = static_cast<PathRef *>(stem.data.ref);
+    PathRef *ref;
+    TU_ASSERT (stem.castRef(ref));
     ref->setPath(path);
 
     TU_RETURN_IF_NOT_OK (currentCoro->pushData(stem));
@@ -263,8 +277,8 @@ fs_path_file_extension(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT (receiver.castRef(instance));
 
     auto extension = instance->getFileExtension();
     TU_RETURN_IF_NOT_OK (heapManager->loadStringOntoStack(extension));
@@ -282,10 +296,10 @@ fs_path_is_absolute(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT (receiver.castRef(instance));
 
-    lyric_runtime::DataCell result(instance->isAbsolute());
+    auto result = lyric_runtime::Operand::fromBool(instance->isAbsolute());
     TU_RETURN_IF_NOT_OK (currentCoro->pushData(result));
 
     return {};
@@ -301,10 +315,10 @@ fs_path_is_relative(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT (receiver.castRef(instance));
 
-    lyric_runtime::DataCell result(instance->isRelative());
+    auto result = lyric_runtime::Operand::fromBool(instance->isRelative());
     TU_RETURN_IF_NOT_OK (currentCoro->pushData(result));
 
     return {};
@@ -321,8 +335,8 @@ fs_path_to_string(
 
     auto &frame = currentCoro->currentCallOrThrow();
     auto receiver = frame.getReceiver();
-    TU_ASSERT(receiver.type == lyric_runtime::DataCellType::Ref);
-    auto *instance = static_cast<PathRef *>(receiver.data.ref);
+    PathRef *instance;
+    TU_ASSERT (receiver.castRef(instance));
 
     auto path = instance->getPath();
     TU_RETURN_IF_NOT_OK (heapManager->loadStringOntoStack(path.c_str()));
